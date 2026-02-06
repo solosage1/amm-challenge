@@ -9,16 +9,16 @@ use rand_pcg::Pcg64;
 /// The GBM model: dS = mu * S * dt + sigma * S * dW
 /// where:
 /// - S is the price
-/// - mu is the drift (annualized)
-/// - sigma is the volatility (annualized)
+/// - mu is the drift
+/// - sigma is the per-step volatility
 /// - dW is a Wiener process increment
 pub struct GBMPriceProcess {
     /// Current price
     current_price: f64,
-    /// Drift (annualized)
+    /// Drift
     #[allow(dead_code)]
     mu: f64,
-    /// Volatility (annualized)
+    /// Per-step volatility
     #[allow(dead_code)]
     sigma: f64,
     /// Time step
@@ -81,8 +81,8 @@ mod tests {
 
     #[test]
     fn test_gbm_deterministic() {
-        let mut process1 = GBMPriceProcess::new(100.0, 0.0, 0.1, 1.0 / 252.0, Some(42));
-        let mut process2 = GBMPriceProcess::new(100.0, 0.0, 0.1, 1.0 / 252.0, Some(42));
+        let mut process1 = GBMPriceProcess::new(100.0, 0.0, 0.1, 1.0, Some(42));
+        let mut process2 = GBMPriceProcess::new(100.0, 0.0, 0.1, 1.0, Some(42));
 
         // Same seed should produce same prices
         for _ in 0..100 {
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn test_gbm_positive_prices() {
-        let mut process = GBMPriceProcess::new(100.0, -0.5, 0.3, 1.0 / 252.0, Some(42));
+        let mut process = GBMPriceProcess::new(100.0, -0.5, 0.3, 1.0, Some(42));
 
         // GBM should always produce positive prices
         for _ in 0..1000 {

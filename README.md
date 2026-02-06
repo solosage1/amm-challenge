@@ -22,11 +22,10 @@ Your strategy competes against a **normalizer AMM** running fixed 30 bps fees. B
 
 ### Price Process
 
-The fair price follows GBM: `dS = μSdt + σSdW`
+The fair price follows GBM: `S(t+1) = S(t) · exp(-σ²/2 + σZ)` where `Z ~ N(0,1)`
 
 - Drift `μ = 0` (no directional bias)
-- Volatility `σ ~ U[1.40%, 1.60%]` per step (varies across simulations)
-- Time step `dt = 1/252`
+- Per-step volatility `σ ~ U[0.088%, 0.101%]` (varies across simulations)
 
 ### Retail Flow
 

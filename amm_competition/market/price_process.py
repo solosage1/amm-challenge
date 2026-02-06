@@ -14,14 +14,14 @@ class GBMPriceProcess:
     The GBM model: dS = mu * S * dt + sigma * S * dW
     where:
     - S is the price
-    - mu is the drift (annualized)
-    - sigma is the volatility (annualized)
+    - mu is the drift
+    - sigma is the per-step volatility
     - dW is a Wiener process increment
     """
     initial_price: float
-    mu: float = 0.0           # Drift (annualized)
-    sigma: float = 0.3        # Volatility (annualized)
-    dt: float = 1/252         # Time step (default: ~1 trading day)
+    mu: float = 0.0           # Drift
+    sigma: float = 0.001      # Per-step volatility
+    dt: float = 1.0           # Time step
     seed: Optional[int] = None
 
     def __post_init__(self) -> None:

@@ -27,7 +27,7 @@ fn benchmark_wad_operations(c: &mut Criterion) {
 fn benchmark_price_process(c: &mut Criterion) {
     use amm_sim_rs::market::GBMPriceProcess;
 
-    let mut process = GBMPriceProcess::new(100.0, 0.0, 0.001, 1.0 / 252.0, Some(42));
+    let mut process = GBMPriceProcess::new(100.0, 0.0, 0.001, 1.0, Some(42));
 
     c.bench_function("gbm_step", |bench| {
         bench.iter(|| process.step())
