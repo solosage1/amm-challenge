@@ -1668,6 +1668,69 @@ Option C: Stress test
 
 ---
 
+### 9.1 Seed Robustness Testing
+
+Test your strategy's stability across different random seed batches:
+
+**Why test across seed batches?**
+- Detects strategies that overfit to specific market conditions
+- Verifies consistent performance across different random scenarios
+- Builds confidence before submission
+
+**How seed batches work:**
+- Default batch (offset 0): seeds 0-999
+- Batch 1 (offset 1000): seeds 1000-1999
+- Batch 2 (offset 2000): seeds 2000-2999
+
+Each batch tests the same strategy with different (but statistically similar) market conditions.
+
+**Manual robustness testing:**
+
+```bash
+# Test with default seeds (0-999)
+python scripts/amm-test-pipeline.py MyStrategy.sol \
+  --output result_batch0.json
+
+# Test with batch 1 (seeds 1000-1999)
+python scripts/amm-test-pipeline.py MyStrategy.sol \
+  --output result_batch1.json --seed-offset 1000
+
+# Test with batch 2 (seeds 2000-2999)
+python scripts/amm-test-pipeline.py MyStrategy.sol \
+  --output result_batch2.json --seed-offset 2000
+```
+
+**Automated robustness checking:**
+
+```bash
+# Run 3 batches automatically and generate report
+python scripts/amm-learning-engine.py robustness-check \
+  --strategy MyStrategy.sol --batches 3
+```
+
+**Interpreting robustness results:**
+
+| Std Deviation | Assessment | Interpretation |
+|---------------|------------|----------------|
+| < 5 | Excellent | Strategy is very stable across conditions |
+| 5-10 | Good | Normal variance, strategy is reliable |
+| 10-15 | Moderate | Strategy sensitive to market conditions |
+| > 15 | Poor | Strategy may be overfitting |
+
+**When to use robustness testing:**
+- ✅ Before final submission (verify stability)
+- ✅ After major strategy changes (ensure no regressions)
+- ✅ When comparing competing designs (choose more robust)
+- ❌ During rapid iteration (too slow for development)
+
+**Best practices:**
+- Test at least 3 batches (3000 total simulations)
+- Look for σ < 10 for submission-ready strategies
+- If σ > 15, consider adding smoothing or reducing reactivity
+- Remember: website uses different seeds, so some variance is expected
+
+---
+
 ## 10. Reference & Troubleshooting
 
 ### Command Reference

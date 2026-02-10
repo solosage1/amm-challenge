@@ -2,6 +2,13 @@
 """
 AMM Test Pipeline
 Complete testing workflow: validation → compilation → simulation
+
+Supports seed robustness testing via --seed-offset flag for testing
+strategies across different random seed batches.
+
+Usage:
+    python scripts/amm-test-pipeline.py strategy.sol --output result.json
+    python scripts/amm-test-pipeline.py strategy.sol --output result.json --seed-offset 1000
 """
 
 import argparse

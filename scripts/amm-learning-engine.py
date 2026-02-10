@@ -348,16 +348,106 @@ def analyze_hypotheses(experiments_dir: str = "research/experiments") -> None:
     print("=" * 60)
 
 
+def robustness_check(strategy_path: str, state_dir: str = ".ralph-amm/state", num_batches: int = 3) -> None:
+    """
+    Test strategy robustness across multiple seed batches.
+
+    Args:
+        strategy_path: Path to strategy .sol file
+        state_dir: Path to state directory
+        num_batches: Number of seed batches to test (default: 3)
+    """
+    import subprocess
+    import json
+    from pathlib import Path
+
+    if not Path(strategy_path).exists():
+        log(f"Strategy file not found: {strategy_path}", "ERROR")
+        return
+
+    log(f"Running robustness check for {strategy_path} ({num_batches} batches)", "INFO")
+
+    results = []
+    for batch_idx in range(num_batches):
+        seed_offset = batch_idx * 1000
+        log(f"\n  Batch {batch_idx + 1}/{num_batches}: seed_offset={seed_offset}", "INFO")
+
+        # Run test pipeline with seed offset
+        result_path = Path(state_dir) / f".robustness_batch_{batch_idx}.json"
+        cmd = [
+            sys.executable,
+            "scripts/amm-test-pipeline.py",
+            strategy_path,
+            "--output", str(result_path),
+            "--seed-offset", str(seed_offset),
+        ]
+
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+
+            # Load result
+            result = json.loads(result_path.read_text())
+            if result.get("success"):
+                edge = result.get("final_edge", 0)
+                results.append({
+                    "batch": batch_idx,
+                    "seed_offset": seed_offset,
+                    "edge": edge,
+                })
+                log(f"    Edge: {edge:.2f}", "INFO")
+            else:
+                log(f"    Test failed", "WARN")
+
+        except subprocess.CalledProcessError as e:
+            log(f"    Batch {batch_idx} failed: {e}", "ERROR")
+
+    # Generate robustness report
+    if results:
+        edges = [r["edge"] for r in results]
+        mean_edge = sum(edges) / len(edges)
+        variance = sum((e - mean_edge) ** 2 for e in edges) / len(edges) if len(edges) > 1 else 0
+        std_dev = variance ** 0.5
+        min_edge = min(edges)
+        max_edge = max(edges)
+
+        print("\n" + "=" * 60)
+        print("Robustness Check Report")
+        print("=" * 60)
+        print(f"  Strategy: {Path(strategy_path).name}")
+        print(f"  Batches tested: {len(results)}")
+        print(f"  Mean edge: {mean_edge:.2f}")
+        print(f"  Std deviation: {std_dev:.2f}")
+        print(f"  Range: [{min_edge:.2f}, {max_edge:.2f}]")
+        print(f"  Spread: {max_edge - min_edge:.2f}")
+        print("\n  Individual batches:")
+        for r in results:
+            print(f"    Batch {r['batch']} (offset {r['seed_offset']}): {r['edge']:.2f}")
+
+        # Robustness assessment
+        print("\n  Assessment:")
+        if std_dev < 5:
+            print("    ✅ Excellent robustness (σ < 5)")
+        elif std_dev < 10:
+            print("    ✓ Good robustness (σ < 10)")
+        elif std_dev < 15:
+            print("    ⚠️  Moderate robustness (σ < 15)")
+        else:
+            print("    ✗ Poor robustness (σ >= 15)")
+
+        print("=" * 60)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="AMM Learning Engine - Track and analyze strategy results",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:
-  record       Record a test result to history and update best
-  analyze      Generate insights report from test history
-  status       Display current loop status
-  hypotheses   Analyze experiments grouped by hypothesis
+  record           Record a test result to history and update best
+  analyze          Generate insights report from test history
+  status           Display current loop status
+  hypotheses       Analyze experiments grouped by hypothesis
+  robustness-check Test strategy across multiple seed batches
 
 Examples:
   # Record latest result
@@ -372,12 +462,16 @@ Examples:
 
   # Analyze hypotheses
   python scripts/amm-learning-engine.py hypotheses
+
+  # Check robustness across 3 seed batches
+  python scripts/amm-learning-engine.py robustness-check \\
+    --strategy .ralph-amm/generated/strategy_001.sol --batches 3
 """,
     )
 
     parser.add_argument(
         "command",
-        choices=["record", "analyze", "status", "hypotheses"],
+        choices=["record", "analyze", "status", "hypotheses", "robustness-check"],
         help="Command to execute",
     )
     parser.add_argument(
@@ -392,6 +486,16 @@ Examples:
         "--state-dir",
         default=".ralph-amm/state",
         help="Path to state directory (default: .ralph-amm/state)",
+    )
+    parser.add_argument(
+        "--strategy",
+        help="Path to strategy file (for robustness-check command)",
+    )
+    parser.add_argument(
+        "--batches",
+        type=int,
+        default=3,
+        help="Number of seed batches for robustness check (default: 3)",
     )
 
     args = parser.parse_args()
@@ -414,6 +518,12 @@ Examples:
 
     elif args.command == "hypotheses":
         analyze_hypotheses()
+
+    elif args.command == "robustness-check":
+        if not args.strategy:
+            print("Error: --strategy is required for robustness-check command", file=sys.stderr)
+            sys.exit(1)
+        robustness_check(args.strategy, args.state_dir, args.batches)
 
 
 if __name__ == "__main__":
