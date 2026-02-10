@@ -365,6 +365,138 @@ def format_hypothesis_gaps(gaps: List[Tuple[str, str]]) -> str:
 # RECENT RESULTS FORMATTING
 # ============================================================================
 
+# ============================================================================
+# INSIGHT LOADING (from forensics, synthesis, auditor)
+# ============================================================================
+
+def load_insights(state_dir: Path) -> Dict:
+    """Load insights from forensics, synthesis, and auditor engines."""
+    insights = {
+        'forensics': None,
+        'synthesis': None,
+        'audit': None,
+    }
+
+    # Load forensics insights
+    forensics_path = state_dir / 'forensics_insights.json'
+    if forensics_path.exists():
+        try:
+            data = json.loads(forensics_path.read_text())
+            insights['forensics'] = data
+        except Exception:
+            pass
+
+    # Load synthesis report
+    synthesis_path = state_dir / 'synthesis_report.json'
+    if synthesis_path.exists():
+        try:
+            data = json.loads(synthesis_path.read_text())
+            insights['synthesis'] = data
+        except Exception:
+            pass
+
+    # Load assumption audit
+    audit_path = state_dir / 'assumption_audit.json'
+    if audit_path.exists():
+        try:
+            data = json.loads(audit_path.read_text())
+            insights['audit'] = data
+        except Exception:
+            pass
+
+    return insights
+
+
+def format_insights_section(insights: Dict) -> str:
+    """Format loaded insights for inclusion in prompt."""
+    sections = []
+
+    # Forensics insights
+    if insights.get('forensics'):
+        f = insights['forensics']
+        lines = ["### Simulation Forensics Insights"]
+
+        if 'edge_curves' in f and f['edge_curves']:
+            ec = f['edge_curves']
+            lines.append(f"- **Edge Timing**: Early game {ec.get('early_game_pct', 0):.0f}%, "
+                        f"Mid game {ec.get('mid_game_pct', 0):.0f}%, "
+                        f"Late game {ec.get('late_game_pct', 0):.0f}%")
+
+        if 'price_regimes' in f and f['price_regimes']:
+            pr = f['price_regimes']
+            ratio = pr.get('vol_edge_ratio', 1)
+            if ratio > 1.3:
+                lines.append(f"- **Volatility**: Strategy excels in high-vol ({ratio:.1f}x edge ratio)")
+            elif ratio < 0.8:
+                lines.append(f"- **Volatility**: Strategy struggles in high-vol ({ratio:.1f}x edge ratio)")
+
+        if 'fee_timing' in f and f['fee_timing']:
+            ft = f['fee_timing']
+            lines.append(f"- **Fee Timing**: {ft.get('timing_interpretation', 'N/A')}")
+
+        sections.append('\n'.join(lines))
+
+    # Synthesis insights
+    if insights.get('synthesis'):
+        s = insights['synthesis']
+        lines = ["### Cross-Strategy Synthesis"]
+
+        # Top mechanisms
+        if 'mechanism_performance' in s:
+            top_mechs = sorted(
+                s['mechanism_performance'].items(),
+                key=lambda x: x[1].get('avg_edge', 0),
+                reverse=True
+            )[:3]
+            if top_mechs:
+                mech_str = ", ".join([f"{m[0]} ({m[1].get('avg_edge', 0):.0f} avg edge)" for m in top_mechs])
+                lines.append(f"- **Top Mechanisms**: {mech_str}")
+
+        # Synthesis candidates
+        if 'synthesis_candidates' in s and s['synthesis_candidates']:
+            candidate = s['synthesis_candidates'][0]
+            mechs = " + ".join(candidate.get('mechanisms', []))
+            lines.append(f"- **Untested Combo**: {mechs} (predicted ~{candidate.get('predicted_edge', 0):.0f} edge)")
+
+        # Parameter insights
+        if 'parameter_insights' in s:
+            for mech, insight in list(s['parameter_insights'].items())[:2]:
+                if 'recommendation' in insight:
+                    lines.append(f"- **{mech}**: {insight['recommendation']}")
+
+        sections.append('\n'.join(lines))
+
+    # Audit insights
+    if insights.get('audit'):
+        a = insights['audit']
+        lines = ["### Assumption Audit"]
+
+        # List violations
+        if 'tests' in a:
+            violations = [
+                (name, result) for name, result in a['tests'].items()
+                if result.get('status') == 'VIOLATED'
+            ]
+            for name, result in violations[:2]:
+                lines.append(f"- **VIOLATED**: {result.get('assumption', name)}")
+                lines.append(f"  - {result.get('implication', 'N/A')}")
+
+            # List weak assumptions
+            weak = [
+                (name, result) for name, result in a['tests'].items()
+                if result.get('status') == 'WEAK'
+            ]
+            for name, result in weak[:2]:
+                lines.append(f"- **WEAK**: {result.get('assumption', name)} (r={result.get('correlation', 0):.2f})")
+
+        sections.append('\n'.join(lines))
+
+    if not sections:
+        return ""
+
+    return "\n---\n\n## AI-Generated Insights\n\n" + "\n\n".join(sections) + "\n"
+
+
 def format_recent_results(state: Dict) -> str:
     """Format last 5 test results for context"""
     recent = state['strategies_log'][-5:]
@@ -429,6 +561,10 @@ def build_prompt(
     hours = remaining // 3600
     minutes = (remaining % 3600) // 60
 
+    # Load AI-generated insights (from forensics, synthesis, auditor)
+    insights = load_insights(state_dir)
+    insights_section = format_insights_section(insights)
+
     # Build prompt from template
     prompt = PROMPT_TEMPLATE.format(
         current_target=target_edge,
@@ -441,9 +577,29 @@ def build_prompt(
         primary_gap_target=gaps[0][1] if gaps else "Explore novel fee strategies"
     )
 
+    # Inject insights section after "Hypothesis Gaps" section
+    if insights_section:
+        # Find the "Known Ceilings" section and insert before it
+        known_ceilings_marker = "## Known Ceilings"
+        if known_ceilings_marker in prompt:
+            prompt = prompt.replace(
+                known_ceilings_marker,
+                insights_section + "\n" + known_ceilings_marker
+            )
+        else:
+            # Fallback: append before the workflow section
+            workflow_marker = "## Generation Workflow"
+            if workflow_marker in prompt:
+                prompt = prompt.replace(
+                    workflow_marker,
+                    insights_section + "\n" + workflow_marker
+                )
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(prompt)
     print(f"Prompt built: {output_path}")
+    if insights_section:
+        print(f"  (includes AI-generated insights from forensics/synthesis/audit)")
 
 # ============================================================================
 # MAIN

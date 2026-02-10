@@ -697,6 +697,45 @@ PY
             fi
         fi
 
+        # === STEP 9: Generate breakthrough insights ===
+
+        # Run forensics on new champions (deep simulation analysis)
+        if [[ "$is_new_champion" == "1" ]]; then
+            log "INFO" "  🔬 Running forensics analysis on new champion..."
+            if "$VENV_PY" scripts/amm-phase7-forensics.py \
+                --strategy "$strategy_path" \
+                --simulations 30 \
+                --output "$PHASE7_STATE_DIR/forensics_insights.json" 2>/dev/null; then
+                log "INFO" "  Forensics insights generated"
+            else
+                log "WARN" "  Forensics analysis failed (non-fatal)"
+            fi
+        fi
+
+        # Run synthesis engine every 10 iterations
+        if (( iteration % 10 == 0 )); then
+            log "INFO" "  🔬 Running cross-strategy synthesis (iteration $iteration)"
+            if "$VENV_PY" scripts/amm-phase7-synthesis.py \
+                --state-dir "$PHASE7_STATE_DIR" \
+                --output "$PHASE7_STATE_DIR/synthesis_report.json" 2>/dev/null; then
+                log "INFO" "  Synthesis report generated"
+            else
+                log "WARN" "  Synthesis analysis failed (non-fatal)"
+            fi
+        fi
+
+        # Run assumption auditor every 50 iterations
+        if (( iteration % 50 == 0 )); then
+            log "INFO" "  🔍 Running assumption audit (iteration $iteration)"
+            if "$VENV_PY" scripts/amm-phase7-auditor.py \
+                --state-dir "$PHASE7_STATE_DIR" \
+                --output "$PHASE7_STATE_DIR/assumption_audit.json" 2>/dev/null; then
+                log "INFO" "  Assumption audit generated"
+            else
+                log "WARN" "  Assumption audit failed (non-fatal)"
+            fi
+        fi
+
         log "INFO" "Iteration $iteration complete. Current best: $(cat "$STATE_CHAMPION")"
         log "INFO" ""
 
