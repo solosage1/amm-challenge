@@ -33,6 +33,7 @@ AMM_MATCH="${AMM_MATCH:-venv_fresh/bin/amm-match}"
 # If CODEX_MODEL is empty, Codex uses its configured default model/provider.
 CODEX_MODEL="${CODEX_MODEL:-}"
 CODEX_MAX_OUTPUT_TOKENS="${CODEX_MAX_OUTPUT_TOKENS:-8000}"
+CODEX_TIMEOUT_MINUTES="${CODEX_TIMEOUT_MINUTES:-20}"  # Max time per Codex invocation
 
 # Performance targets
 COMPETITIVE_EDGE=527
@@ -282,16 +283,22 @@ invoke_codex_generator() {
 
     # Invoke Codex, feeding the prompt via stdin and capturing the final assistant
     # message via --output-last-message.
+    # CRITICAL: Use read-only sandbox to prevent Codex from running interactive grid searches.
+    # CRITICAL: Add timeout to prevent iteration from running indefinitely.
     local codex_ok=1
+    local timeout_minutes="${CODEX_TIMEOUT_MINUTES:-20}"  # 20 minute default per iteration
+
     if [[ -n "$CODEX_MODEL" ]]; then
-        codex exec \
+        timeout "${timeout_minutes}m" codex exec \
+            --sandbox read-only \
             --json \
             --config "max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS" \
             --output-last-message "$codex_last_msg_path" \
             --model "$CODEX_MODEL" \
             - < "$prompt_path" > "$codex_jsonl_path" 2> "$codex_stderr_path" && codex_ok=0 || codex_ok=$?
     else
-        codex exec \
+        timeout "${timeout_minutes}m" codex exec \
+            --sandbox read-only \
             --json \
             --config "max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS" \
             --output-last-message "$codex_last_msg_path" \
