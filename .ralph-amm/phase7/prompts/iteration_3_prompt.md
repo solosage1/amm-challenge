@@ -9,7 +9,7 @@ Generate a novel AMM strategy that maximizes **Edge** (profitability metric) aga
 **Target**: Edge > 527.0
 **Current Best**: 374.56
 **Iteration**: 3
-**Time Remaining**: 9h 11m
+**Time Remaining**: 6h 49m
 
 ---
 

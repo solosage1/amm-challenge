@@ -9,7 +9,7 @@ Generate a novel AMM strategy that maximizes **Edge** (profitability metric) aga
 **Target**: Edge > 527.0
 **Current Best**: 374.56
 **Iteration**: 4
-**Time Remaining**: 9h 9m
+**Time Remaining**: 6h 32m
 
 ---
 
@@ -119,9 +119,7 @@ struct TradeInfo {
 
 ## Current State
 
-**Recent Test Results**:
-
-- Unknown: Edge N/A [codex_failed | stage=codex | msg=Error: Fatal error: Codex cannot access session files at /Users/rbgross/.codex/s] (Hypothesis: H-baseline)
+**No strategies tested yet.** This is the first iteration.
 
 ---
 
