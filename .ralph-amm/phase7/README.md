@@ -148,16 +148,19 @@ Launch the full autonomous loop:
 ```bash
 cd /Users/rbgross/amm-challenge
 
-# Run in background with nohup
+# Launch in background
 nohup bash scripts/ralph-amm-phase7.sh > phase7_run.log 2>&1 &
 
-# Note the process ID
+# Save PID for later
 echo $! > .ralph-amm/phase7/phase7.pid
 
-# Monitor progress
+# Monitor with dashboard (recommended)
+bash scripts/monitor-phase7.sh
+
+# Or monitor with raw logs
 tail -f phase7_run.log
 
-# Or check status
+# Or check status programmatically
 python scripts/amm-learning-engine.py status --state-dir .ralph-amm/phase7/state
 ```
 
@@ -174,36 +177,235 @@ bash scripts/ralph-amm-phase7.sh --target-edge 450
 bash scripts/ralph-amm-phase7.sh --max-iterations 50
 ```
 
-### Monitoring
+### Monitoring & Quality Control
 
-**Real-time monitoring** (in separate terminal):
+#### Quick Start: Monitoring Dashboard
 
+**Recommended: Use the automated monitoring dashboard**:
 ```bash
-# Watch iteration progress
+# Launch comprehensive real-time dashboard
+bash scripts/monitor-phase7.sh
+
+# With custom refresh interval (default: 10s)
+bash scripts/monitor-phase7.sh .ralph-amm/phase7/state 5
+```
+
+**Dashboard displays**:
+- Current iteration, best edge, time remaining
+- Codex activity (file size, event count, latest reasoning)
+- Recent test results (last 5 strategies)
+- Templates extracted
+- Quality alerts (failure rate, plateau detection)
+- Performance projections
+
+Press Ctrl+C to stop monitoring (Phase 7 loop continues running).
+
+#### Manual Monitoring Commands (Advanced)
+
+**Watch iteration progress**:
+```bash
+# Update every 10 seconds
 watch -n 10 'cat .ralph-amm/phase7/state/.iteration_count.txt'
 
 # Watch best edge
 watch -n 10 'cat .ralph-amm/phase7/state/.best_edge.txt'
 
-# Check recent log entries
-tail -n 20 phase7_run.log
+# Monitor Codex response file growth (indicates activity)
+watch -n 5 'ls -lh .ralph-amm/phase7/state/iteration_*_codex_response.json | tail -1'
+
+# Check JSONL event count (shows Codex progress)
+watch -n 5 'wc -l .ralph-amm/phase7/state/iteration_*_codex_response.json | tail -1'
+
+# Check for completion events
+watch -n 5 'tail -1 .ralph-amm/phase7/state/iteration_*_codex_response.json | jq -r .type 2>/dev/null'
 ```
 
-**Status check**:
-
+**Check recent log entries**:
 ```bash
-# Current state
-cat .ralph-amm/phase7/state/.iteration_count.txt
-cat .ralph-amm/phase7/state/.best_edge.txt
+# Last 20 lines of main log
+tail -n 20 phase7_run.log
 
-# Elapsed time
-python -c "import time; start=$(cat .ralph-amm/phase7/state/.start_timestamp.txt); print(f'{(time.time() - start) / 3600:.2f} hours elapsed')"
+# Follow log in real-time
+tail -f phase7_run.log
+
+# Filter for key events only
+tail -f phase7_run.log | grep -E "Iteration|Edge|Champion|Template"
+```
+
+#### Detailed Status Checks
+
+**Current state snapshot**:
+```bash
+# Current iteration and best edge
+echo "Iteration: $(cat .ralph-amm/phase7/state/.iteration_count.txt)"
+echo "Best Edge: $(cat .ralph-amm/phase7/state/.best_edge.txt)"
+
+# Elapsed time calculation
+python3 -c "
+import time
+start = int(open('.ralph-amm/phase7/state/.start_timestamp.txt').read())
+elapsed = time.time() - start
+hours = elapsed / 3600
+remaining = (36000 - elapsed) / 3600
+print(f'Elapsed: {hours:.2f} hours')
+print(f'Remaining: {remaining:.2f} hours')
+print(f'Progress: {(elapsed/36000)*100:.1f}%')
+"
 
 # Strategies tested
 jq 'length' .ralph-amm/phase7/state/.strategies_log.json
 
 # Templates created
 jq 'length' .ralph-amm/phase7/state/.templates_created.json
+```
+
+#### Codex Activity Monitoring
+
+**Check if Codex is actively running**:
+```bash
+# Process check
+ps aux | grep ralph-amm-phase7.sh | grep -v grep
+
+# Check current Codex iteration
+ls -t .ralph-amm/phase7/state/iteration_*_codex_response.json | head -1
+```
+
+**Analyze Codex progress on current iteration**:
+```bash
+# Count events in current iteration
+python3 -c "
+import json
+events = []
+with open('.ralph-amm/phase7/state/iteration_1_codex_response.json') as f:
+    for line in f:
+        try:
+            events.append(json.loads(line))
+        except:
+            pass
+
+print(f'Total events: {len(events)}')
+print(f'Last event: {events[-1].get(\"type\", \"unknown\")}')
+
+# Show recent reasoning
+reasoning_items = [e for e in events if e.get('type') == 'item.completed'
+                   and e.get('item', {}).get('type') == 'reasoning']
+if reasoning_items:
+    last = reasoning_items[-1]['item']['text'][:150]
+    print(f'Latest reasoning: {last}...')
+"
+```
+
+**Check for completion**:
+```bash
+# Look for turn.ended or thread.ended events
+grep -E '"type":"(turn\.ended|thread\.ended)"' \
+  .ralph-amm/phase7/state/iteration_*_codex_response.json | tail -5
+```
+
+#### Performance Metrics
+
+**Iteration rate calculation**:
+```bash
+python3 -c "
+import time
+import json
+
+# Load state
+iteration = int(open('.ralph-amm/phase7/state/.iteration_count.txt').read())
+start = int(open('.ralph-amm/phase7/state/.start_timestamp.txt').read())
+elapsed = time.time() - start
+
+if iteration > 0 and elapsed > 0:
+    rate_per_min = iteration / (elapsed / 60)
+    rate_per_hour = iteration / (elapsed / 3600)
+    avg_time_per_iter = elapsed / iteration
+
+    print(f'Iterations: {iteration}')
+    print(f'Rate: {rate_per_min:.2f} iter/min ({rate_per_hour:.1f} iter/hour)')
+    print(f'Avg time per iteration: {avg_time_per_iter:.1f} seconds')
+
+    # Project total
+    remaining_time = 36000 - elapsed
+    projected_total = iteration + (remaining_time / avg_time_per_iter)
+    print(f'Projected total iterations: {int(projected_total)}')
+else:
+    print('No iterations completed yet')
+"
+```
+
+**Success rate tracking**:
+```bash
+python3 -c "
+import json
+
+log = json.loads(open('.ralph-amm/phase7/state/.strategies_log.json').read())
+total = len(log)
+successful = sum(1 for s in log if s.get('final_edge', 0) > 0)
+
+if total > 0:
+    success_rate = (successful / total) * 100
+    print(f'Success rate: {success_rate:.1f}% ({successful}/{total})')
+
+    # Best performers
+    sorted_log = sorted(log, key=lambda x: x.get('final_edge', 0), reverse=True)
+    print('\nTop 3 strategies:')
+    for i, s in enumerate(sorted_log[:3], 1):
+        name = s.get('strategy_name', 'Unknown')
+        edge = s.get('final_edge', 0)
+        print(f'  {i}. {name}: {edge:.2f}')
+else:
+    print('No strategies tested yet')
+"
+```
+
+#### Quality Control Alerts
+
+**Check for issues**:
+```bash
+# High failure rate alert
+python3 -c "
+import json
+log = json.loads(open('.ralph-amm/phase7/state/.strategies_log.json').read())
+if log:
+    failures = sum(1 for s in log if not s.get('final_edge') or s.get('final_edge', 0) == 0)
+    total = len(log)
+    failure_rate = (failures / total) * 100
+
+    print(f'Failure rate: {failure_rate:.1f}%')
+    if failure_rate > 30:
+        print('⚠️  WARNING: High failure rate (>30%)')
+        print('Consider adjusting prompt or Codex config')
+    elif failure_rate > 50:
+        print('❌ CRITICAL: Very high failure rate (>50%)')
+        print('STOP and review Codex outputs')
+    else:
+        print('✓ Failure rate acceptable')
+"
+
+# Performance plateau detection
+python3 -c "
+import json
+log = json.loads(open('.ralph-amm/phase7/state/.strategies_log.json').read())
+if len(log) >= 10:
+    recent = [s.get('final_edge', 0) for s in log[-10:] if s.get('final_edge', 0) > 0]
+    if recent:
+        mean_edge = sum(recent) / len(recent)
+        variance = sum((e - mean_edge) ** 2 for e in recent) / len(recent)
+        std_dev = variance ** 0.5
+
+        print(f'Recent 10 iterations:')
+        print(f'  Mean edge: {mean_edge:.2f}')
+        print(f'  Std dev: {std_dev:.2f}')
+
+        if std_dev < 2.0:
+            print('⚠️  WARNING: Performance plateau detected (σ < 2.0)')
+            print('Consider adjusting exploration strategy')
+        else:
+            print('✓ Healthy variance in results')
+"
+
+# Disk space monitoring
+du -sh .ralph-amm/phase7/ && echo "Target: < 1GB for full 10-hour run"
 ```
 
 ### Stopping the Run

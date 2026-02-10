@@ -162,12 +162,10 @@ invoke_codex_generator() {
     fi
 
     # Invoke Codex with full-auto mode
-    # Note: Adjust model and parameters as needed
+    # Uses default Codex config (model, provider, sandbox)
+    # Current config: gpt-5.2 (openai)
     if codex exec \
-        --sandbox workspace-write \
-        --model claude-sonnet-4-5 \
         --json \
-        --config 'max_output_tokens=8000' \
         "$(cat "$prompt_path")" > "$output_path" 2>&1; then
         log "INFO" "Codex invocation successful"
         return 0
