@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {AMMStrategyBase} from "./AMMStrategyBase.sol";
+import {IAMMStrategy, TradeInfo} from "./IAMMStrategy.sol";
+
+contract Strategy is AMMStrategyBase {
+    function afterInitialize(uint256, uint256) external override
+        returns (uint256, uint256) {
+        slots[0] = bpsToWad({base_fee_bps});  // current fee
+        slots[1] = 0;  // steps since last spike
+        return (slots[0], slots[0]);
+    }
+
+    function afterSwap(TradeInfo calldata trade) external override
+        returns (uint256, uint256) {
+        uint256 fee = slots[0];
+        uint256 stepsSinceSpike = slots[1];
+
+        uint256 tradeRatio = wdiv(trade.amountY, trade.reserveY);
+
+        // If large trade, spike fees
+        if (tradeRatio > WAD / {spike_threshold_denominator}) {
+            fee = clampFee(bpsToWad({base_fee_bps}) + bpsToWad({spike_bps}));
+            stepsSinceSpike = 0;
+        }
+        // Otherwise, decay fee back to base
+        else {
+            stepsSinceSpike++;
+            if (stepsSinceSpike >= {decay_steps} && fee > bpsToWad({base_fee_bps})) {
+                fee = fee - bpsToWad({decay_rate_bps});
+                if (fee < bpsToWad({base_fee_bps})) {
+                    fee = bpsToWad({base_fee_bps});
+                }
+            }
+        }
+
+        slots[0] = fee;
+        slots[1] = stepsSinceSpike;
+        return (fee, fee);
+    }
+
+    function getName() external pure override returns (string memory) {
+        return "{name}";
+    }
+}

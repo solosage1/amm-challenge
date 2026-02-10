@@ -166,6 +166,23 @@ contract Strategy is AMMStrategyBase {
 }
 ```
 
+## Testing Your Strategy
+
+For detailed testing methodology, workflows, and debugging guidance, see **[TESTING_GUIDE.md](research/TESTING_GUIDE.md)**.
+
+**Quick reference:**
+- **Validate:** `amm-match validate MyStrategy.sol` — Check syntax and security
+- **Quick test:** `amm-match run MyStrategy.sol --simulations 10` — Smoke test (~2 sec)
+- **Development:** `amm-match run MyStrategy.sol --simulations 100` — Iterate (~10 sec)
+- **Baseline:** `amm-match run MyStrategy.sol --simulations 1000` — Final validation (~24 sec)
+
+The testing guide covers:
+- Development workflow (validate → iterate → optimize → submit)
+- Understanding edge scores and statistical significance
+- Debugging common issues (validation failures, low edge, volatility)
+- Pre-submission checklist
+- Advanced optimization techniques
+
 ## CLI
 
 ```bash

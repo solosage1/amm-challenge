@@ -91,11 +91,13 @@ class MatchRunner:
         config: SimulationConfig,
         n_workers: int,
         variance: HyperparameterVariance,
+        seed_offset: int = 0,
     ):
         self.n_simulations = n_simulations
         self.base_config = config
         self.n_workers = n_workers
         self.variance = variance
+        self.seed_offset = seed_offset
 
     def _build_configs(self) -> list[amm_sim_rs.SimulationConfig]:
         """Build simulation configs with optional variance."""
@@ -103,7 +105,8 @@ class MatchRunner:
 
         configs = []
         for i in range(self.n_simulations):
-            rng = np.random.default_rng(seed=i)
+            effective_seed = i + self.seed_offset
+            rng = np.random.default_rng(seed=effective_seed)
 
             retail_mean_size = (
                 rng.uniform(self.variance.retail_mean_size_min, self.variance.retail_mean_size_max)
@@ -133,7 +136,7 @@ class MatchRunner:
                 retail_mean_size=retail_mean_size,
                 retail_size_sigma=self.base_config.retail_size_sigma,
                 retail_buy_prob=self.base_config.retail_buy_prob,
-                seed=i,
+                seed=effective_seed,
             )
             configs.append(cfg)
         return configs

@@ -1,0 +1,402 @@
+[
+  {
+    "rank": 1,
+    "submission": {
+      "id": "3a2cec31-57fe-4e54-95cb-16f12c7f2ae0",
+      "author": "@basedfk",
+      "name": "New CLIZA.ai Soon!",
+      "createdAt": "2026-02-10T12:08:03.511043Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 493.52834553391256,
+      "avgPnlVsBaseline": 171.15913807168846,
+      "avgEdge": 526.388399999275,
+      "avgEdgeVsBaseline": 171.28616303960968
+    },
+    "avgEdge": 526.388399999275,
+    "winRate": 1,
+    "attempts": 24
+  },
+  {
+    "rank": 2,
+    "submission": {
+      "id": "831dd2dd-9725-4a61-ae52-a379a1f9352c",
+      "author": "@josusanmartin",
+      "name": "v1555",
+      "createdAt": "2026-02-10T04:54:03.036963Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 493.2035019220013,
+      "avgPnlVsBaseline": 172.88185223901115,
+      "avgEdge": 526.0486223359856,
+      "avgEdgeVsBaseline": 173.00316529762057
+    },
+    "avgEdge": 526.0486223359856,
+    "winRate": 1,
+    "attempts": 86
+  },
+  {
+    "rank": 3,
+    "submission": {
+      "id": "1207a5b5-62c1-48b8-984e-98b651400fd6",
+      "author": "@UngusTrade",
+      "name": "overfit",
+      "createdAt": "2026-02-10T08:47:48.219816Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.84392000168873,
+      "avgPnlVsBaseline": 162.72137989012322,
+      "avgEdge": 524.7390122238835,
+      "avgEdgeVsBaseline": 162.87940349158714
+    },
+    "avgEdge": 524.7390122238835,
+    "winRate": 1,
+    "attempts": 9
+  },
+  {
+    "rank": 4,
+    "submission": {
+      "id": "b48236d2-f40c-4ae5-b5f7-d32ce8a0ac56",
+      "author": "@rishabhjava",
+      "name": "AD61",
+      "createdAt": "2026-02-10T06:05:33.098937Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.7492313723796,
+      "avgPnlVsBaseline": 166.89905662353965,
+      "avgEdge": 524.5920866484248,
+      "avgEdgeVsBaseline": 167.01789898207227
+    },
+    "avgEdge": 524.5920866484248,
+    "winRate": 1,
+    "attempts": 1
+  },
+  {
+    "rank": 5,
+    "submission": {
+      "id": "5c5ac465-a83e-490d-a52c-c487ad18871c",
+      "author": "@stokasz",
+      "name": "PARADIGMFARMINGINFERENCE",
+      "createdAt": "2026-02-10T06:54:20.265992Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.59586237769645,
+      "avgPnlVsBaseline": 161.54461650320155,
+      "avgEdge": 524.4823845401487,
+      "avgEdgeVsBaseline": 161.7032499283784
+    },
+    "avgEdge": 524.4823845401487,
+    "winRate": 1,
+    "attempts": 36
+  },
+  {
+    "rank": 6,
+    "submission": {
+      "id": "d90ed5a2-0329-4cc5-9e6b-65a439c42c31",
+      "author": "@kbrizzle_",
+      "name": "\ud83d\udc7b",
+      "createdAt": "2026-02-10T10:15:51.833988Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.57520407686184,
+      "avgPnlVsBaseline": 161.51997172592974,
+      "avgEdge": 524.4512049726712,
+      "avgEdgeVsBaseline": 161.66164218096822
+    },
+    "avgEdge": 524.4512049726712,
+    "winRate": 1,
+    "attempts": 22
+  },
+  {
+    "rank": 7,
+    "submission": {
+      "id": "bcfc3673-135d-4fd9-89ba-70dacb46c117",
+      "author": "@DollarBill1488",
+      "name": "AD12",
+      "createdAt": "2026-02-10T05:22:31.654595Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.5440141755366,
+      "avgPnlVsBaseline": 163.11818398458473,
+      "avgEdge": 524.4102236788334,
+      "avgEdgeVsBaseline": 163.25741985443756
+    },
+    "avgEdge": 524.4102236788334,
+    "winRate": 1,
+    "attempts": 15
+  },
+  {
+    "rank": 8,
+    "submission": {
+      "id": "f280ba04-4ae3-4741-80db-96e393f098e3",
+      "author": "@fluketendencies",
+      "name": "testing",
+      "createdAt": "2026-02-10T09:27:05.406455Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.53077124284977,
+      "avgPnlVsBaseline": 172.30475836774696,
+      "avgEdge": 524.3859683506897,
+      "avgEdgeVsBaseline": 172.43521306565032
+    },
+    "avgEdge": 524.3859683506897,
+    "winRate": 1,
+    "attempts": 25
+  },
+  {
+    "rank": 9,
+    "submission": {
+      "id": "abf073dc-b8aa-4ede-a8d7-751d6f60fc5b",
+      "author": "@MidTermDev",
+      "name": "cma_v16",
+      "createdAt": "2026-02-10T12:31:55.821219Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.45139118718544,
+      "avgPnlVsBaseline": 167.47419445711392,
+      "avgEdge": 524.2611636283798,
+      "avgEdgeVsBaseline": 167.55812474860699
+    },
+    "avgEdge": 524.2611636283798,
+    "winRate": 1,
+    "attempts": 2
+  },
+  {
+    "rank": 10,
+    "submission": {
+      "id": "8280c358-0e07-41f8-8ff4-be13aa4375e5",
+      "author": "@ChrisTorresLugo",
+      "name": "#BenitoBowl",
+      "createdAt": "2026-02-10T11:23:23.391281Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.2770073494719,
+      "avgPnlVsBaseline": 162.38983477346966,
+      "avgEdge": 524.161383934844,
+      "avgEdgeVsBaseline": 162.550500194101
+    },
+    "avgEdge": 524.161383934844,
+    "winRate": 1,
+    "attempts": 5
+  },
+  {
+    "rank": 11,
+    "submission": {
+      "id": "ed940c25-5a89-4fc2-89c6-aeace56b9f6b",
+      "author": "@0xhelios",
+      "name": "decay",
+      "createdAt": "2026-02-10T11:33:18.463260Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.1877281402587,
+      "avgPnlVsBaseline": 163.2010899383008,
+      "avgEdge": 524.0889567382782,
+      "avgEdgeVsBaseline": 163.37047331763569
+    },
+    "avgEdge": 524.0889567382782,
+    "winRate": 1,
+    "attempts": 12
+  },
+  {
+    "rank": 12,
+    "submission": {
+      "id": "63b214e9-230d-4e1b-8840-450f1f8ebbbf",
+      "author": "@eliahilse",
+      "name": "Kyora Medallion",
+      "createdAt": "2026-02-10T02:59:00.904967Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.1992571705547,
+      "avgPnlVsBaseline": 163.21959050760256,
+      "avgEdge": 524.0715190993027,
+      "avgEdgeVsBaseline": 163.36507741058057
+    },
+    "avgEdge": 524.0715190993027,
+    "winRate": 1,
+    "attempts": 17
+  },
+  {
+    "rank": 13,
+    "submission": {
+      "id": "733df868-41ea-4e75-9d83-08082cdba1b2",
+      "author": "@christopherwxyz",
+      "name": "hey mom!",
+      "createdAt": "2026-02-10T11:19:22.945758Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.2054192134903,
+      "avgPnlVsBaseline": 160.96856922749532,
+      "avgEdge": 524.0711925037984,
+      "avgEdgeVsBaseline": 161.10636735363238
+    },
+    "avgEdge": 524.0711925037984,
+    "winRate": 1,
+    "attempts": 7
+  },
+  {
+    "rank": 14,
+    "submission": {
+      "id": "2e7be395-eeff-4dff-bed6-d43895bd3656",
+      "author": "@be11pepper",
+      "name": "H31_R2",
+      "createdAt": "2026-02-10T04:52:19.812086Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.1593173263263,
+      "avgPnlVsBaseline": 158.54630707166336,
+      "avgEdge": 524.0364845141997,
+      "avgEdgeVsBaseline": 158.69267989442528
+    },
+    "avgEdge": 524.0364845141997,
+    "winRate": 1,
+    "attempts": 22
+  },
+  {
+    "rank": 15,
+    "submission": {
+      "id": "6d37edd4-eb79-4aea-9f81-db05c93f7631",
+      "author": "@unhedged21",
+      "name": "EQX_Labs_v23",
+      "createdAt": "2026-02-10T01:14:58.125591Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.10890664831857,
+      "avgPnlVsBaseline": 176.3461843993025,
+      "avgEdge": 523.9665093325809,
+      "avgEdgeVsBaseline": 176.4750472331026
+    },
+    "avgEdge": 523.9665093325809,
+    "winRate": 1,
+    "attempts": 25
+  },
+  {
+    "rank": 16,
+    "submission": {
+      "id": "18a4e558-7576-4353-93b8-426d5b91591c",
+      "author": "@adrianleb",
+      "name": "hmmmm",
+      "createdAt": "2026-02-10T12:23:13.321081Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.0419522020131,
+      "avgPnlVsBaseline": 163.6564605554483,
+      "avgEdge": 523.9316287661469,
+      "avgEdgeVsBaseline": 163.81840173076722
+    },
+    "avgEdge": 523.9316287661469,
+    "winRate": 1,
+    "attempts": 3
+  },
+  {
+    "rank": 17,
+    "submission": {
+      "id": "d5bbcda9-d1e7-4c97-9b27-3d86913ea008",
+      "author": "@lostbutlucky",
+      "name": "HazardDistilledTable",
+      "createdAt": "2026-02-10T05:06:04.427979Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 491.04381518168447,
+      "avgPnlVsBaseline": 168.4411868632469,
+      "avgEdge": 523.9284733559027,
+      "avgEdgeVsBaseline": 168.60345878879252
+    },
+    "avgEdge": 523.9284733559027,
+    "winRate": 1,
+    "attempts": 20
+  },
+  {
+    "rank": 18,
+    "submission": {
+      "id": "a05a4970-d281-428c-8338-8e88d1553b08",
+      "author": "@frok_ai",
+      "name": "frokked",
+      "createdAt": "2026-02-09T23:02:01.261696Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 490.99551743117416,
+      "avgPnlVsBaseline": 168.0342397707929,
+      "avgEdge": 523.8777703434189,
+      "avgEdgeVsBaseline": 168.18243076840332
+    },
+    "avgEdge": 523.8777703434189,
+    "winRate": 1,
+    "attempts": 8
+  },
+  {
+    "rank": 19,
+    "submission": {
+      "id": "0fb0277b-8d18-47c6-ab8b-1e634a31b2a2",
+      "author": "@llm_kv",
+      "name": "v54_shock_026",
+      "createdAt": "2026-02-10T04:19:12.602380Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 490.98826046185104,
+      "avgPnlVsBaseline": 163.1415451240635,
+      "avgEdge": 523.876365287574,
+      "avgEdgeVsBaseline": 163.29750965322575
+    },
+    "avgEdge": 523.876365287574,
+    "winRate": 1,
+    "attempts": 7
+  },
+  {
+    "rank": 20,
+    "submission": {
+      "id": "e9fa4616-7ef8-4dab-b302-7950a8e6da48",
+      "author": "@js_horne",
+      "name": "idea guy",
+      "createdAt": "2026-02-09T20:34:50.124467Z",
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0,
+      "totalSimulations": 1000,
+      "avgPnl": 490.9990430063051,
+      "avgPnlVsBaseline": 164.51786495066256,
+      "avgEdge": 523.8347228550799,
+      "avgEdgeVsBaseline": 164.62240951293057
+    },
+    "avgEdge": 523.8347228550799,
+    "winRate": 1,
+    "attempts": 36
+  }
+]
