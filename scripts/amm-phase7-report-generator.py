@@ -14,6 +14,25 @@ from typing import Dict, List
 # REPORT GENERATION
 # ============================================================================
 
+def _coerce_float(value):
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+def _is_ok_entry(entry: Dict) -> bool:
+    status = entry.get("status")
+    edge = _coerce_float(entry.get("final_edge"))
+    if status is None:
+        return edge is not None
+    return status == "ok" and edge is not None
+
+def _edge_or_zero(entry: Dict) -> float:
+    v = _coerce_float(entry.get("final_edge"))
+    return v if v is not None else 0.0
+
 def load_state(state_dir: Path) -> Dict:
     """Load Phase 7 state for reporting"""
     state = {
@@ -58,9 +77,9 @@ def analyze_hypothesis_coverage(strategies_log: List[Dict]) -> Dict:
                 if hyp_id not in coverage:
                     coverage[hyp_id] = {'count': 0, 'best_edge': 0}
                 coverage[hyp_id]['count'] += 1
-                edge = strategy.get('final_edge', 0)
-                if edge > coverage[hyp_id]['best_edge']:
-                    coverage[hyp_id]['best_edge'] = edge
+                edge = _coerce_float(strategy.get('final_edge'))
+                if edge is not None and edge > coverage[hyp_id]['best_edge']:
+                    coverage[hyp_id]['best_edge'] = float(edge)
     return coverage
 
 def generate_report(state_dir: Path, output_path: Path):
@@ -75,11 +94,11 @@ def generate_report(state_dir: Path, output_path: Path):
     templates_created = len(state['templates_created'])
 
     # Success rates
-    successful_strategies = [s for s in state['strategies_log'] if s.get('final_edge', 0) > 0]
-    success_rate = (len(successful_strategies) / max(1, strategies_tested)) * 100
+    ok_strategies = [s for s in state['strategies_log'] if isinstance(s, dict) and _is_ok_entry(s)]
+    success_rate = (len(ok_strategies) / max(1, strategies_tested)) * 100
 
     # Best strategies
-    top_strategies = sorted(state['strategies_log'], key=lambda x: x.get('final_edge', 0), reverse=True)[:10]
+    top_strategies = sorted(ok_strategies, key=_edge_or_zero, reverse=True)[:10]
 
     # Hypothesis coverage
     hypothesis_coverage = analyze_hypothesis_coverage(state['strategies_log'])
@@ -123,13 +142,16 @@ def generate_report(state_dir: Path, output_path: Path):
         "",
     ])
 
-    for i, strategy in enumerate(top_strategies[:10], 1):
-        name = strategy.get('strategy_name', 'Unknown')
-        edge = strategy.get('final_edge', 0)
-        hyp_ids = strategy.get('hypothesis_ids', [])
-        hyp_str = ', '.join(hyp_ids) if isinstance(hyp_ids, list) and hyp_ids else 'H-baseline'
+    if top_strategies:
+        for i, strategy in enumerate(top_strategies[:10], 1):
+            name = strategy.get('strategy_name', 'Unknown')
+            edge = _edge_or_zero(strategy)
+            hyp_ids = strategy.get('hypothesis_ids', [])
+            hyp_str = ', '.join(hyp_ids) if isinstance(hyp_ids, list) and hyp_ids else 'H-baseline'
 
-        report_lines.append(f"{i}. **{name}**: Edge {edge:.2f} ({hyp_str})")
+            report_lines.append(f"{i}. **{name}**: Edge {edge:.2f} ({hyp_str})")
+    else:
+        report_lines.append("No successful strategies recorded yet.")
 
     report_lines.extend([
         "",
@@ -177,7 +199,7 @@ def generate_report(state_dir: Path, output_path: Path):
         "",
         "## Performance Analysis",
         "",
-        f"- **Average Edge** (successful): {sum(s.get('final_edge', 0) for s in successful_strategies) / max(1, len(successful_strategies)):.2f}",
+        f"- **Average Edge** (successful): {sum(_edge_or_zero(s) for s in ok_strategies) / max(1, len(ok_strategies)):.2f}",
         f"- **Iteration Rate**: {total_iterations / max(1, elapsed / 60):.2f} iter/min",
         f"- **Time per Strategy**: {elapsed / max(1, strategies_tested):.1f}s average",
         "",

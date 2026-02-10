@@ -2,7 +2,7 @@
 
 ## Overview
 
-Phase 7 is an autonomous AI-powered loop that uses Claude API (via Codex CLI) to generate novel AMM strategy patterns, test them deterministically, and extract reusable templates from successful patterns.
+Phase 7 is an autonomous AI-powered loop that uses Codex CLI to generate novel AMM strategy patterns, test them deterministically, and extract reusable templates from successful patterns.
 
 **Status**: ✅ All components implemented and ready for production
 
@@ -28,7 +28,7 @@ Phase 7 is an autonomous AI-powered loop that uses Claude API (via Codex CLI) to
    - Handles malformed outputs gracefully
 
 4. **amm-phase7-template-extractor.py** - Pattern extraction
-   - Converts successful strategies (edge > 390) into templates
+   - Converts strong strategies into templates (based on champion/top-K rules)
    - Identifies parameterizable constants
    - Generates schema documentation
 
@@ -72,7 +72,7 @@ Phase 7 is an autonomous AI-powered loop that uses Claude API (via Codex CLI) to
 5. Record Results
    ↓ (update champion, log results)
 6. Extract Template
-   ↓ (if edge > 390, create reusable template)
+   ↓ (if new champion / within-best band / top-K, create reusable template)
 7. Check Exit Conditions
    ↓ (time: 10 hours OR edge > 527)
 8. Loop or Exit
@@ -100,25 +100,19 @@ This ensures AI considers constraints, edge cases, and optimizations before impl
 
 ### Required
 
-1. **Python Environment**: Python 3.8+ with dependencies
+1. **Pinned Python Environment**: `venv_fresh` must exist and contain dependencies
    ```bash
-   source venv_fresh/bin/activate  # Or your venv
+   # Optional: activate, but Phase 7 also calls venv_fresh/bin/python3 explicitly
+   source venv_fresh/bin/activate
    ```
 
 2. **Codex CLI**: Installed and configured
    ```bash
    # Check if available
    codex --version
-
-   # If not installed, follow Codex CLI setup instructions
-   # https://github.com/anthropics/claude-code
    ```
 
-3. **Claude API Key**: Configured for Codex
-   ```bash
-   # Usually configured in ~/.config/claude/config.json
-   # or via ANTHROPIC_API_KEY environment variable
-   ```
+3. **Codex authentication/provider configured** (whatever your `codex` install uses)
 
 4. **Existing Infrastructure**: Phase 1-6 components operational
    - amm-test-pipeline.py
@@ -161,7 +155,7 @@ bash scripts/monitor-phase7.sh
 tail -f phase7_run.log
 
 # Or check status programmatically
-python scripts/amm-learning-engine.py status --state-dir .ralph-amm/phase7/state
+venv_fresh/bin/python3 scripts/amm-learning-engine.py status --state-dir .ralph-amm/phase7/state
 ```
 
 ### Custom Parameters
@@ -210,14 +204,11 @@ watch -n 10 'cat .ralph-amm/phase7/state/.iteration_count.txt'
 # Watch best edge
 watch -n 10 'cat .ralph-amm/phase7/state/.best_edge.txt'
 
-# Monitor Codex response file growth (indicates activity)
-watch -n 5 'ls -lh .ralph-amm/phase7/state/iteration_*_codex_response.json | tail -1'
+# Monitor Codex JSONL file growth (indicates activity)
+watch -n 5 'ls -lh .ralph-amm/phase7/state/iteration_*_codex.jsonl | tail -1'
 
 # Check JSONL event count (shows Codex progress)
-watch -n 5 'wc -l .ralph-amm/phase7/state/iteration_*_codex_response.json | tail -1'
-
-# Check for completion events
-watch -n 5 'tail -1 .ralph-amm/phase7/state/iteration_*_codex_response.json | jq -r .type 2>/dev/null'
+watch -n 5 'wc -l .ralph-amm/phase7/state/iteration_*_codex.jsonl | tail -1'
 ```
 
 **Check recent log entries**:
@@ -241,7 +232,7 @@ echo "Iteration: $(cat .ralph-amm/phase7/state/.iteration_count.txt)"
 echo "Best Edge: $(cat .ralph-amm/phase7/state/.best_edge.txt)"
 
 # Elapsed time calculation
-python3 -c "
+venv_fresh/bin/python3 -c "
 import time
 start = int(open('.ralph-amm/phase7/state/.start_timestamp.txt').read())
 elapsed = time.time() - start
@@ -253,10 +244,10 @@ print(f'Progress: {(elapsed/36000)*100:.1f}%')
 "
 
 # Strategies tested
-jq 'length' .ralph-amm/phase7/state/.strategies_log.json
+venv_fresh/bin/python3 -c "import json; print(len(json.load(open('.ralph-amm/phase7/state/.strategies_log.json'))))"
 
 # Templates created
-jq 'length' .ralph-amm/phase7/state/.templates_created.json
+venv_fresh/bin/python3 -c "import json; print(len(json.load(open('.ralph-amm/phase7/state/.templates_created.json'))))"
 ```
 
 #### Codex Activity Monitoring
@@ -267,16 +258,16 @@ jq 'length' .ralph-amm/phase7/state/.templates_created.json
 ps aux | grep ralph-amm-phase7.sh | grep -v grep
 
 # Check current Codex iteration
-ls -t .ralph-amm/phase7/state/iteration_*_codex_response.json | head -1
+ls -t .ralph-amm/phase7/state/iteration_*_codex.jsonl | head -1
 ```
 
 **Analyze Codex progress on current iteration**:
 ```bash
 # Count events in current iteration
-python3 -c "
+venv_fresh/bin/python3 -c "
 import json
 events = []
-with open('.ralph-amm/phase7/state/iteration_1_codex_response.json') as f:
+with open('.ralph-amm/phase7/state/iteration_1_codex.jsonl') as f:
     for line in f:
         try:
             events.append(json.loads(line))
@@ -299,14 +290,14 @@ if reasoning_items:
 ```bash
 # Look for turn.ended or thread.ended events
 grep -E '"type":"(turn\.ended|thread\.ended)"' \
-  .ralph-amm/phase7/state/iteration_*_codex_response.json | tail -5
+  .ralph-amm/phase7/state/iteration_*_codex.jsonl | tail -5
 ```
 
 #### Performance Metrics
 
 **Iteration rate calculation**:
 ```bash
-python3 -c "
+venv_fresh/bin/python3 -c "
 import time
 import json
 
@@ -335,7 +326,7 @@ else:
 
 **Success rate tracking**:
 ```bash
-python3 -c "
+venv_fresh/bin/python3 -c "
 import json
 
 log = json.loads(open('.ralph-amm/phase7/state/.strategies_log.json').read())
@@ -363,11 +354,11 @@ else:
 **Check for issues**:
 ```bash
 # High failure rate alert
-python3 -c "
+venv_fresh/bin/python3 -c "
 import json
 log = json.loads(open('.ralph-amm/phase7/state/.strategies_log.json').read())
 if log:
-    failures = sum(1 for s in log if not s.get('final_edge') or s.get('final_edge', 0) == 0)
+    failures = sum(1 for s in log if s.get('status') != 'ok')
     total = len(log)
     failure_rate = (failures / total) * 100
 
@@ -383,11 +374,11 @@ if log:
 "
 
 # Performance plateau detection
-python3 -c "
+venv_fresh/bin/python3 -c "
 import json
 log = json.loads(open('.ralph-amm/phase7/state/.strategies_log.json').read())
 if len(log) >= 10:
-    recent = [s.get('final_edge', 0) for s in log[-10:] if s.get('final_edge', 0) > 0]
+    recent = [s.get('final_edge', 0) for s in log[-10:] if s.get('status') == 'ok' and s.get('final_edge', 0) > 0]
     if recent:
         mean_edge = sum(recent) / len(recent)
         variance = sum((e - mean_edge) ** 2 for e in recent) / len(recent)
@@ -473,13 +464,43 @@ kill -9 $(cat .ralph-amm/phase7/phase7.pid)
 - `.ralph-amm/phase7/state/.best_edge.txt` - Current best edge
 - `.ralph-amm/phase7/state/.best_strategy.sol` - Champion strategy
 - `.ralph-amm/phase7/generated/phase7_strategy_N.sol` - Generated strategies
+- `.ralph-amm/phase7/generated/phase7_strategy_N.json` - Metadata for generated strategies (if provided)
 - `.ralph-amm/phase7/prompts/iteration_N_prompt.md` - Prompts used
+- `.ralph-amm/phase7/state/iteration_N_codex.jsonl` - Codex JSONL event stream (debug)
+- `.ralph-amm/phase7/state/iteration_N_codex.stderr` - Codex stderr (debug)
+- `.ralph-amm/phase7/state/iteration_N_last_message.md` - Codex final assistant message (input to extractor)
 
 ### After Completion
 
 - `.ralph-amm/phase7/PHASE7_FINAL_REPORT.md` - Comprehensive report
 - `.ralph-amm/phase7/templates/*.sol.template` - Extracted templates
-- `.ralph-amm/phase7/state/.strategies_log.json` - Full test history
+- `.ralph-amm/phase7/state/.strategies_log.json` - Full per-iteration history (**source of truth**)
+
+### `.strategies_log.json` entry schema (required)
+
+Each iteration appends exactly one entry with this minimum shape:
+
+```json
+{
+  "iteration": 12,
+  "status": "ok",
+  "timestamp": "2026-02-10T12:34:56.123Z",
+  "final_edge": 371.23,
+  "strategy_name": "SomeNameOrUnknown",
+  "hypothesis_ids": ["H-002", "H-003"],
+  "artifact_paths": {
+    "prompt_path": ".ralph-amm/phase7/prompts/iteration_12_prompt.md",
+    "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_12_codex.jsonl",
+    "codex_stderr_path": ".ralph-amm/phase7/state/iteration_12_codex.stderr",
+    "codex_last_message_path": ".ralph-amm/phase7/state/iteration_12_last_message.md",
+    "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_12.sol",
+    "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_12.json",
+    "result_path": ".ralph-amm/phase7/state/iteration_12_result.json"
+  },
+  "metrics": { "edge_10": 390.12, "edge_100": 372.88, "edge_1000": 371.23 },
+  "error": { "stage": null, "message": null }
+}
+```
 
 ## Troubleshooting
 
@@ -505,14 +526,14 @@ bash scripts/ralph-amm-phase7.sh --max-iterations 100
 ```bash
 # Prompt may need refinement
 # Check recent failed strategies:
-jq '.[-10:]' .ralph-amm/phase7/state/.strategies_log.json
+venv_fresh/bin/python3 -c "import json; log=json.load(open('.ralph-amm/phase7/state/.strategies_log.json')); print(json.dumps(log[-10:], indent=2))"
 ```
 
 **4. "No improvement after 50 iterations"**
 ```
 # May have reached local maximum
 # Check hypothesis coverage:
-python scripts/amm-learning-engine.py hypotheses \
+venv_fresh/bin/python3 scripts/amm-learning-engine.py hypotheses \
   --state-dir .ralph-amm/phase7/state
 
 # Consider adjusting prompt focus
@@ -539,13 +560,13 @@ tail -f phase7_run.log | grep -v "DEBUG"
 
 2. **Test Champion**:
    ```bash
-   python scripts/amm-learning-engine.py robustness-check \
+   venv_fresh/bin/python3 scripts/amm-learning-engine.py robustness-check \
      --strategy .ralph-amm/phase7/state/.best_strategy.sol --batches 3
    ```
 
 3. **Extract Insights**:
    ```bash
-   python scripts/amm-learning-engine.py hypotheses \
+   venv_fresh/bin/python3 scripts/amm-learning-engine.py hypotheses \
      --state-dir .ralph-amm/phase7/state
    ```
 

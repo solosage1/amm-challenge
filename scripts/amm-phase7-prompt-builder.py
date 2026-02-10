@@ -330,7 +330,12 @@ def format_recent_results(state: Dict) -> str:
     lines = ["**Recent Test Results**:", ""]
     for entry in recent:
         name = entry.get('strategy_name', 'Unknown')
-        edge = entry.get('final_edge', 0)
+        status = str(entry.get("status") or "unknown")
+        raw_edge = entry.get('final_edge', None)
+        try:
+            edge = float(raw_edge) if raw_edge is not None else None
+        except (TypeError, ValueError):
+            edge = None
         hyp_ids = entry.get('hypothesis_ids', [])
 
         if isinstance(hyp_ids, list):
@@ -338,7 +343,22 @@ def format_recent_results(state: Dict) -> str:
         else:
             hyp_str = 'H-baseline'
 
-        lines.append(f"- {name}: Edge {edge:.2f} (Hypothesis: {hyp_str})")
+        edge_str = f"{edge:.2f}" if edge is not None else "N/A"
+
+        note_parts = []
+        if status != "ok":
+            note_parts.append(status)
+            err = entry.get("error") if isinstance(entry.get("error"), dict) else {}
+            stage = err.get("stage")
+            if stage:
+                note_parts.append(f"stage={stage}")
+            msg = err.get("message")
+            if msg:
+                msg = str(msg).replace("\n", " ").strip()
+                note_parts.append(f"msg={msg[:80]}")
+        note = f" [{' | '.join(note_parts)}]" if note_parts else ""
+
+        lines.append(f"- {name}: Edge {edge_str}{note} (Hypothesis: {hyp_str})")
 
     return '\n'.join(lines)
 
@@ -346,20 +366,27 @@ def format_recent_results(state: Dict) -> str:
 # PROMPT BUILDING
 # ============================================================================
 
-def build_prompt(iteration: int, state_dir: Path, output_path: Path):
+def build_prompt(
+    iteration: int,
+    state_dir: Path,
+    output_path: Path,
+    *,
+    target_edge: float,
+    max_runtime_seconds: int,
+):
     """Build complete prompt for Codex"""
     state = load_state(state_dir)
     gaps = select_hypothesis_gaps(state)
 
     # Calculate time remaining
     elapsed = int(time.time()) - state['start_time']
-    remaining = max(0, 36000 - elapsed)  # 10 hours - elapsed
+    remaining = max(0, int(max_runtime_seconds) - elapsed)
     hours = remaining // 3600
     minutes = (remaining % 3600) // 60
 
     # Build prompt from template
     prompt = PROMPT_TEMPLATE.format(
-        current_target=527,
+        current_target=target_edge,
         best_edge=state['best_edge'],
         iteration=iteration,
         hours=hours,
@@ -382,9 +409,22 @@ def main():
     parser.add_argument("--iteration", type=int, required=True, help="Current iteration number")
     parser.add_argument("--state-dir", required=True, help="Path to state directory")
     parser.add_argument("--output", required=True, help="Output path for prompt")
+    parser.add_argument("--target-edge", type=float, default=527.0, help="Target edge to achieve (default: 527)")
+    parser.add_argument(
+        "--max-runtime-seconds",
+        type=int,
+        default=36000,
+        help="Max runtime in seconds (default: 36000 = 10 hours)",
+    )
     args = parser.parse_args()
 
-    build_prompt(args.iteration, Path(args.state_dir), Path(args.output))
+    build_prompt(
+        args.iteration,
+        Path(args.state_dir),
+        Path(args.output),
+        target_edge=args.target_edge,
+        max_runtime_seconds=args.max_runtime_seconds,
+    )
 
 if __name__ == "__main__":
     main()

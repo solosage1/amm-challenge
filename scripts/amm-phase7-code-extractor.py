@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """
 AMM Phase 7 Code Extractor
-Extracts and validates Solidity code from Codex JSON response
+Extracts and validates Solidity code from Codex output.
+
+Primary input is the plain-text file produced by:
+  codex exec --output-last-message <path>
+
+Backward compatibility: if the input file is JSON, we will attempt to extract
+the response text from common keys.
 """
 
 import argparse
@@ -109,7 +115,11 @@ def validate_and_save(code: str, metadata: dict, output_path: Path) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Extract Solidity code from Codex response")
-    parser.add_argument("--codex-response", required=True, help="Path to Codex JSON response")
+    parser.add_argument(
+        "--codex-response",
+        required=True,
+        help="Path to Codex --output-last-message file (plain text). JSON is accepted for backward compatibility.",
+    )
     parser.add_argument("--output", required=True, help="Output path for .sol file")
     args = parser.parse_args()
 
@@ -119,27 +129,31 @@ def main():
         print(f"ERROR: Response file not found: {response_path}", file=sys.stderr)
         sys.exit(1)
 
-    try:
-        response_data = json.loads(response_path.read_text())
+    raw_text = response_path.read_text()
 
-        # Try multiple possible keys for the response text
-        response_text = (
-            response_data.get('output', '')
-            or response_data.get('content', '')
-            or response_data.get('text', '')
-            or response_data.get('response', '')
-            or json.dumps(response_data)  # Fallback: search entire response
-        )
+    # Prefer treating input as plain text (Codex --output-last-message).
+    response_text = raw_text
 
-        if not response_text:
-            print("ERROR: Could not find response text in Codex output", file=sys.stderr)
-            print("Available keys:", list(response_data.keys()), file=sys.stderr)
-            sys.exit(1)
-
-    except json.JSONDecodeError as e:
-        print(f"ERROR: Failed to parse Codex response JSON: {e}", file=sys.stderr)
-        # Try reading as plain text
-        response_text = response_path.read_text()
+    # Backward compatibility: if the file appears to be JSON, attempt to decode
+    # and extract the response content from common keys.
+    stripped = raw_text.lstrip()
+    if stripped.startswith("{") or stripped.startswith("["):
+        try:
+            response_data = json.loads(raw_text)
+            if isinstance(response_data, dict):
+                candidate = (
+                    response_data.get("output", "")
+                    or response_data.get("content", "")
+                    or response_data.get("text", "")
+                    or response_data.get("response", "")
+                )
+                if isinstance(candidate, str) and candidate.strip():
+                    response_text = candidate
+            elif isinstance(response_data, str) and response_data.strip():
+                response_text = response_data
+        except json.JSONDecodeError:
+            # Not valid JSON; keep raw_text
+            pass
 
     # Extract code
     code, metadata = extract_code_from_response(response_text)
