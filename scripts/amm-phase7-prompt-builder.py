@@ -150,9 +150,23 @@ struct TradeInfo {{
 
 ---
 
+## Known Ceilings (What's Been Tried)
+
+These strategies use fair price inference and achieve ~375 edge:
+
+| Strategy | Mechanism | Edge | Limitation |
+|----------|-----------|------|------------|
+| arb_infer_protect | Infer fair from arb, protect mispriced side | ~375 | EWMA lag, retail-first noise |
+| arb_infer_skew | Fair price + vol proxy + inventory skew | ~375 | Same + vol estimate noisy |
+| arb_infer_bandprotect | Fee = no-arb boundary condition | ~375 | Requires accurate fair estimate |
+
+**The gap to 527**: These strategies optimize fee LEVELS but may not be optimizing fee TIMING or exploiting multi-trade-per-step dynamics.
+
+---
+
 ## Generation Workflow (REQUIRED STRUCTURE)
 
-Follow this exact 4-step workflow in your response:
+Follow this exact 5-step workflow in your response:
 
 ### STEP 1: DRAFT_STRATEGY_IDEA
 
@@ -167,6 +181,37 @@ Briefly describe your strategy concept:
 ---DRAFT_STRATEGY_IDEA---
 <Your strategy description here>
 ---END_DRAFT_STRATEGY_IDEA---
+```
+
+### STEP 1.5: ASSUMPTION_AUDIT (RED TEAM YOUR IDEA)
+
+Before implementation, stress-test your assumptions:
+
+- **Information Limits**: What can you NOT observe? (fair price is hidden, other AMM state unknown, future prices unpredictable)
+- **Inference Validity**: If inferring fair price from arb trades, when does this fail?
+  - Retail trades first (no arb opportunity when vol is low)
+  - Fair price drifts between trades
+  - EWMA smoothing introduces lag
+- **Prior Art Analysis**: Existing strategies (arb_infer_protect, arb_infer_skew, arb_infer_bandprotect) already use fair price inference and plateau at ~375. What ceiling are they hitting? Why?
+- **Theoretical Bound**: What's the MAXIMUM edge improvement your mechanism can provide? Show rough math.
+- **Failure Modes**: Under what market conditions does your strategy perform WORSE than 45 bps fixed fee?
+
+**Output Format**:
+```
+---ASSUMPTION_AUDIT---
+Key assumptions and failure conditions:
+1. <assumption> → Fails when: <specific condition>
+2. <assumption> → Fails when: <specific condition>
+
+Why existing fair-price strategies plateau at ~375:
+<your analysis of what limits them>
+
+Theoretical edge bound for this approach:
+<rough calculation or reasoning>
+
+Worst-case scenarios where this underperforms:
+- <scenario>: Expected impact
+---END_ASSUMPTION_AUDIT---
 ```
 
 ### STEP 2: DESIGN_REVIEW
