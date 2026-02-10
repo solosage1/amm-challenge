@@ -355,6 +355,7 @@ def run_pipeline(strategy_path: str, output_path: str, seed_offset: int = 0) -> 
         return 5
 
     # Step 6: Baseline (1000 sims) - conditional with enhanced metrics
+    # IMPORTANT: Only 1000-sim results are authoritative for final_edge
     threshold = 375.0
     if edge_100 > threshold:
         log(f"Step 6: Running 1000 simulations (edge {edge_100:.2f} > {threshold} threshold)...")
@@ -365,7 +366,7 @@ def run_pipeline(strategy_path: str, output_path: str, seed_offset: int = 0) -> 
 
             result["testing"]["edge_1000"] = edge_1000
             result["runtime"]["baseline_1000_seconds"] = sim_duration
-            result["final_edge"] = edge_1000
+            result["final_edge"] = edge_1000  # Only 1000-sim results set final_edge
             log(f"  ✓ Baseline complete: Edge {edge_1000:.2f} ({sim_duration:.1f}s)")
 
             # Extract detailed metrics
@@ -378,10 +379,12 @@ def run_pipeline(strategy_path: str, output_path: str, seed_offset: int = 0) -> 
         except Exception as e:
             log(f"  ✗ Baseline test failed: {e}", "ERROR")
             result["testing"]["baseline_error"] = str(e)
-            result["final_edge"] = edge_100
+            # Don't set final_edge from 100-sim fallback - leave it unset
+            result["final_edge"] = None
     else:
         log(f"  → Skipping 1000 sims (edge {edge_100:.2f} < {threshold} threshold)")
-        result["final_edge"] = edge_100
+        # Don't set final_edge - only 1000-sim results are authoritative
+        result["final_edge"] = None
 
     # Add git SHA and hypothesis ID
     result["git_sha"] = get_git_sha()

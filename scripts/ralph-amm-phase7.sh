@@ -522,6 +522,11 @@ should_extract_template() {
     local best_edge="$3"
     local is_new_champion="$4" # 1 or 0
 
+    # Skip if no 1000-sim result (final_edge is empty)
+    if [[ -z "$final_edge" ]]; then
+        return 1
+    fi
+
     "$VENV_PY" - "$STATE_STRATEGIES" "$iteration" "$final_edge" "$best_edge" "$is_new_champion" \
         "$TEMPLATE_MIN_EDGE" "$TEMPLATE_WITHIN_BEST" "$TEMPLATE_TOP_K" <<'PY'
 import json
@@ -540,6 +545,9 @@ from pathlib import Path
 ) = sys.argv[1:9]
 
 iteration_i = int(iteration)
+# Handle empty final_edge (no 1000-sim result)
+if not final_edge or final_edge.strip() == "":
+    raise SystemExit(1)  # Don't extract template without 1000-sim result
 final_edge_f = float(final_edge)
 best_edge_f = float(best_edge)
 is_new = str(is_new_champion) == "1"
@@ -703,6 +711,7 @@ PY
         fi
 
         # === STEP 5: Extract edge score ===
+        # IMPORTANT: final_edge is only set when 1000 simulations were run
         final_edge="$("$VENV_PY" - "$result_path" <<'PY'
 import json, sys
 from pathlib import Path
@@ -712,16 +721,20 @@ v=data.get("final_edge", None)
 print(v if v is not None else "")
 PY
 )"
-        log "INFO" "  → Final Edge: $final_edge"
+        if [[ -n "$final_edge" ]]; then
+            log "INFO" "  → Final Edge (1000 sims): $final_edge"
+        else
+            log "INFO" "  → Final Edge: N/A (did not qualify for 1000-sim test)"
+        fi
 
         # === STEP 6: Record to learning engine ===
         "$VENV_PY" scripts/amm-learning-engine.py record \
             --result "$result_path" \
             --state-dir "$PHASE7_STATE_DIR" 2>/dev/null || true
 
-        # === STEP 7: Check if new champion ===
+        # === STEP 7: Check if new champion (only if 1000-sim result exists) ===
         local current_best=$(cat "$STATE_CHAMPION")
-        if float_gt "$final_edge" "$current_best"; then
+        if [[ -n "$final_edge" ]] && float_gt "$final_edge" "$current_best"; then
             log "INFO" "  🏆 NEW CHAMPION! $final_edge beats $current_best"
             echo "$final_edge" > "$STATE_CHAMPION"
             cp "$strategy_path" "$PHASE7_STATE_DIR/.best_strategy.sol"
