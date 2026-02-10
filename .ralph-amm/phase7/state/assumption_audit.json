@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-02-10T18:47:57.865819",
+  "n_strategies": 2,
+  "tests": {
+    "fee_volume": {
+      "status": "INSUFFICIENT_DATA",
+      "n_samples": 0
+    },
+    "symmetry": {
+      "status": "INSUFFICIENT_DATA",
+      "n_samples": 0
+    },
+    "edge_win_alignment": {
+      "status": "INSUFFICIENT_DATA",
+      "n_samples": 0
+    },
+    "arb_volume_correlation": {
+      "status": "INSUFFICIENT_DATA",
+      "n_samples": 0
+    },
+    "retail_volume_correlation": {
+      "status": "INSUFFICIENT_DATA",
+      "n_samples": 0
+    },
+    "fee_level_impact": {
+      "status": "INSUFFICIENT_DATA",
+      "n_samples": 0
+    }
+  },
+  "summary": {
+    "supported": 0,
+    "violated": 0,
+    "weak": 0,
+    "insufficient_data": 6
+  },
+  "recommended_experiments": [
+    {
+      "name": "Parameter sensitivity analysis",
+      "description": "Test variations of current best strategy parameters",
+      "rationale": "Assumptions appear valid; focus on optimization",
+      "priority": "MEDIUM"
+    }
+  ]
+}

@@ -29,6 +29,17 @@ Generate a novel AMM strategy that maximizes **Edge** (profitability metric) aga
 
 ---
 
+## Execution Contract (CRITICAL)
+
+This is a **non-interactive** generation run inside an autonomous loop.
+
+- **DO NOT** run shell commands or try to inspect files/repos.
+- **DO NOT** write/modify any files.
+- The orchestrator will compile + simulate after your response; your job is to **output the final strategy** in the required format.
+- If you don’t produce the required response blocks, the iteration will fail.
+
+---
+
 ## Environment Context
 
 ### Simulation Mechanics
@@ -51,6 +62,83 @@ Edge = Σ (amountX × fairPrice - amountY)  [when AMM sells X]
 - Arbitrage trades → Negative edge (you lose to informed flow)
 
 **Goal**: Maximize retail edge while minimizing arb losses.
+
+---
+
+## Critical Simulation Mechanics (EXPLOIT THESE)
+
+These are the exact formulas used by the simulation engine. Understanding them is key to beating 527 edge.
+
+### 1. Router Split Formula
+
+The router splits retail orders to equalize marginal prices across AMMs. For a trader buying X (spending Y):
+
+```
+γ_i = 1 - fee_i           (gamma = 1 minus fee)
+A_i = sqrt(x_i * γ_i * y_i)   (liquidity coefficient)
+r = A_1 / A_2              (split ratio)
+
+Optimal split: Δy_1 = (r*(y_2 + γ_2*Y) - y_1) / (γ_1 + r*γ_2)
+```
+
+**Key insight**: Lower fees → higher γ → higher A → you get MORE of the order (but less per unit).
+The relationship is nonlinear (square root), so small fee changes can shift large volume fractions.
+
+### 2. Fair Price Inversion from Arbitrage
+
+After an arbitrage trade, you can EXACTLY infer the fair price that motivated it:
+
+```
+When AMM sells X (buy arb):
+  p_fair = k / (γ * x_post²)    where k = x_pre * y_pre, γ = 1 - ask_fee
+
+When AMM buys X (sell arb):
+  p_fair = k * γ / x_post²      where γ = 1 - bid_fee
+```
+
+**Key insight**: Post-arb, you KNOW fair price exactly (not estimated). Use this for protective fees.
+
+**Failure modes**:
+- Arb capped at 99% of reserves → biased estimate (check if amountX ≈ 0.99 * pre_reserveX)
+- Retail trades first in a step (no arb when vol is low) → no signal
+
+### 3. Fee Update Timing
+
+```
+Within each step:
+  1. Fair price moves (GBM)
+  2. Arbitrageur executes using CURRENT fees → afterSwap called → fees UPDATE
+  3. Retail orders execute using NEW fees → afterSwap called → fees UPDATE
+  4. Next step begins with fees from last trade
+```
+
+**Key insight**: After arb, you can set fees for retail in the SAME step. Two-phase quoting:
+- Phase 1 (after arb): Set competitive fees to attract retail
+- Phase 2 (after retail): Set protective fees for next step's arb
+
+### 4. Multi-Trade Sequencing
+
+Multiple trades can occur per step (arb + 0-N retail orders).
+
+**Detection via timestamp**:
+```solidity
+if (trade.timestamp != lastTimestamp) {
+    // First trade of new step (usually arb)
+    lastTimestamp = trade.timestamp;
+} else {
+    // Same-step follow-on trade (usually retail)
+}
+```
+
+**Key insight**: First trade often sets fair price anchor; subsequent trades can use it.
+
+### 5. The 99% Reserve Cap
+
+Arb trades are capped: `amount = min(optimal, reserve * 0.99)`
+
+When the cap is hit, fair price inversion is BIASED. Detect via:
+- `amountX > 0.95 * (reserveX + amountX)` for buy arb
+- Spot still far from inferred fair after trade
 
 ---
 
@@ -152,15 +240,11 @@ struct TradeInfo {{
 
 ## Known Ceilings (What's Been Tried)
 
-These strategies use fair price inference and achieve ~375 edge:
+Treat “ceilings” as provisional. Use the **AI-Generated Insights** section (if present) as the source of truth for current best-known results.
 
-| Strategy | Mechanism | Edge | Limitation |
-|----------|-----------|------|------------|
-| arb_infer_protect | Infer fair from arb, protect mispriced side | ~375 | EWMA lag, retail-first noise |
-| arb_infer_skew | Fair price + vol proxy + inventory skew | ~375 | Same + vol estimate noisy |
-| arb_infer_bandprotect | Fee = no-arb boundary condition | ~375 | Requires accurate fair estimate |
+Historically, simple “infer fair then protect mispriced side / undercut other side” strategies tended to plateau well below target. Recent variants that use **exact arb inversion** + **dual-regime quoting** can reach ~500 edge (1000 sims) but still miss 527 — suggesting the remaining gap is about **classification + timing + regime selection**, not just fee-level tuning.
 
-**The gap to 527**: These strategies optimize fee LEVELS but may not be optimizing fee TIMING or exploiting multi-trade-per-step dynamics.
+Your job: propose a mechanism that can plausibly move the current ceiling meaningfully upward without collapsing routing/volume.
 
 ---
 
@@ -192,7 +276,7 @@ Before implementation, stress-test your assumptions:
   - Retail trades first (no arb opportunity when vol is low)
   - Fair price drifts between trades
   - EWMA smoothing introduces lag
-- **Prior Art Analysis**: Existing strategies (arb_infer_protect, arb_infer_skew, arb_infer_bandprotect) already use fair price inference and plateau at ~375. What ceiling are they hitting? Why?
+- **Prior Art Analysis**: Existing strategies already use fair inference (e.g., `arb_infer_*`, `arb_oracle_*`). What ceiling do they hit in this repo’s latest results, and why?
 - **Theoretical Bound**: What's the MAXIMUM edge improvement your mechanism can provide? Show rough math.
 - **Failure Modes**: Under what market conditions does your strategy perform WORSE than 45 bps fixed fee?
 
@@ -203,7 +287,7 @@ Key assumptions and failure conditions:
 1. <assumption> → Fails when: <specific condition>
 2. <assumption> → Fails when: <specific condition>
 
-Why existing fair-price strategies plateau at ~375:
+Why existing fair-price strategies plateau below target:
 <your analysis of what limits them>
 
 Theoretical edge bound for this approach:

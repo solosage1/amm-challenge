@@ -1,0 +1,1509 @@
+{
+  "timestamp": "2026-02-10T18:47:57.805685",
+  "strategies_analyzed": 11,
+  "mechanism_catalog": {
+    "fair_price_inference": [
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": [
+          "fair"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": [
+          "fair"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": [
+          "fair"
+        ]
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": [
+          "fair"
+        ]
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "fair"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "fair"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "fair"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "fair"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": [
+          "fair"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "fair"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "fair"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "fairCandidate"
+        ]
+      }
+    ],
+    "inventory_skew": [
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": [
+          "Spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": [
+          "spotAbove"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": [
+          "Spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": [
+          "Spot"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "spotAbove"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": [
+          "spotAbove"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "spot"
+        ]
+      }
+    ],
+    "timestamp_gating": [
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": []
+      }
+    ],
+    "protection_buffer": [
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": [
+          "6"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": [
+          "8"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "8"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "10"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "8"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "10"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": [
+          "20"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "10"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "10"
+        ]
+      }
+    ],
+    "competitive_undercut": [
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": [
+          "2"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "3"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "2"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "2"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "2"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "2"
+        ]
+      }
+    ],
+    "fee_clamping": [
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": []
+      }
+    ],
+    "gamma_calculation": [
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": []
+      }
+    ],
+    "volatility_tracking": [
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": []
+      }
+    ],
+    "initial_wide_fees": [
+      {
+        "strategy": "arb_oracle_bandmatch",
+        "edge": null,
+        "params": [
+          "8"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": [
+          "80"
+        ]
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": [
+          "80"
+        ]
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": [
+          "10"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "70"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "25"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "80"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "25"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": [
+          "80"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "25"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "60"
+        ]
+      }
+    ],
+    "ewma_smoothing": [
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": [
+          "80",
+          "20",
+          "100"
+        ]
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": [
+          "73",
+          "27",
+          "100"
+        ]
+      },
+      {
+        "strategy": "arb_infer_skew",
+        "edge": null,
+        "params": [
+          "65",
+          "35",
+          "100"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "70",
+          "30",
+          "100"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "80",
+          "20",
+          "100"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "80",
+          "20",
+          "100"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "80",
+          "20",
+          "100"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": [
+          "80",
+          "20",
+          "100"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "80",
+          "20",
+          "100"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "85",
+          "15",
+          "100"
+        ]
+      }
+    ],
+    "max_jump_limit": [
+      {
+        "strategy": "arb_infer_bandprotect_base0",
+        "edge": null,
+        "params": [
+          "500"
+        ]
+      },
+      {
+        "strategy": "arb_infer_protect",
+        "edge": null,
+        "params": [
+          "200"
+        ]
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": [
+          "500"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": [
+          "400"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect",
+        "edge": null,
+        "params": [
+          "500"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": [
+          "400"
+        ]
+      },
+      {
+        "strategy": "arb_infer_bandprotect_buf20",
+        "edge": null,
+        "params": [
+          "500"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": [
+          "400"
+        ]
+      },
+      {
+        "strategy": "arb_oracle_bandmatch2",
+        "edge": null,
+        "params": [
+          "400"
+        ]
+      }
+    ],
+    "regime_switching": [
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_pulse_twophase",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact_tight18",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime_exact",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      },
+      {
+        "strategy": "arb_oracle_dualregime",
+        "edge": null,
+        "params": []
+      }
+    ]
+  },
+  "mechanism_performance": {},
+  "synthesis_candidates": [],
+  "anti_patterns_detected": [],
+  "parameter_insights": {}
+}

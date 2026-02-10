@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-02-10T18:48:05.785970",
+  "n_simulations": 30,
+  "edge_curves": {
+    "total_edge": 484.6920541732214,
+    "early_game_edge": 179.04949991556128,
+    "mid_game_edge": 221.9310962693305,
+    "late_game_edge": 83.71145798832985,
+    "early_game_pct": 36.940877898438124,
+    "mid_game_pct": 45.788061586422415,
+    "late_game_pct": 17.271060515139514,
+    "max_drawdown_step": 44,
+    "peak_edge_step": 9833,
+    "n_simulations": 30
+  },
+  "price_regimes": {},
+  "fee_timing": {
+    "avg_timing_correctness": 4.704367172399976,
+    "timing_std": 0.5977979050530948,
+    "timing_interpretation": "GOOD: High fees align with high mispricing",
+    "n_simulations": 30
+  },
+  "arb_detection": {
+    "avg_correction_rate": 0.26967363403006966,
+    "correction_rate_std": 0.014804041744098733,
+    "interpretation": "Arb corrects price 27.0% of steps - unreliable arb signal",
+    "n_simulations": 30
+  },
+  "comparison": {}
+}

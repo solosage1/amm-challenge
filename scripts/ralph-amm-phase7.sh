@@ -34,6 +34,7 @@ AMM_MATCH="${AMM_MATCH:-venv_fresh/bin/amm-match}"
 CODEX_MODEL="${CODEX_MODEL:-}"
 CODEX_MAX_OUTPUT_TOKENS="${CODEX_MAX_OUTPUT_TOKENS:-8000}"
 CODEX_TIMEOUT_MINUTES="${CODEX_TIMEOUT_MINUTES:-50}"  # Max time per Codex invocation (increased for full write+test cycles)
+CODEX_DISABLE_SHELL_TOOL="${CODEX_DISABLE_SHELL_TOOL:-1}"  # 1=disable agent shell commands (faster, less stalling)
 
 # Performance targets
 COMPETITIVE_EDGE=527
@@ -301,11 +302,19 @@ invoke_codex_generator() {
     local codex_ok=1
     local timeout_minutes="${CODEX_TIMEOUT_MINUTES:-40}"  # 40 minute default (down from 50 for graceful termination)
 
+    # Default to no shell tool so Codex produces the required final message (no long-running local searches).
+    # Set CODEX_DISABLE_SHELL_TOOL=0 to allow shell usage.
+    local codex_disable_args=()
+    if [[ "${CODEX_DISABLE_SHELL_TOOL}" == "1" ]]; then
+        codex_disable_args+=(--disable shell_tool)
+    fi
+
     if [[ -n "$CODEX_MODEL" ]]; then
         timeout "${timeout_minutes}m" codex exec \
             --json \
             --config "max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS" \
             --output-last-message "$codex_last_msg_path" \
+            "${codex_disable_args[@]}" \
             --model "$CODEX_MODEL" \
             - < "$prompt_path" > "$codex_jsonl_path" 2> "$codex_stderr_path" && codex_ok=0 || codex_ok=$?
     else
@@ -313,6 +322,7 @@ invoke_codex_generator() {
             --json \
             --config "max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS" \
             --output-last-message "$codex_last_msg_path" \
+            "${codex_disable_args[@]}" \
             - < "$prompt_path" > "$codex_jsonl_path" 2> "$codex_stderr_path" && codex_ok=0 || codex_ok=$?
     fi
 
