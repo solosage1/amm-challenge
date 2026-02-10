@@ -281,12 +281,25 @@ invoke_codex_generator() {
     : > "$codex_stderr_path"
     rm -f "$codex_last_msg_path" 2>/dev/null || true
 
+    # === START LIVE EXTRACTOR (checkpoints every 5 minutes) ===
+    local checkpoint_dir="$PHASE7_STATE_DIR/checkpoints_iter${iteration}"
+    mkdir -p "$checkpoint_dir"
+    local extractor_pid=""
+
+    if [[ -x "scripts/amm-phase7-live-extractor.sh" ]]; then
+        bash scripts/amm-phase7-live-extractor.sh \
+            "$codex_jsonl_path" "$checkpoint_dir" 300 \
+            >> "$PHASE7_STATE_DIR/live_extractor.log" 2>&1 &
+        extractor_pid=$!
+        log "INFO" "  Started live extractor (PID $extractor_pid, checkpoints to $checkpoint_dir)"
+    fi
+
     # Invoke Codex, feeding the prompt via stdin and capturing the final assistant
     # message via --output-last-message.
     # Allow full read-write access so Codex can write strategies and run tests.
     # CRITICAL: Add timeout to prevent iteration from running indefinitely.
     local codex_ok=1
-    local timeout_minutes="${CODEX_TIMEOUT_MINUTES:-50}"  # 50 minute default per iteration
+    local timeout_minutes="${CODEX_TIMEOUT_MINUTES:-40}"  # 40 minute default (down from 50 for graceful termination)
 
     if [[ -n "$CODEX_MODEL" ]]; then
         timeout "${timeout_minutes}m" codex exec \
@@ -303,7 +316,51 @@ invoke_codex_generator() {
             - < "$prompt_path" > "$codex_jsonl_path" 2> "$codex_stderr_path" && codex_ok=0 || codex_ok=$?
     fi
 
+    # === STOP LIVE EXTRACTOR ===
+    if [[ -n "$extractor_pid" ]]; then
+        kill "$extractor_pid" 2>/dev/null || true
+        wait "$extractor_pid" 2>/dev/null || true
+        log "INFO" "  Stopped live extractor"
+    fi
+
+    # === HANDLE TIMEOUT (exit code 124) - RECOVER FROM CHECKPOINT ===
+    if [[ "$codex_ok" -eq 124 ]]; then
+        log "WARN" "Codex timed out after ${timeout_minutes} minutes"
+
+        # Find most recent checkpoint
+        local last_checkpoint
+        last_checkpoint=$(ls -1t "$checkpoint_dir"/checkpoint_*.json 2>/dev/null | head -1 || true)
+
+        if [[ -n "$last_checkpoint" && -s "$last_checkpoint" ]]; then
+            log "INFO" "  Recovering from checkpoint: $last_checkpoint"
+
+            # Parse codex.jsonl to extract knowledge even on timeout
+            local knowledge_path="$PHASE7_STATE_DIR/iteration_${iteration}_knowledge.json"
+            "$VENV_PY" scripts/amm-phase7-codex-parser.py "$codex_jsonl_path" > "$knowledge_path" 2>/dev/null || true
+
+            # Try to recover best strategy into structured output format
+            if [[ -x scripts/amm-phase7-recover-from-checkpoint.py ]]; then
+                "$VENV_PY" scripts/amm-phase7-recover-from-checkpoint.py \
+                    --checkpoint "$last_checkpoint" \
+                    --output "$codex_last_msg_path" \
+                    --strategy-dir "." 2>/dev/null || true
+
+                if [[ -s "$codex_last_msg_path" ]]; then
+                    log "INFO" "  Successfully recovered strategy from checkpoint"
+                    return 0
+                fi
+            fi
+        fi
+
+        log "ERROR" "Codex timed out and checkpoint recovery failed"
+        return 1
+    fi
+
     if [[ "$codex_ok" -eq 0 ]]; then
+        # Also extract knowledge on success for future iterations
+        local knowledge_path="$PHASE7_STATE_DIR/iteration_${iteration}_knowledge.json"
+        "$VENV_PY" scripts/amm-phase7-codex-parser.py "$codex_jsonl_path" > "$knowledge_path" 2>/dev/null || true
+
         if [[ ! -s "$codex_last_msg_path" ]]; then
             log "ERROR" "Codex completed but last-message file is missing/empty: $codex_last_msg_path"
             return 1

@@ -369,12 +369,42 @@ def format_hypothesis_gaps(gaps: List[Tuple[str, str]]) -> str:
 # INSIGHT LOADING (from forensics, synthesis, auditor)
 # ============================================================================
 
+def load_iteration_discoveries(state_dir: Path) -> str:
+    """Load discoveries from previous iterations' knowledge files and manual discoveries."""
+    discoveries = []
+
+    # Check for manual discoveries file first (highest priority)
+    manual_path = state_dir / 'discoveries_iter8_9.md'
+    if manual_path.exists():
+        return manual_path.read_text()
+
+    # Load from knowledge JSON files (parsed from codex.jsonl)
+    for i in range(1, 100):
+        knowledge_path = state_dir / f'iteration_{i}_knowledge.json'
+        if not knowledge_path.exists():
+            continue
+        try:
+            data = json.loads(knowledge_path.read_text())
+            experiments = data.get('edge_experiments', [])
+            # Get top 3 from this iteration
+            top = sorted(experiments, key=lambda x: x.get('edge', 0), reverse=True)[:3]
+            for exp in top:
+                discoveries.append(f"- {exp['strategy']}: {exp['edge']:.1f} edge")
+        except Exception:
+            continue
+
+    if discoveries:
+        return "### Previous Iteration Discoveries\n" + "\n".join(discoveries[:15])
+    return ""
+
+
 def load_insights(state_dir: Path) -> Dict:
     """Load insights from forensics, synthesis, and auditor engines."""
     insights = {
         'forensics': None,
         'synthesis': None,
         'audit': None,
+        'discoveries': None,
     }
 
     # Load forensics insights
@@ -403,6 +433,11 @@ def load_insights(state_dir: Path) -> Dict:
             insights['audit'] = data
         except Exception:
             pass
+
+    # Load iteration discoveries
+    discoveries = load_iteration_discoveries(state_dir)
+    if discoveries:
+        insights['discoveries'] = discoveries
 
     return insights
 
@@ -490,6 +525,10 @@ def format_insights_section(insights: Dict) -> str:
                 lines.append(f"- **WEAK**: {result.get('assumption', name)} (r={result.get('correlation', 0):.2f})")
 
         sections.append('\n'.join(lines))
+
+    # Discoveries from previous iterations
+    if insights.get('discoveries'):
+        sections.insert(0, insights['discoveries'])
 
     if not sections:
         return ""
