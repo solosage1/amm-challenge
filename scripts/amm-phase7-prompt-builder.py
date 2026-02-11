@@ -6,6 +6,7 @@ Constructs context-aware prompts for Codex that enforce Draft→Review→Revise 
 
 import argparse
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -406,8 +407,42 @@ def load_state(state_dir: Path) -> Dict:
         'iteration': int((state_dir / '.iteration_count.txt').read_text().strip()),
         'start_time': int((state_dir / '.start_timestamp.txt').read_text().strip()),
         'strategies_log': [],
-        'knowledge_context': {}
+        'knowledge_context': {},
+        'best_edge_sims': None,
     }
+
+    # If the loop is currently failing before it can update .best_edge.txt, allow a
+    # human/auxiliary discoveries file to override the displayed best edge in prompts.
+    manual_discoveries = state_dir / "discoveries_iter8_9.md"
+    if manual_discoveries.exists():
+        try:
+            candidates = []
+            for m in re.finditer(
+                r"\*\*(\d+(?:\.\d+)?)\s+Edge\b(?:\s*@\s*(\d+)\s*sims)?",
+                manual_discoveries.read_text(),
+            ):
+                try:
+                    edge = float(m.group(1))
+                except ValueError:
+                    continue
+                sims = 0
+                try:
+                    sims = int(m.group(2)) if m.group(2) else 0
+                except ValueError:
+                    sims = 0
+                candidates.append((sims, edge))
+
+            if candidates:
+                max_sims = max(s for s, _ in candidates)
+                best_edge_at_max_sims = max(e for s, e in candidates if s == max_sims)
+                current_sims = int(state["best_edge_sims"] or 0)
+                if (max_sims > current_sims) or (
+                    max_sims == current_sims and best_edge_at_max_sims > state["best_edge"]
+                ):
+                    state["best_edge"] = best_edge_at_max_sims
+                    state["best_edge_sims"] = max_sims or None
+        except Exception:
+            pass
 
     # Load strategies log if it exists and is valid
     strategies_file = state_dir / '.strategies_log.json'
@@ -421,10 +456,30 @@ def load_state(state_dir: Path) -> Dict:
     knowledge = load_knowledge_context(state_dir)
     if knowledge:
         state['knowledge_context'] = knowledge
-        # Override best_edge if knowledge shows higher
-        true_best = knowledge.get('true_best_edge', 0)
-        if true_best > state['best_edge']:
-            state['best_edge'] = true_best
+        try:
+            candidates = []
+            for row in knowledge.get("all_tested_strategies", []) or []:
+                try:
+                    edge = float(row.get("edge", 0))
+                except (TypeError, ValueError):
+                    continue
+                try:
+                    sims = int(row.get("sims", 0))
+                except (TypeError, ValueError):
+                    sims = 0
+                candidates.append((sims, edge))
+
+            if candidates:
+                max_sims = max(s for s, _ in candidates)
+                best_edge_at_max_sims = max(e for s, e in candidates if s == max_sims)
+                current_sims = int(state["best_edge_sims"] or 0)
+                if (max_sims > current_sims) or (
+                    max_sims == current_sims and best_edge_at_max_sims > state["best_edge"]
+                ):
+                    state["best_edge"] = best_edge_at_max_sims
+                    state["best_edge_sims"] = max_sims or None
+        except Exception:
+            pass
 
     return state
 
@@ -850,8 +905,30 @@ def build_prompt(
     if insights_section:
         print(f"  (includes AI-generated insights from forensics/synthesis/audit)")
     if knowledge_section:
-        true_best = state.get('knowledge_context', {}).get('true_best_edge', 0)
-        print(f"  (includes harvested knowledge: true best edge = {true_best:.2f})")
+        try:
+            tested = state.get("knowledge_context", {}).get("all_tested_strategies", [])
+            if isinstance(tested, list) and tested:
+                sims_vals = []
+                for row in tested:
+                    try:
+                        sims_vals.append(int(row.get("sims", 0)))
+                    except (TypeError, ValueError):
+                        sims_vals.append(0)
+                max_sims = max(sims_vals) if sims_vals else 0
+                best_edge = 0.0
+                for row in tested:
+                    try:
+                        sims = int(row.get("sims", 0))
+                        edge = float(row.get("edge", 0))
+                    except (TypeError, ValueError):
+                        continue
+                    if sims == max_sims and edge > best_edge:
+                        best_edge = edge
+                print(f"  (includes harvested knowledge: best {best_edge:.2f} @ {max_sims} sims)")
+            else:
+                print("  (includes harvested knowledge)")
+        except Exception:
+            print("  (includes harvested knowledge)")
 
 # ============================================================================
 # MAIN

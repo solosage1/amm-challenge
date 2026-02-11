@@ -82,6 +82,16 @@ MECHANISM_PATTERNS = {
         "description": "Explicit gamma (1-fee) calculations for no-arb bounds",
         "flags": re.IGNORECASE | re.DOTALL,
     },
+    "exact_arb_inversion": {
+        "pattern": r"fairCandidate\s*=\s*wdiv\s*\(\s*wmul\s*\(\s*k\s*,\s*gamma\s*\)\s*,\s*wmul\s*\(\s*xVirtual\s*,\s*xVirtual\s*\)\s*\)\s*;|fairCandidate\s*=\s*wdiv\s*\(\s*k\s*,\s*wmul\s*\(\s*gamma\s*,\s*wmul\s*\(\s*rx\s*,\s*rx\s*\)\s*\)\s*\)\s*;",
+        "description": "Infers fair price by inverting the simulator's closed-form arbitrage sizing (exact arb inversion)",
+        "flags": re.IGNORECASE | re.DOTALL,
+    },
+    "dual_regime_quoting": {
+        "pattern": r"mis\s*=.*?tightBand.*?if\s*\(\s*mis\s*<=\s*tightBand\s*\)",
+        "description": "Dual-regime quoting (tight-band vs protective-band logic)",
+        "flags": re.IGNORECASE | re.DOTALL,
+    },
     "volatility_tracking": {
         "pattern": r"vol(?:Ewma|atility)?\s*=.*?(?:absDiff|wmul)",
         "description": "Tracks volatility for adaptive fee adjustment",
@@ -197,6 +207,119 @@ def load_strategies_log(state_dir: Path) -> List[Dict]:
         log(f"Failed to load strategies log: {e}", "ERROR")
         return []
 
+def load_codex_edge_observations(state_dir: Path) -> Dict[str, Dict]:
+    """
+    Parse iteration_*_codex.jsonl files for any amm-match runs and capture
+    the best observed Edge per strategy (preferring higher simulation counts).
+
+    Returns:
+        Dict keyed by strategy file stem -> {edge, simulations, file, source}
+    """
+    edge_re = re.compile(r"\bEdge:\s*([0-9]+(?:\.[0-9]+)?)\b")
+    sims_re = re.compile(r"--simulations\s+(\d+)\b")
+    file_re = re.compile(r"\bamm-match\s+run\s+([A-Za-z0-9_./-]+\.sol)\b")
+
+    observations: Dict[str, Dict] = {}
+
+    for jsonl_path in sorted(state_dir.glob("iteration_*_codex.jsonl")):
+        try:
+            with jsonl_path.open("r", encoding="utf-8", errors="ignore") as f:
+                for lineno, line in enumerate(f, start=1):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        obj = json.loads(line)
+                    except Exception:
+                        continue
+
+                    if obj.get("type") != "item.completed":
+                        continue
+                    item = obj.get("item")
+                    if not isinstance(item, dict) or item.get("type") != "command_execution":
+                        continue
+
+                    cmd = str(item.get("command") or "")
+                    out = str(item.get("aggregated_output") or "")
+
+                    if "amm-match" not in cmd or " run " not in cmd:
+                        continue
+
+                    sims = 0
+                    m_sims = sims_re.search(cmd)
+                    if m_sims:
+                        try:
+                            sims = int(m_sims.group(1))
+                        except ValueError:
+                            sims = 0
+
+                    direct_file = None
+                    m_file = file_re.search(cmd)
+                    if m_file:
+                        direct_file = m_file.group(1)
+
+                    # Case 1: loop output with explicit "---- file.sol" markers
+                    current_file = None
+                    any_markers = False
+                    for ln in out.splitlines():
+                        if ln.startswith("---- "):
+                            any_markers = True
+                            parts = ln.split()
+                            current_file = parts[1] if len(parts) >= 2 else None
+                            continue
+                        m_edge = edge_re.search(ln)
+                        if not m_edge:
+                            continue
+                        try:
+                            edge = float(m_edge.group(1))
+                        except ValueError:
+                            continue
+                        if current_file and current_file.endswith(".sol"):
+                            stem = Path(current_file).stem
+                            prev = observations.get(stem)
+                            rec = {
+                                "edge": edge,
+                                "simulations": sims,
+                                "file": current_file,
+                                "source": f"{jsonl_path.name}:{lineno}",
+                            }
+                            if prev is None or sims > int(prev.get("simulations", 0)) or (
+                                sims == int(prev.get("simulations", 0)) and edge > float(prev.get("edge", 0))
+                            ):
+                                observations[stem] = rec
+
+                    if any_markers:
+                        continue
+
+                    # Case 2: single-run output inferred from the command's file argument
+                    if not direct_file:
+                        continue
+
+                    m_edge = edge_re.search(out)
+                    if not m_edge:
+                        continue
+                    try:
+                        edge = float(m_edge.group(1))
+                    except ValueError:
+                        continue
+
+                    stem = Path(direct_file).stem
+                    prev = observations.get(stem)
+                    rec = {
+                        "edge": edge,
+                        "simulations": sims,
+                        "file": direct_file,
+                        "source": f"{jsonl_path.name}:{lineno}",
+                    }
+                    if prev is None or sims > int(prev.get("simulations", 0)) or (
+                        sims == int(prev.get("simulations", 0)) and edge > float(prev.get("edge", 0))
+                    ):
+                        observations[stem] = rec
+        except Exception as e:
+            log(f"Failed to parse {jsonl_path}: {e}", "WARN")
+
+    return observations
+
 
 def analyze_strategies(state_dir: Path, min_edge: float = 350.0) -> Dict:
     """
@@ -206,13 +329,15 @@ def analyze_strategies(state_dir: Path, min_edge: float = 350.0) -> Dict:
         Dict with mechanism catalog, performance correlations, and synthesis candidates.
     """
     strategies_log = load_strategies_log(state_dir)
+    edge_observations = load_codex_edge_observations(state_dir)
 
     # Also scan for .sol files directly
     generated_dir = state_dir.parent / "generated"
     root_dir = state_dir.parent.parent.parent  # Go up to project root
 
     sol_files = list(generated_dir.glob("*.sol")) if generated_dir.exists() else []
-    sol_files.extend(list(root_dir.glob("arb_*.sol")))
+    # Include repo-root candidate strategies (not just arb_*).
+    sol_files.extend(list(root_dir.glob("*.sol")))
 
     analysis = {
         "timestamp": datetime.now().isoformat(),
@@ -283,7 +408,11 @@ def analyze_strategies(state_dir: Path, min_edge: float = 350.0) -> Dict:
                 mech_names.add(mech_name)
                 analysis["mechanism_catalog"][mech_name].append({
                     "strategy": sol_path.stem,
-                    "edge": None,  # Unknown edge
+                    "edge": (
+                        edge_observations.get(sol_path.stem, {}).get("edge")
+                        if sol_path.stem in edge_observations
+                        else None
+                    ),
                     "params": mech["params"],
                 })
 

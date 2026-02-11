@@ -1,7 +1,14 @@
 {
-  "true_best_edge": 516.16,
-  "true_best_strategy": "Unknown",
+  "true_best_edge": 505.61,
+  "true_best_strategy": "ArbOracleDualRegime_Tight30_Buf4",
   "all_tested_strategies": [
+    {
+      "name": "ArbOracleDualRegime_Tight30_Buf4",
+      "edge": 518.99,
+      "sims": 100,
+      "iteration": 9,
+      "file": "arb_oracle_dualregime_tight30_buf4.sol"
+    },
     {
       "name": "ArbOracleDualRegimeExact",
       "edge": 510.98,
@@ -134,13 +141,6 @@
       "sims": 200,
       "iteration": 8,
       "file": "arb_pulse_twophase.sol"
-    },
-    {
-      "name": "DualRegimePulseCandidate",
-      "edge": 417.92,
-      "sims": 200,
-      "iteration": 9,
-      "file": "dualregime_pulse_candidate.sol"
     }
   ],
   "lessons_learned": [
@@ -204,20 +204,20 @@
       "iteration": 8
     },
     {
-      "from": "ArbOracleDualRegimeExact",
-      "from_edge": 508.74,
+      "from": "ArbOracleDualRegime_Tight30_Buf4",
+      "from_edge": 518.99,
       "to": "Const_30bps",
       "to_edge": 346.57,
       "iteration": 9
     },
     {
-      "from": "ArbOracleDualRegimeExact",
-      "from_edge": 508.74,
+      "from": "ArbOracleDualRegime_Tight30_Buf4",
+      "from_edge": 518.99,
       "to": "Const_10bps",
       "to_edge": 163.68,
       "iteration": 9
     }
   ],
-  "harvested_at": "2026-02-10T23:59:50.142543Z",
-  "total_results_harvested": 104
+  "harvested_at": "2026-02-11T00:14:12.192820Z",
+  "total_results_harvested": 107
 }

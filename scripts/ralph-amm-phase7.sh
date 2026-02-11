@@ -377,8 +377,23 @@ invoke_codex_generator() {
         "$VENV_PY" scripts/amm-phase7-codex-parser.py "$codex_jsonl_path" > "$knowledge_path" 2>/dev/null || true
 
         if [[ ! -s "$codex_last_msg_path" ]]; then
-            log "ERROR" "Codex completed but last-message file is missing/empty: $codex_last_msg_path"
-            return 1
+            log "WARN" "Codex completed but last-message file is missing/empty: $codex_last_msg_path"
+            log "INFO" "  Attempting checkpoint recovery..."
+
+            local last_checkpoint
+            last_checkpoint=$(ls -1t "$checkpoint_dir"/checkpoint_*.json 2>/dev/null | head -1 || true)
+
+            if [[ -n "$last_checkpoint" && -s "$last_checkpoint" && -x scripts/amm-phase7-recover-from-checkpoint.py ]]; then
+                "$VENV_PY" scripts/amm-phase7-recover-from-checkpoint.py \
+                    --checkpoint "$last_checkpoint" \
+                    --output "$codex_last_msg_path" \
+                    --strategy-dir "." 2>/dev/null || true
+            fi
+
+            if [[ ! -s "$codex_last_msg_path" ]]; then
+                log "ERROR" "Last-message recovery failed: $codex_last_msg_path"
+                return 1
+            fi
         fi
         log "INFO" "Codex invocation successful (last message captured)"
         return 0

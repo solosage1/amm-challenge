@@ -1547,5 +1547,47 @@
       "stage": "codex",
       "message": "codex failed"
     }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-11T00:14:02.036482Z",
+    "final_edge": 518.99,
+    "strategy_name": "ArbOracleDualRegime_Tight30_Buf4",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-11T00:14:02.036494Z",
+    "final_edge": 511.68,
+    "strategy_name": "ArbOracleDualRegime_Tight30_Buf4",
+    "source": "codex_session",
+    "n_simulations": 300,
+    "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-11T00:14:02.036507Z",
+    "final_edge": 505.61,
+    "strategy_name": "ArbOracleDualRegime_Tight30_Buf4",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol"
+    }
   }
 ]
