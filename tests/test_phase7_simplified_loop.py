@@ -1,6 +1,7 @@
 import argparse
 import json
 import importlib.util
+import random
 import subprocess
 import sys
 from pathlib import Path
@@ -46,6 +47,8 @@ def setup_state(tmp_path: Path) -> Path:
 
 def test_run_once_dry_run_creates_stats_and_log(tmp_path: Path) -> None:
     state = setup_state(tmp_path)
+    champion_before = (state / ".best_strategy.sol").read_text()
+    edge_before = (state / ".best_edge.txt").read_text().strip()
     run_script(
         SIMPLIFIED,
         [
@@ -67,7 +70,13 @@ def test_run_once_dry_run_creates_stats_and_log(tmp_path: Path) -> None:
     entry = json.loads(logs[0])
     assert entry["status"] == "complete"
     assert entry["valid"] is True
+    assert entry["promoted"] is False
+    assert entry["promotable"] is False
+    assert entry["authoritative_eval"] is False
+    assert entry["evaluation_source"] == "dry_run"
     assert "mechanism" in entry
+    assert (state / ".best_strategy.sol").read_text() == champion_before
+    assert (state / ".best_edge.txt").read_text().strip() == edge_before
 
 
 def test_invalid_candidate_increments_invalid_count(tmp_path: Path) -> None:
@@ -619,7 +628,7 @@ def test_evaluate_with_pipeline_accepts_screen_only_results(tmp_path: Path) -> N
 
     original_run = module.subprocess.run
     try:
-        def fake_run(cmd, capture_output=False, text=False):  # type: ignore[no-untyped-def]
+        def fake_run(cmd, capture_output=False, text=False, cwd=None, env=None, **kwargs):  # type: ignore[no-untyped-def]
             output_path = Path(cmd[cmd.index("--output") + 1])
             seed_offset = int(cmd[cmd.index("--seed-offset") + 1])
             payload = {
@@ -727,3 +736,213 @@ def test_bootstrap_champion_selects_best_candidate(tmp_path: Path) -> None:
     assert "return \"B\";" in (state / ".best_strategy.sol").read_text()
     assert (state / ".best_edge.txt").read_text().strip() == "520.00"
     assert (state / "mechanism_stats.json").exists()
+
+
+def test_bootstrap_champion_rejects_non_promotable_candidates(tmp_path: Path) -> None:
+    module = load_simplified_module()
+    state = tmp_path / "state"
+    state.mkdir(parents=True, exist_ok=True)
+    original_code = "pragma solidity ^0.8.24; contract Strategy { function getName() external pure returns (string memory) { return \"old\"; } }"
+    (state / ".best_strategy.sol").write_text(original_code)
+    (state / ".best_edge.txt").write_text("500.00\n")
+
+    definitions_path = tmp_path / "definitions.json"
+    definitions_payload = {
+        "schema_version": "1.0",
+        "champion_file": ".best_strategy.sol",
+        "champion_edge": 500.0,
+        "mechanisms": {
+            "fair_price_and_arb": {
+                "current_implementation": "",
+                "code_location": "x",
+                "allowed_overlap_with": [],
+                "anchors": [{"start": "pragma", "end": "contract Strategy"}],
+                "parameters": {},
+                "modification_directions": [],
+            }
+        },
+    }
+    definitions_path.write_text(json.dumps(definitions_payload))
+    install_definitions = tmp_path / "definitions_bandshield.json"
+    install_definitions.write_text(json.dumps(definitions_payload))
+
+    source_a = tmp_path / "a.sol"
+    source_b = tmp_path / "b.sol"
+    source_a.write_text("pragma solidity ^0.8.24; contract Strategy { function getName() external pure returns (string memory) { return \"A\"; } }")
+    source_b.write_text("pragma solidity ^0.8.24; contract Strategy { function getName() external pure returns (string memory) { return \"B\"; } }")
+
+    original_eval = module.evaluate_with_pipeline
+    try:
+        def fake_eval(candidate_path, result_path, python_exe, screen_sims, seed_offsets, promotion_std_penalty):  # type: ignore[no-untyped-def]
+            return {
+                "primary_edge": 530.0,
+                "promotion_edge": None,
+                "promotable": False,
+                "screen_only": True,
+                "seed_count": 3,
+                "seed_offsets": [0, 10000, 20000],
+                "seed_results": [],
+            }, None
+
+        module.evaluate_with_pipeline = fake_eval
+        args = argparse.Namespace(
+            state_dir=str(state),
+            definitions=str(definitions_path),
+            from_paths=[str(source_a), str(source_b)],
+            install_definitions=str(install_definitions),
+            python_exe="python3",
+            screen_sims=200,
+            seed_offsets="0,10000,20000",
+            promotion_std_penalty=0.5,
+            exploration_c=0.5,
+            improvement_threshold=0.02,
+            max_retries_on_invalid=2,
+            wildcard_frequency=10,
+        )
+        code = module.bootstrap_champion(args)
+    finally:
+        module.evaluate_with_pipeline = original_eval
+
+    assert code == 1
+    assert (state / ".best_strategy.sol").read_text() == original_code
+    assert (state / ".best_edge.txt").read_text().strip() == "500.00"
+    assert not (state / "mechanism_stats.json").exists()
+
+
+def test_update_rollback_status_filters_non_authoritative_with_legacy_fallback() -> None:
+    module = load_simplified_module()
+
+    def make_stats() -> dict:
+        return {
+            "champion": {"edge": 500.0, "baseline_edge": 500.0},
+            "global": {"rollback_triggered": False, "rollback_reason": None},
+        }
+
+    reason = module.update_rollback_status(
+        make_stats(),
+        [{"valid": True, "delta": -2.0, "authoritative_eval": False}],
+        consecutive_invalid_threshold=3,
+        severe_regression_threshold=-0.5,
+        cumulative_loss_threshold=-0.5,
+        cumulative_window=1,
+    )
+    assert reason is None
+
+    reason = module.update_rollback_status(
+        make_stats(),
+        [{"valid": True, "delta": -2.0, "screen_only_eval": True}],
+        consecutive_invalid_threshold=3,
+        severe_regression_threshold=-0.5,
+        cumulative_loss_threshold=-0.5,
+        cumulative_window=1,
+    )
+    assert reason is None
+
+    reason = module.update_rollback_status(
+        make_stats(),
+        [{"valid": True, "delta": -2.0, "promotable": True}],
+        consecutive_invalid_threshold=3,
+        severe_regression_threshold=-0.5,
+        cumulative_loss_threshold=-0.5,
+        cumulative_window=1,
+    )
+    assert reason in {"severe_regression<=-0.5", "cumulative_loss_1<=-0.5"}
+
+
+def test_select_mechanism_uses_authoritative_tries_not_legacy_tries() -> None:
+    module = load_simplified_module()
+    mechanisms = {
+        "mech_a": {
+            "tries": 100,
+            "tries_authoritative": 1,
+            "total_uplift": 1.0,
+        },
+        "mech_b": {
+            "tries": 1,
+            "tries_authoritative": 1,
+            "total_uplift": 0.95,
+        },
+    }
+    chosen = module.select_mechanism(mechanisms, exploration_c=0.5, rng=random.Random(7))
+    assert chosen == "mech_a"
+
+
+def test_extract_iteration_policy_metadata_parses_comment() -> None:
+    module = load_simplified_module()
+    source = """
+// ITERATION_POLICY {"decision":"pivot","confidence":0.82,"ceiling_probability":0.91,"ev_next_5":0.01,"best_delta_seen":0.04,"reason":"local ceiling likely","next_mechanism":"toxicity_and_activity"}
+pragma solidity ^0.8.24;
+contract Strategy {}
+"""
+    parsed = module.extract_iteration_policy_metadata(source)
+    assert parsed is not None
+    assert parsed["decision"] == "pivot"
+    assert parsed["confidence"] == 0.82
+    assert parsed["ceiling_probability"] == 0.91
+    assert parsed["next_mechanism"] == "toxicity_and_activity"
+
+
+def test_apply_iteration_policy_decision_sets_cooldown() -> None:
+    module = load_simplified_module()
+    stats = module.default_mechanism_stats()
+    module.apply_iteration_policy_decision(
+        mechanism_stats=stats,
+        policy_metadata={"decision": "ceiling_reached", "confidence": 0.9, "reason": "plateau"},
+        iteration=12,
+        cooldown_span=6,
+        min_confidence=0.7,
+    )
+    assert stats["cooldown_until_iter"] == 18
+    assert stats["last_policy_decision"] == "ceiling_reached"
+    assert stats["last_policy_confidence"] == 0.9
+
+
+def test_select_mechanism_respects_cooldown_when_possible() -> None:
+    module = load_simplified_module()
+    mechanisms = {
+        "mech_a": {
+            "tries": 1,
+            "tries_authoritative": 1,
+            "total_uplift": 1.0,
+            "cooldown_until_iter": 12,
+        },
+        "mech_b": {
+            "tries": 1,
+            "tries_authoritative": 1,
+            "total_uplift": 0.5,
+            "cooldown_until_iter": 0,
+        },
+    }
+    chosen = module.select_mechanism(
+        mechanisms=mechanisms,
+        exploration_c=0.5,
+        rng=random.Random(7),
+        current_iteration=10,
+    )
+    assert chosen == "mech_b"
+
+
+def test_timeout_recovery_extracts_valid_code(tmp_path: Path) -> None:
+    """Test that timeout recovery extracts code from last_message.md when available."""
+    module = load_simplified_module()
+
+    # Simulate the scenario: last_message.md exists with valid Solidity
+    last_msg_path = tmp_path / "test.codex.last_message.md"
+    valid_code = """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+contract Strategy {}
+"""
+    last_msg_path.write_text(valid_code)
+
+    # Test extract_solidity_from_response directly (used by generate_candidate_with_llm)
+    extracted = module.extract_solidity_from_response(valid_code)
+    assert extracted is not None
+    assert "pragma solidity" in extracted
+    assert "contract Strategy" in extracted
+
+
+def test_severe_regression_gate_constant_exists() -> None:
+    """Test that DEFAULT_SEVERE_REGRESSION_GATE constant is defined."""
+    module = load_simplified_module()
+    assert hasattr(module, "DEFAULT_SEVERE_REGRESSION_GATE")
+    assert module.DEFAULT_SEVERE_REGRESSION_GATE == -5.0

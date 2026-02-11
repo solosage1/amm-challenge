@@ -53,6 +53,12 @@ htmlcov/
 # =============================================================================
 # ALL STRATEGIES (Competitive Advantage - DO NOT COMMIT)
 # =============================================================================
+# All ralph-amm files (approaches, state, prompts, research)
+.ralph-amm/
+
+# Scripts (competitive approaches)
+scripts/
+
 # Main strategy file
 contracts/src/Strategy.sol
 
@@ -127,6 +133,9 @@ interval_*.sol
 arb_*.sol
 phase7_iter*_candidate.sol
 _tmp_*.txt
+
+# Evaluation/test files (temporary, regenerable)
+_eval_*.sol
 
 # Batch-generated experimental variants (regenerable)
 # Versioned variants (*_v1.sol through *_v10.sol etc)
