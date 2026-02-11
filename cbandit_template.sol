@@ -267,9 +267,8 @@ contract Strategy is AMMStrategyBase {
             if (n == 0) n = 1;
 
             uint256 meanMilli = (a * 1_000_000) / n;
-            uint256 rootN = sqrt(n * 1_000_000);
-            if (rootN == 0) rootN = 1;
-            uint256 bonusMilli = (EXPLORE_MILLI * 1_000) / rootN;
+            // Cheaper than sqrt-based UCB and avoids runtime gas blowups.
+            uint256 bonusMilli = EXPLORE_MILLI / (n + 2);
 
             uint256 score = meanMilli + bonusMilli + _armBias(ctx, arm);
             if (ctx == prevCtx && arm == prevArm) {

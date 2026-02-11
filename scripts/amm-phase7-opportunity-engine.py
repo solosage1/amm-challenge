@@ -53,6 +53,12 @@ DEFAULT_GATES_FALLBACK_POLL_SECONDS = 0.25
 DEFAULT_SCORE_NOVELTY_WEIGHT = 0.55
 DEFAULT_SCORE_BREAKTHROUGH_WEIGHT = 0.60
 DEFAULT_SCORE_UNTRIED_BONUS = 4.0
+DEFAULT_EWMA_ALPHA = 0.30
+DEFAULT_EWMA_PENALTY_THRESHOLD = -0.20
+DEFAULT_EWMA_PENALTY_MAX = 2.0
+DEFAULT_CONFORMANCE_WEIGHT_MATCH = 1.0
+DEFAULT_CONFORMANCE_WEIGHT_PARTIAL = 0.25
+DEFAULT_CONFORMANCE_WEIGHT_MISMATCH = 0.10
 
 FAMILY_CLASS_BY_ID = {
     "adaptive_undercut_search": "undercut_sweep",
@@ -174,6 +180,21 @@ def safe_float(value: Any) -> Optional[float]:
 
 def clamp(v: float, low: float = 0.0, high: float = 10.0) -> float:
     return max(low, min(high, v))
+
+
+def resolve_conformance_weight(
+    *,
+    planned_vs_actual_match: bool,
+    subfamily_confidence: str,
+    weight_match: float,
+    weight_partial: float,
+    weight_mismatch: float,
+) -> float:
+    if planned_vs_actual_match:
+        return max(0.0, float(weight_match))
+    if subfamily_confidence in {"inferred_only", "planned"}:
+        return max(0.0, float(weight_partial))
+    return max(0.0, float(weight_mismatch))
 
 
 def family_class(opportunity_id: str) -> str:
@@ -541,6 +562,8 @@ class Candidate:
     base_weighted_score: float = 0.0
     score_bonus: float = 0.0
     untried_family: bool = False
+    ewma_delta: Optional[float] = None
+    ewma_penalty: float = 0.0
 
 
 def weighted_score(uplift: float, confidence: float, time_to_signal: float, complexity: float, overfit_risk: float) -> float:
@@ -708,6 +731,8 @@ def build_candidates(
     score_novelty_weight: float,
     score_breakthrough_weight: float,
     score_untried_bonus: float,
+    ewma_penalty_threshold: float,
+    ewma_penalty_max: float,
 ) -> List[Candidate]:
     p = safe_float(signals.get("plateau_strength")) or 0.0
     b = safe_float(signals.get("brittleness_strength")) or 0.0
@@ -946,6 +971,16 @@ def build_candidates(
             BREAKTHROUGH_PRIOR_BY_FAMILY_CLASS.get(c.family_class, 5.0)
             + (0.4 if c.untried_family else 0.0)
         )
+        c.ewma_delta = safe_float(prior.get("ewma_delta")) if isinstance(prior, dict) else None
+        c.ewma_penalty = 0.0
+        if c.ewma_delta is not None and c.ewma_delta < float(ewma_penalty_threshold):
+            depth = min(1.0, abs(c.ewma_delta - float(ewma_penalty_threshold)) / 0.8)
+            c.ewma_penalty = max(0.0, min(float(ewma_penalty_max), depth * float(ewma_penalty_max)))
+            c.confidence = clamp(c.confidence - 0.5 * c.ewma_penalty)
+            c.rationale = (
+                f"{c.rationale} [ewma penalty: {c.ewma_penalty:.2f}; "
+                f"ewma_delta={c.ewma_delta:.3f} < {float(ewma_penalty_threshold):.3f}]"
+            )
         cooldown_until = int(prior.get("cooldown_until_iteration", 0) or 0)
         if cooldown_until >= int(iteration):
             remaining = cooldown_until - int(iteration) + 1
@@ -984,7 +1019,7 @@ def build_candidates(
         if c.untried_family:
             c.score_bonus += float(score_untried_bonus)
             c.rationale = f"{c.rationale} [untried family bonus applied]"
-        c.weighted_score = round(c.base_weighted_score + c.score_bonus, 3)
+        c.weighted_score = round(max(0.0, c.base_weighted_score + c.score_bonus - c.ewma_penalty), 3)
 
     cands.sort(key=lambda x: (-x.weighted_score, x.id))
     return cands
@@ -1454,6 +1489,8 @@ def evaluate(args: argparse.Namespace) -> int:
         score_novelty_weight=float(args.score_novelty_weight),
         score_breakthrough_weight=float(args.score_breakthrough_weight),
         score_untried_bonus=float(args.score_untried_bonus),
+        ewma_penalty_threshold=float(args.ewma_penalty_threshold),
+        ewma_penalty_max=float(args.ewma_penalty_max),
     )
     top = candidates[0]
     selection_reason = "top_weighted_score"
@@ -1608,6 +1645,8 @@ def evaluate(args: argparse.Namespace) -> int:
                 "untried_family": bool(c.untried_family),
                 "base_weighted_score": c.base_weighted_score,
                 "score_bonus": round(c.score_bonus, 3),
+                "ewma_delta": round(c.ewma_delta, 6) if c.ewma_delta is not None else None,
+                "ewma_penalty": round(c.ewma_penalty, 6),
                 "weighted_score": c.weighted_score,
             }
             for c in candidates
@@ -1650,6 +1689,8 @@ def evaluate(args: argparse.Namespace) -> int:
             "untried_family": bool(top.untried_family),
             "base_weighted_score": top.base_weighted_score,
             "score_bonus": round(top.score_bonus, 3),
+            "ewma_delta": round(top.ewma_delta, 6) if top.ewma_delta is not None else None,
+            "ewma_penalty": round(top.ewma_penalty, 6),
             "weighted_score": top.weighted_score,
         },
         "policy": {
@@ -1673,6 +1714,8 @@ def evaluate(args: argparse.Namespace) -> int:
             "score_novelty_weight": float(args.score_novelty_weight),
             "score_breakthrough_weight": float(args.score_breakthrough_weight),
             "score_untried_bonus": float(args.score_untried_bonus),
+            "ewma_penalty_threshold": float(args.ewma_penalty_threshold),
+            "ewma_penalty_max": float(args.ewma_penalty_max),
             "subfamily_override": str(args.subfamily_override or ""),
             "breakthrough_tie_epsilon": float(args.breakthrough_tie_epsilon),
             "severe_subfamily_failure_threshold": int(args.severe_subfamily_failure_threshold),
@@ -1920,6 +1963,19 @@ def record(args: argparse.Namespace) -> int:
         subfamily_confidence = "inferred_override"
     elif inferred_subfamily:
         subfamily_confidence = "inferred_only"
+    planned_vs_actual_match = bool(selected_subfamily and final_subfamily and selected_subfamily == final_subfamily)
+    conformance_weight = resolve_conformance_weight(
+        planned_vs_actual_match=planned_vs_actual_match,
+        subfamily_confidence=subfamily_confidence,
+        weight_match=float(args.conformance_weight_match),
+        weight_partial=float(args.conformance_weight_partial),
+        weight_mismatch=float(args.conformance_weight_mismatch),
+    )
+    conformance_required = 1.0
+    conformance_matched = float(conformance_weight)
+    conformance_score = float(conformance_weight)
+    conformance_missing = [] if planned_vs_actual_match else ["subfamily_mismatch"]
+    effective_delta = (float(delta) * float(conformance_weight)) if delta is not None else None
 
     history_path = state_dir / ".opportunity_history.json"
     history = load_json(history_path, [])
@@ -1951,6 +2007,13 @@ def record(args: argparse.Namespace) -> int:
         "no_uplift": no_uplift,
         "validated": validated,
         "severe_failure": severe_failure,
+        "planned_vs_actual_match": planned_vs_actual_match,
+        "conformance_weight": conformance_weight,
+        "conformance_score": conformance_score,
+        "conformance_required": conformance_required,
+        "conformance_matched": conformance_matched,
+        "conformance_missing": conformance_missing,
+        "effective_delta": effective_delta,
     }
     priors_path = state_dir / ".opportunity_priors.json"
     priors = load_json(priors_path, {})
@@ -1971,10 +2034,14 @@ def record(args: argparse.Namespace) -> int:
                 "non_uplift_streak": 0,
                 "no_uplift_outcomes": 0,
                 "last_uplift_iteration": None,
+                "ewma_delta": None,
+                "ewma_count": 0,
                 "subfamilies": {},
             },
         )
         bucket["attempts"] = int(bucket.get("attempts", 0) or 0) + 1
+        bucket.setdefault("ewma_delta", None)
+        bucket.setdefault("ewma_count", 0)
         sub_key = entry.get("final_subfamily") or entry.get("selected_subfamily") or default_subfamily_for_opportunity(opp)
         if not isinstance(sub_key, str) or not sub_key:
             sub_key = default_subfamily_for_opportunity(opp)
@@ -1997,6 +2064,8 @@ def record(args: argparse.Namespace) -> int:
                 "last_uplift_iteration": None,
                 "last_attempt_iteration": None,
                 "breakthrough_probe_hits": 0,
+                "ewma_delta": None,
+                "ewma_count": 0,
             },
         )
         if not isinstance(sub_bucket, dict):
@@ -2014,11 +2083,38 @@ def record(args: argparse.Namespace) -> int:
         sub_bucket.setdefault("last_uplift_iteration", None)
         sub_bucket.setdefault("last_attempt_iteration", None)
         sub_bucket.setdefault("breakthrough_probe_hits", 0)
+        sub_bucket.setdefault("ewma_delta", None)
+        sub_bucket.setdefault("ewma_count", 0)
 
         prior_attempts = int(sub_bucket.get("attempts", 0) or 0)
         sub_bucket["attempts"] = prior_attempts + 1
         sub_bucket["last_attempt_iteration"] = int(args.iteration)
         bucket["last_selected_subfamily"] = sub_key
+        entry["actual_subfamily_prior_updated"] = True
+        planned_updated = bool(
+            (not selected_subfamily)
+            or (selected_subfamily == sub_key)
+            or planned_vs_actual_match
+        )
+        entry["planned_subfamily_prior_updated"] = planned_updated
+        if not planned_updated:
+            entry["planned_subfamily_not_updated_reason"] = "mismatch_actual_subfamily_only"
+
+        alpha = max(0.0, min(1.0, float(args.ewma_alpha)))
+        if effective_delta is not None:
+            bucket_prev_ewma = safe_float(bucket.get("ewma_delta"))
+            if bucket_prev_ewma is None:
+                bucket["ewma_delta"] = float(effective_delta)
+            else:
+                bucket["ewma_delta"] = alpha * float(effective_delta) + (1.0 - alpha) * bucket_prev_ewma
+            bucket["ewma_count"] = int(bucket.get("ewma_count", 0) or 0) + 1
+
+            sub_prev_ewma = safe_float(sub_bucket.get("ewma_delta"))
+            if sub_prev_ewma is None:
+                sub_bucket["ewma_delta"] = float(effective_delta)
+            else:
+                sub_bucket["ewma_delta"] = alpha * float(effective_delta) + (1.0 - alpha) * sub_prev_ewma
+            sub_bucket["ewma_count"] = int(sub_bucket.get("ewma_count", 0) or 0) + 1
 
         breakthrough_probe = False
         breakthrough_reason = None
@@ -2175,6 +2271,8 @@ def main() -> int:
     p_eval.add_argument("--score-novelty-weight", type=float, default=DEFAULT_SCORE_NOVELTY_WEIGHT)
     p_eval.add_argument("--score-breakthrough-weight", type=float, default=DEFAULT_SCORE_BREAKTHROUGH_WEIGHT)
     p_eval.add_argument("--score-untried-bonus", type=float, default=DEFAULT_SCORE_UNTRIED_BONUS)
+    p_eval.add_argument("--ewma-penalty-threshold", type=float, default=DEFAULT_EWMA_PENALTY_THRESHOLD)
+    p_eval.add_argument("--ewma-penalty-max", type=float, default=DEFAULT_EWMA_PENALTY_MAX)
     p_eval.add_argument("--subfamily-override", default="")
     p_eval.add_argument("--breakthrough-tie-epsilon", type=float, default=DEFAULT_BREAKTHROUGH_TIE_EPSILON)
     p_eval.add_argument(
@@ -2209,6 +2307,10 @@ def main() -> int:
     )
     p_rec.add_argument("--gates-fallback-polls", type=int, default=DEFAULT_GATES_FALLBACK_POLLS)
     p_rec.add_argument("--gates-fallback-poll-seconds", type=float, default=DEFAULT_GATES_FALLBACK_POLL_SECONDS)
+    p_rec.add_argument("--ewma-alpha", type=float, default=DEFAULT_EWMA_ALPHA)
+    p_rec.add_argument("--conformance-weight-match", type=float, default=DEFAULT_CONFORMANCE_WEIGHT_MATCH)
+    p_rec.add_argument("--conformance-weight-partial", type=float, default=DEFAULT_CONFORMANCE_WEIGHT_PARTIAL)
+    p_rec.add_argument("--conformance-weight-mismatch", type=float, default=DEFAULT_CONFORMANCE_WEIGHT_MISMATCH)
     p_rec.set_defaults(use_gate_family_fallback=True)
     p_rec.add_argument("--use-gate-family-fallback", dest="use_gate_family_fallback", action="store_true")
     p_rec.add_argument("--disable-gate-family-fallback", dest="use_gate_family_fallback", action="store_false")

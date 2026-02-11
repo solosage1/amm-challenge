@@ -6010,5 +6010,251 @@
     "artifact_paths": {
       "strategy_file": "canary_mode3_v1.sol"
     }
+  },
+  {
+    "iteration": 40,
+    "status": "harvested",
+    "timestamp": "2026-02-11T11:42:49.037452Z",
+    "final_edge": 508.67,
+    "strategy_name": "mode2_v1",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "mode2_v1.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "mode2_v1.sol"
+    }
+  },
+  {
+    "iteration": 40,
+    "status": "harvested",
+    "timestamp": "2026-02-11T11:42:49.037514Z",
+    "final_edge": 534.72,
+    "strategy_name": "cb3_v1",
+    "source": "codex_session",
+    "n_simulations": 10,
+    "strategy_file": "cb3_v1.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "cb3_v1.sol"
+    }
+  },
+  {
+    "iteration": 40,
+    "status": "harvested",
+    "timestamp": "2026-02-11T11:42:49.037524Z",
+    "final_edge": 520.42,
+    "strategy_name": "cb3_v1",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "cb3_v1.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "cb3_v1.sol"
+    }
+  },
+  {
+    "iteration": 40,
+    "status": "harvested",
+    "timestamp": "2026-02-11T11:42:49.037532Z",
+    "final_edge": 507.42,
+    "strategy_name": "cb3_v1",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "cb3_v1.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "cb3_v1.sol"
+    }
+  },
+  {
+    "iteration": 41,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T11:57:49.867911Z",
+    "final_edge": null,
+    "final_score": null,
+    "effective_score": null,
+    "score_source": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_41_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_41_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_41_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_41_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_41.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_41.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_41_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 42,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T12:07:46.363453Z",
+    "final_edge": null,
+    "final_score": null,
+    "effective_score": null,
+    "score_source": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_42_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_42_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_42_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_42_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_42.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_42.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_42_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 42,
+    "status": "harvested",
+    "timestamp": "2026-02-11T12:07:46.519407Z",
+    "final_edge": 508.67,
+    "strategy_name": "mode2_v1",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "mode2_v1.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "mode2_v1.sol"
+    }
+  },
+  {
+    "iteration": 43,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T12:33:42.909541Z",
+    "final_edge": null,
+    "final_score": null,
+    "effective_score": null,
+    "score_source": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_43_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_43_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_43_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_43_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_43.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_43.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_43_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 43,
+    "status": "harvested",
+    "timestamp": "2026-02-11T12:33:43.069992Z",
+    "final_edge": 508.67,
+    "strategy_name": "mode2_v1",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "mode2_v1.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "mode2_v1.sol"
+    }
+  },
+  {
+    "iteration": 43,
+    "status": "harvested",
+    "timestamp": "2026-02-11T12:33:43.070000Z",
+    "final_edge": 508.8,
+    "strategy_name": "iskewx_v11",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "iskewx_v11.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "iskewx_v11.sol"
+    }
+  },
+  {
+    "iteration": 44,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T12:43:22.727303Z",
+    "final_edge": null,
+    "final_score": null,
+    "effective_score": null,
+    "score_source": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_44_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_44_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_44_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_44_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_44.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_44.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_44_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
   }
 ]

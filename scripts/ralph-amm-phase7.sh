@@ -65,11 +65,17 @@ AUTO_OPP_EXPLORE_MIN_REPEAT_SHARE="${AUTO_OPP_EXPLORE_MIN_REPEAT_SHARE:-0.60}"
 AUTO_OPP_EXPLORE_REPEAT_CLASSES="${AUTO_OPP_EXPLORE_REPEAT_CLASSES:-undercut_sweep,gating_adaptive}"
 AUTO_OPP_EXPLORE_TARGET_CLASSES="${AUTO_OPP_EXPLORE_TARGET_CLASSES:-adversarial_robustness,asymmetric,bayesian_optimization,gamma_formula,microstructure,online_learning,optimal_control}"
 AUTO_OPP_EXPLORE_UNTRIED_FLOOR_ENABLED="${AUTO_OPP_EXPLORE_UNTRIED_FLOOR_ENABLED:-1}"
-AUTO_OPP_EXPLORE_STALL_LOOKBACK="${AUTO_OPP_EXPLORE_STALL_LOOKBACK:-10}"
-AUTO_OPP_EXPLORE_STALL_MIN_NO_UPLIFT="${AUTO_OPP_EXPLORE_STALL_MIN_NO_UPLIFT:-7}"
+AUTO_OPP_EXPLORE_STALL_LOOKBACK="${AUTO_OPP_EXPLORE_STALL_LOOKBACK:-8}"
+AUTO_OPP_EXPLORE_STALL_MIN_NO_UPLIFT="${AUTO_OPP_EXPLORE_STALL_MIN_NO_UPLIFT:-6}"
 AUTO_OPP_SCORE_NOVELTY_WEIGHT="${AUTO_OPP_SCORE_NOVELTY_WEIGHT:-0.55}"
 AUTO_OPP_SCORE_BREAKTHROUGH_WEIGHT="${AUTO_OPP_SCORE_BREAKTHROUGH_WEIGHT:-0.60}"
 AUTO_OPP_SCORE_UNTRIED_BONUS="${AUTO_OPP_SCORE_UNTRIED_BONUS:-4.0}"
+AUTO_OPP_EWMA_ALPHA="${AUTO_OPP_EWMA_ALPHA:-0.30}"
+AUTO_OPP_EWMA_PENALTY_THRESHOLD="${AUTO_OPP_EWMA_PENALTY_THRESHOLD:--0.20}"
+AUTO_OPP_EWMA_PENALTY_MAX="${AUTO_OPP_EWMA_PENALTY_MAX:-2.0}"
+AUTO_OPP_CONFORMANCE_WEIGHT_MATCH="${AUTO_OPP_CONFORMANCE_WEIGHT_MATCH:-1.0}"
+AUTO_OPP_CONFORMANCE_WEIGHT_PARTIAL="${AUTO_OPP_CONFORMANCE_WEIGHT_PARTIAL:-0.25}"
+AUTO_OPP_CONFORMANCE_WEIGHT_MISMATCH="${AUTO_OPP_CONFORMANCE_WEIGHT_MISMATCH:-0.10}"
 AUTO_OPP_RECORD_GATES_FALLBACK="${AUTO_OPP_RECORD_GATES_FALLBACK:-1}"
 AUTO_OPP_SUBFAMILY_OVERRIDE="${AUTO_OPP_SUBFAMILY_OVERRIDE:-}"
 AUTO_OPP_BREAKTHROUGH_TIE_EPSILON="${AUTO_OPP_BREAKTHROUGH_TIE_EPSILON:-0.10}"
@@ -345,6 +351,8 @@ run_opportunity_evaluate() {
         --score-novelty-weight "$AUTO_OPP_SCORE_NOVELTY_WEIGHT" \
         --score-breakthrough-weight "$AUTO_OPP_SCORE_BREAKTHROUGH_WEIGHT" \
         --score-untried-bonus "$AUTO_OPP_SCORE_UNTRIED_BONUS" \
+        --ewma-penalty-threshold "$AUTO_OPP_EWMA_PENALTY_THRESHOLD" \
+        --ewma-penalty-max "$AUTO_OPP_EWMA_PENALTY_MAX" \
         --breakthrough-tie-epsilon "$AUTO_OPP_BREAKTHROUGH_TIE_EPSILON" \
         --severe-subfamily-failure-threshold "$AUTO_OPP_SEVERE_SUBFAMILY_FAILURE_THRESHOLD" \
         --ranking-out "$ranking_path" \
@@ -409,6 +417,10 @@ record_opportunity_outcome() {
         --severe-subfamily-failure-threshold "$AUTO_OPP_SEVERE_SUBFAMILY_FAILURE_THRESHOLD" \
         --gates-fallback-polls "$AUTO_OPP_GATES_FALLBACK_POLLS" \
         --gates-fallback-poll-seconds "$AUTO_OPP_GATES_FALLBACK_POLL_SECONDS" \
+        --ewma-alpha "$AUTO_OPP_EWMA_ALPHA" \
+        --conformance-weight-match "$AUTO_OPP_CONFORMANCE_WEIGHT_MATCH" \
+        --conformance-weight-partial "$AUTO_OPP_CONFORMANCE_WEIGHT_PARTIAL" \
+        --conformance-weight-mismatch "$AUTO_OPP_CONFORMANCE_WEIGHT_MISMATCH" \
         --gates-state-file "$STATE_EXEC_GATES" \
         ${gates_fallback_arg[@]+"${gates_fallback_arg[@]}"} >/dev/null 2>&1 || true
 }
@@ -1655,11 +1667,17 @@ Options:
     --auto-opp-explore-target-classes CSV   Target classes for forced exploration (default: adversarial_robustness,asymmetric,bayesian_optimization,gamma_formula,microstructure,online_learning,optimal_control)
     --auto-opp-explore-untried-floor-enable  Force untried family when stalled (default: enabled)
     --auto-opp-explore-untried-floor-disable Disable forced untried-family floor
-    --auto-opp-explore-stall-lookback N      Lookback for global stall detection (default: 10)
-    --auto-opp-explore-stall-min-no-uplift N Min no-uplift outcomes in stall window to force untried family (default: 7)
+    --auto-opp-explore-stall-lookback N      Lookback for global stall detection (default: 8)
+    --auto-opp-explore-stall-min-no-uplift N Min no-uplift outcomes in stall window to force untried family (default: 6)
     --auto-opp-score-novelty-weight N        Score weight for family novelty bonus (default: 0.55)
     --auto-opp-score-breakthrough-weight N   Score weight for breakthrough-likelihood bonus (default: 0.60)
     --auto-opp-score-untried-bonus N         Additive score bonus for untried families (default: 4.0)
+    --auto-opp-ewma-alpha N                  EWMA alpha for delta tracking in priors (default: 0.30)
+    --auto-opp-ewma-penalty-threshold N      EWMA delta threshold for score penalty (default: -0.20)
+    --auto-opp-ewma-penalty-max N            Maximum EWMA score penalty (default: 2.0)
+    --auto-opp-conformance-weight-match N    Conformance weight for matched execution (default: 1.0)
+    --auto-opp-conformance-weight-partial N  Conformance weight for partial/inferred execution (default: 0.25)
+    --auto-opp-conformance-weight-mismatch N Conformance weight for mismatched execution (default: 0.10)
     --auto-opp-subfamily-override SPEC  Optional override (subfamily or opp:subfamily, comma-separated)
     --auto-opp-breakthrough-eps N     Tie epsilon for novel-subfamily breakthrough probes (default: 0.10)
     --auto-opp-severe-subfamily-threshold N  Family-level severe-failure trigger threshold (default: 2)
@@ -1828,6 +1846,30 @@ while [[ $# -gt 0 ]]; do
             AUTO_OPP_SCORE_UNTRIED_BONUS="$2"
             shift 2
             ;;
+        --auto-opp-ewma-alpha)
+            AUTO_OPP_EWMA_ALPHA="$2"
+            shift 2
+            ;;
+        --auto-opp-ewma-penalty-threshold)
+            AUTO_OPP_EWMA_PENALTY_THRESHOLD="$2"
+            shift 2
+            ;;
+        --auto-opp-ewma-penalty-max)
+            AUTO_OPP_EWMA_PENALTY_MAX="$2"
+            shift 2
+            ;;
+        --auto-opp-conformance-weight-match)
+            AUTO_OPP_CONFORMANCE_WEIGHT_MATCH="$2"
+            shift 2
+            ;;
+        --auto-opp-conformance-weight-partial)
+            AUTO_OPP_CONFORMANCE_WEIGHT_PARTIAL="$2"
+            shift 2
+            ;;
+        --auto-opp-conformance-weight-mismatch)
+            AUTO_OPP_CONFORMANCE_WEIGHT_MISMATCH="$2"
+            shift 2
+            ;;
         --auto-opp-subfamily-override)
             AUTO_OPP_SUBFAMILY_OVERRIDE="$2"
             shift 2
@@ -1937,7 +1979,7 @@ log "INFO" "Knowledge guardrail config: epsilon=$KNOWLEDGE_GUARDRAIL_EPSILON"
 log "INFO" "Autonomous opportunity config: enabled=$AUTO_OPP_ENGINE_ENABLED shadow_iters=$AUTO_OPP_SHADOW_ITERS canary_pct=$AUTO_OPP_CANARY_PCT window_size=$AUTO_OPP_WINDOW_SIZE"
 log "INFO" "Autonomous opportunity policy: no_uplift_eps=$AUTO_OPP_NO_UPLIFT_EPSILON streak=$AUTO_OPP_NO_UPLIFT_STREAK_THRESHOLD cooldown_iters=$AUTO_OPP_NO_UPLIFT_COOLDOWN_ITERS novelty_lookback=$AUTO_OPP_NOVELTY_LOOKBACK novelty_penalty=$AUTO_OPP_NOVELTY_PENALTY"
 log "INFO" "Autonomous exploration policy: enabled=$AUTO_OPP_EXPLORE_QUOTA_ENABLED lookback=$AUTO_OPP_EXPLORE_LOOKBACK min_no_uplift=$AUTO_OPP_EXPLORE_MIN_NO_UPLIFT min_repeat_share=$AUTO_OPP_EXPLORE_MIN_REPEAT_SHARE repeat_classes=$AUTO_OPP_EXPLORE_REPEAT_CLASSES target_classes=$AUTO_OPP_EXPLORE_TARGET_CLASSES untried_floor=$AUTO_OPP_EXPLORE_UNTRIED_FLOOR_ENABLED stall_lookback=$AUTO_OPP_EXPLORE_STALL_LOOKBACK stall_min_no_uplift=$AUTO_OPP_EXPLORE_STALL_MIN_NO_UPLIFT"
-log "INFO" "Autonomous scoring boosts: novelty_weight=$AUTO_OPP_SCORE_NOVELTY_WEIGHT breakthrough_weight=$AUTO_OPP_SCORE_BREAKTHROUGH_WEIGHT untried_bonus=$AUTO_OPP_SCORE_UNTRIED_BONUS subfamily_override=${AUTO_OPP_SUBFAMILY_OVERRIDE:-<none>}"
+log "INFO" "Autonomous scoring boosts: novelty_weight=$AUTO_OPP_SCORE_NOVELTY_WEIGHT breakthrough_weight=$AUTO_OPP_SCORE_BREAKTHROUGH_WEIGHT untried_bonus=$AUTO_OPP_SCORE_UNTRIED_BONUS ewma_alpha=$AUTO_OPP_EWMA_ALPHA ewma_threshold=$AUTO_OPP_EWMA_PENALTY_THRESHOLD ewma_penalty_max=$AUTO_OPP_EWMA_PENALTY_MAX conf_weights=($AUTO_OPP_CONFORMANCE_WEIGHT_MATCH,$AUTO_OPP_CONFORMANCE_WEIGHT_PARTIAL,$AUTO_OPP_CONFORMANCE_WEIGHT_MISMATCH) subfamily_override=${AUTO_OPP_SUBFAMILY_OVERRIDE:-<none>}"
 log "INFO" "Autonomous innovation safeguards: breakthrough_eps=$AUTO_OPP_BREAKTHROUGH_TIE_EPSILON severe_subfamily_threshold=$AUTO_OPP_SEVERE_SUBFAMILY_FAILURE_THRESHOLD gates_fallback=$AUTO_OPP_RECORD_GATES_FALLBACK polls=$AUTO_OPP_GATES_FALLBACK_POLLS poll_seconds=$AUTO_OPP_GATES_FALLBACK_POLL_SECONDS"
 log "INFO" "Execution gate config: enabled=$EXEC_GATES_ENABLED early_enabled=$GATE_EARLY_ABORT_ENABLED early_n=$GATE_EARLY_MIN_RESULTS early_delta=$GATE_EARLY_DELTA batch_delta=$GATE_BATCH_FAIL_DELTA confirmations=$GATE_PROMOTION_CONFIRMATIONS min_sims=$GATE_MIN_SIMS poll_s=$GATE_MONITOR_POLL_SECONDS"
 if [[ "${CODEX_DISABLE_SHELL_TOOL}" == "1" ]]; then

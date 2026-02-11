@@ -1,13 +1,20 @@
 {
-  "true_best_edge": 508.67,
-  "true_best_strategy": "mode2_v1",
+  "true_best_edge": 508.8,
+  "true_best_strategy": "iskewx_v11",
   "has_1000_results": true,
-  "state_best_edge_benchmark": 508.67,
-  "true_best_edge_1000": 508.67,
-  "true_best_strategy_1000": "mode2_v1",
-  "true_best_edge_any": 534.49,
-  "true_best_strategy_any": "adu_p1",
+  "state_best_edge_benchmark": 508.8,
+  "true_best_edge_1000": 508.8,
+  "true_best_strategy_1000": "iskewx_v11",
+  "true_best_edge_any": 534.72,
+  "true_best_strategy_any": "cb3_v1",
   "all_tested_strategies": [
+    {
+      "name": "iskewx_v11",
+      "edge": 508.8,
+      "sims": 1000,
+      "iteration": 43,
+      "file": "iskewx_v11.sol"
+    },
     {
       "name": "mode2_v1",
       "edge": 508.67,
@@ -35,6 +42,27 @@
       "sims": 1000,
       "iteration": 36,
       "file": "egrd_v1.sol"
+    },
+    {
+      "name": "mode2_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 40,
+      "file": "mode2_v1.sol"
+    },
+    {
+      "name": "mode2_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 42,
+      "file": "mode2_v1.sol"
+    },
+    {
+      "name": "mode2_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 43,
+      "file": "mode2_v1.sol"
     },
     {
       "name": "emax_v4",
@@ -119,38 +147,17 @@
       "sims": 1000,
       "iteration": 3,
       "file": "tmp_u11_band25_init27.sol"
-    },
-    {
-      "name": "Tmp_U11_Band25",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 6,
-      "file": "tmp_u11_band25.sol"
-    },
-    {
-      "name": "Tmp_U11_Band25",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 7,
-      "file": "tmp_u11_band25.sol"
-    },
-    {
-      "name": "Tmp_U10_Band25",
-      "edge": 508.23,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_band25.sol"
-    },
-    {
-      "name": "Tmp_U12_Band25",
-      "edge": 508.23,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u12_band25.sol"
     }
   ],
   "all_tested_strategies_1000": [
     {
+      "name": "iskewx_v11",
+      "edge": 508.8,
+      "sims": 1000,
+      "iteration": 43,
+      "file": "iskewx_v11.sol"
+    },
+    {
       "name": "mode2_v1",
       "edge": 508.67,
       "sims": 1000,
@@ -177,6 +184,27 @@
       "sims": 1000,
       "iteration": 36,
       "file": "egrd_v1.sol"
+    },
+    {
+      "name": "mode2_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 40,
+      "file": "mode2_v1.sol"
+    },
+    {
+      "name": "mode2_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 42,
+      "file": "mode2_v1.sol"
+    },
+    {
+      "name": "mode2_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 43,
+      "file": "mode2_v1.sol"
     },
     {
       "name": "emax_v4",
@@ -261,38 +289,10 @@
       "sims": 1000,
       "iteration": 3,
       "file": "tmp_u11_band25_init27.sol"
-    },
-    {
-      "name": "Tmp_U11_Band25",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 6,
-      "file": "tmp_u11_band25.sol"
-    },
-    {
-      "name": "Tmp_U11_Band25",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 7,
-      "file": "tmp_u11_band25.sol"
-    },
-    {
-      "name": "Tmp_U10_Band25",
-      "edge": 508.23,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_band25.sol"
-    },
-    {
-      "name": "Tmp_U12_Band25",
-      "edge": 508.23,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u12_band25.sol"
     }
   ],
   "lessons_learned": [],
   "regressions": [],
-  "harvested_at": "2026-02-11T11:17:44.844864Z",
-  "total_results_harvested": 91
+  "harvested_at": "2026-02-11T12:43:22.892499Z",
+  "total_results_harvested": 98
 }

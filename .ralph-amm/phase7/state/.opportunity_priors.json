@@ -4,10 +4,10 @@
     "failures": 1,
     "neutral": 2,
     "severe_failures": 1,
-    "cooldown_until_iteration": 43,
+    "cooldown_until_iteration": 47,
     "cooldown_reason": "harvested family failure: heavy/light 3-state regime machine underperformed champion by >0.8",
     "status": "FAILED",
-    "failed_at_iteration": 39
+    "failed_at_iteration": 43
   },
   "adaptive_undercut_search": {
     "successes": 0,
@@ -138,5 +138,137 @@
       }
     },
     "last_selected_subfamily": "parameter_beam"
+  },
+  "contextual_bandit_policy_search": {
+    "attempts": 1,
+    "successes": 0,
+    "failures": 1,
+    "neutral": 0,
+    "severe_failures": 0,
+    "cooldown_until_iteration": 0,
+    "cooldown_reason": null,
+    "non_uplift_streak": 0,
+    "no_uplift_outcomes": 0,
+    "last_uplift_iteration": null,
+    "ewma_delta": 0.0,
+    "ewma_count": 1,
+    "subfamilies": {
+      "thompson_quote_arms": {
+        "attempts": 1,
+        "successes": 0,
+        "failures": 1,
+        "neutral": 0,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 0,
+        "cooldown_reason": null,
+        "non_uplift_streak": 0,
+        "no_uplift_outcomes": 0,
+        "last_uplift_iteration": null,
+        "last_attempt_iteration": 41,
+        "breakthrough_probe_hits": 1,
+        "ewma_delta": 0.0,
+        "ewma_count": 1
+      }
+    },
+    "last_selected_subfamily": "thompson_quote_arms"
+  },
+  "distributionally_robust_control_search": {
+    "attempts": 1,
+    "successes": 0,
+    "failures": 1,
+    "neutral": 0,
+    "severe_failures": 0,
+    "cooldown_until_iteration": 0,
+    "cooldown_reason": null,
+    "non_uplift_streak": 0,
+    "no_uplift_outcomes": 0,
+    "last_uplift_iteration": null,
+    "ewma_delta": -0.040000000000020464,
+    "ewma_count": 1,
+    "subfamilies": {
+      "ambiguity_set_penalty": {
+        "attempts": 1,
+        "successes": 0,
+        "failures": 1,
+        "neutral": 0,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 0,
+        "cooldown_reason": null,
+        "non_uplift_streak": 0,
+        "no_uplift_outcomes": 0,
+        "last_uplift_iteration": null,
+        "last_attempt_iteration": 42,
+        "breakthrough_probe_hits": 1,
+        "ewma_delta": -0.040000000000020464,
+        "ewma_count": 1
+      }
+    },
+    "last_selected_subfamily": "ambiguity_set_penalty"
+  },
+  "inventory_hjb_control_search": {
+    "attempts": 1,
+    "successes": 0,
+    "failures": 1,
+    "neutral": 0,
+    "severe_failures": 0,
+    "cooldown_until_iteration": 0,
+    "cooldown_reason": null,
+    "non_uplift_streak": 0,
+    "no_uplift_outcomes": 0,
+    "last_uplift_iteration": null,
+    "ewma_delta": 0.12999999999999545,
+    "ewma_count": 1,
+    "subfamilies": {
+      "hjb_discrete_inventory": {
+        "attempts": 1,
+        "successes": 0,
+        "failures": 1,
+        "neutral": 0,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 0,
+        "cooldown_reason": null,
+        "non_uplift_streak": 0,
+        "no_uplift_outcomes": 0,
+        "last_uplift_iteration": 43,
+        "last_attempt_iteration": 43,
+        "breakthrough_probe_hits": 1,
+        "ewma_delta": 0.12999999999999545,
+        "ewma_count": 1
+      }
+    },
+    "last_selected_subfamily": "hjb_discrete_inventory"
+  },
+  "queue_microprice_impact_search": {
+    "attempts": 1,
+    "successes": 0,
+    "failures": 1,
+    "neutral": 0,
+    "severe_failures": 0,
+    "cooldown_until_iteration": 0,
+    "cooldown_reason": null,
+    "non_uplift_streak": 0,
+    "no_uplift_outcomes": 0,
+    "last_uplift_iteration": null,
+    "ewma_delta": 0.006000000000000227,
+    "ewma_count": 1,
+    "subfamilies": {
+      "microprice_imbalance": {
+        "attempts": 1,
+        "successes": 0,
+        "failures": 1,
+        "neutral": 0,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 0,
+        "cooldown_reason": null,
+        "non_uplift_streak": 0,
+        "no_uplift_outcomes": 0,
+        "last_uplift_iteration": 44,
+        "last_attempt_iteration": 44,
+        "breakthrough_probe_hits": 1,
+        "ewma_delta": 0.006000000000000227,
+        "ewma_count": 1
+      }
+    },
+    "last_selected_subfamily": "microprice_imbalance"
   }
 }
