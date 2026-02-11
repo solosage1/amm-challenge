@@ -259,20 +259,33 @@ def build_knowledge_context(
 ) -> dict:
     """Build the knowledge context for prompt builder."""
 
-    # Find true best - simply the highest edge (all tests now use 1000 sims)
-    if results:
-        best_result = max(results, key=lambda r: r.edge)
-        true_best_edge = max(best_result.edge, current_best_edge)
-        true_best_strategy = best_result.strategy_name if best_result.edge >= current_best_edge else "Unknown"
+    # Canonical best metric is 1000-sim edge.
+    results_1000 = [r for r in results if r.n_simulations >= 1000]
+    has_1000_results = bool(results_1000)
+    if has_1000_results:
+        best_result_1000 = max(results_1000, key=lambda r: r.edge)
+        true_best_edge_1000 = float(best_result_1000.edge)
+        true_best_strategy_1000 = best_result_1000.strategy_name
     else:
-        true_best_edge = current_best_edge
-        true_best_strategy = "Unknown"
+        # Explicit no-data state for canonical 1000-sim ranking.
+        true_best_edge_1000 = 0.0
+        true_best_strategy_1000 = "Unknown"
+
+    # Track best-any as a secondary signal for exploration prioritization.
+    if results:
+        best_result_any = max(results, key=lambda r: r.edge)
+        true_best_edge_any = float(best_result_any.edge)
+        true_best_strategy_any = best_result_any.strategy_name
+    else:
+        true_best_edge_any = 0.0
+        true_best_strategy_any = "Unknown"
 
     # Build strategies table
     all_tested = []
     seen_strategies = set()
-    for r in sorted(results, key=lambda x: x.edge, reverse=True):
-        key = (r.strategy_name, r.iteration)
+    # Prioritize higher simulation counts before edge so authoritative results appear first.
+    for r in sorted(results, key=lambda x: (x.n_simulations, x.edge), reverse=True):
+        key = (r.strategy_name, r.iteration, r.n_simulations)
         if key in seen_strategies:
             continue
         seen_strategies.add(key)
@@ -283,6 +296,10 @@ def build_knowledge_context(
             'iteration': r.iteration,
             'file': r.strategy_file
         })
+
+    all_tested_1000 = [
+        s for s in all_tested if int(s.get("sims", 0) or 0) >= 1000
+    ]
 
     # Detect regressions
     regressions = detect_regressions(results)
@@ -298,9 +315,18 @@ def build_knowledge_context(
     ]
 
     return {
-        'true_best_edge': true_best_edge,
-        'true_best_strategy': true_best_strategy,
+        # Backward-compatible canonical aliases:
+        'true_best_edge': true_best_edge_1000,
+        'true_best_strategy': true_best_strategy_1000,
+        # Explicit metrics:
+        'has_1000_results': has_1000_results,
+        'state_best_edge_benchmark': float(current_best_edge),
+        'true_best_edge_1000': true_best_edge_1000,
+        'true_best_strategy_1000': true_best_strategy_1000,
+        'true_best_edge_any': true_best_edge_any,
+        'true_best_strategy_any': true_best_strategy_any,
         'all_tested_strategies': all_tested[:20],  # Limit size
+        'all_tested_strategies_1000': all_tested_1000[:20],
         'lessons_learned': lessons,
         'regressions': regression_list,
         'harvested_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
@@ -316,7 +342,7 @@ def update_state_files(
 ) -> None:
     """Update state files with harvested data."""
 
-    # Update .best_edge.txt if we found a better edge
+    # Update .best_edge.txt from canonical 1000-sim best only (sync exact value).
     best_edge_path = state_dir / '.best_edge.txt'
     current_best = 0.0
     if best_edge_path.exists():
@@ -325,12 +351,17 @@ def update_state_files(
         except ValueError:
             pass
 
-    if knowledge_context['true_best_edge'] > current_best:
-        if dry_run:
-            print(f"[DRY RUN] Would update .best_edge.txt: {current_best} -> {knowledge_context['true_best_edge']}")
-        else:
-            best_edge_path.write_text(f"{knowledge_context['true_best_edge']:.2f}\n")
-            print(f"Updated .best_edge.txt: {current_best} -> {knowledge_context['true_best_edge']}")
+    canonical_best = float(knowledge_context.get('true_best_edge_1000', knowledge_context.get('true_best_edge', 0.0)))
+    has_1000_results = bool(knowledge_context.get('has_1000_results', False))
+    if has_1000_results:
+        if abs(canonical_best - current_best) > 1e-9:
+            if dry_run:
+                print(f"[DRY RUN] Would sync .best_edge.txt to canonical 1000-sim value: {current_best} -> {canonical_best}")
+            else:
+                best_edge_path.write_text(f"{canonical_best:.2f}\n")
+                print(f"Synced .best_edge.txt to canonical 1000-sim value: {current_best} -> {canonical_best}")
+    else:
+        print("No >=1000-sim results harvested; leaving .best_edge.txt unchanged")
 
     # Write knowledge context
     knowledge_path = state_dir / '.knowledge_context.json'
@@ -355,13 +386,18 @@ def update_state_files(
     existing_keys = set()
     for entry in existing_log:
         if entry.get('source') == 'codex_session':
-            key = (entry.get('iteration'), entry.get('strategy_name'), entry.get('final_edge'))
+            key = (
+                entry.get('iteration'),
+                entry.get('strategy_name'),
+                entry.get('final_edge'),
+                entry.get('n_simulations'),
+            )
             existing_keys.add(key)
 
     # Add new results
     new_entries = []
     for r in results:
-        key = (r.iteration, r.strategy_name, r.edge)
+        key = (r.iteration, r.strategy_name, r.edge, r.n_simulations)
         if key in existing_keys:
             continue
 
@@ -441,7 +477,14 @@ def main():
     # Build knowledge context
     knowledge_context = build_knowledge_context(results, lessons, current_best)
 
-    print(f"\nTrue best edge: {knowledge_context['true_best_edge']:.2f} ({knowledge_context['true_best_strategy']})")
+    print(
+        f"\nTrue best edge (1000 sims): {knowledge_context['true_best_edge_1000']:.2f} "
+        f"({knowledge_context['true_best_strategy_1000']})"
+    )
+    print(
+        f"Best edge (any sims): {knowledge_context['true_best_edge_any']:.2f} "
+        f"({knowledge_context['true_best_strategy_any']})"
+    )
 
     if knowledge_context['regressions']:
         print("\nRegressions detected:")

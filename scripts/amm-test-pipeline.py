@@ -369,7 +369,18 @@ def run_regime_tests(strategy: EVMStrategyAdapter, n_sims: int = 100) -> dict:
     return result
 
 
-def run_pipeline(strategy_path: str, output_path: str, seed_offset: int = 0) -> int:
+def run_pipeline(
+    strategy_path: str,
+    output_path: str,
+    seed_offset: int = 0,
+    *,
+    screen_sims: int = 200,
+    screen_min_edge: float = 375.0,
+    predicted_drop: float = -8.2,
+    predicted_min_edge: float = 500.0,
+    robust_free_spread: float = 50.0,
+    robust_penalty_per_point: float = 0.02,
+) -> int:
     """
     Run complete testing pipeline.
 
@@ -377,6 +388,12 @@ def run_pipeline(strategy_path: str, output_path: str, seed_offset: int = 0) -> 
         strategy_path: Path to strategy .sol file
         output_path: Path to write JSON results
         seed_offset: Seed offset for robustness testing (default: 0)
+        screen_sims: Number of simulations for first-stage screening
+        screen_min_edge: Minimum screening edge to consider 1000-sim test
+        predicted_drop: Expected 200->1000 edge delta (typically negative)
+        predicted_min_edge: Minimum predicted 1000-sim edge to run baseline
+        robust_free_spread: Corner-spread ignored before robustness penalty applies
+        robust_penalty_per_point: Penalty per point of spread above robust_free_spread
 
     Returns:
         Exit code (0 = success, 1+ = failure at various stages)
@@ -385,6 +402,14 @@ def run_pipeline(strategy_path: str, output_path: str, seed_offset: int = 0) -> 
         "success": False,
         "strategy_path": strategy_path,
         "timestamp": datetime.now().isoformat(),
+        "config": {
+            "screen_sims": screen_sims,
+            "screen_min_edge": screen_min_edge,
+            "predicted_drop": predicted_drop,
+            "predicted_min_edge": predicted_min_edge,
+            "robust_free_spread": robust_free_spread,
+            "robust_penalty_per_point": robust_penalty_per_point,
+        },
         "validation": {},
         "compilation": {},
         "testing": {},
@@ -484,29 +509,50 @@ def run_pipeline(strategy_path: str, output_path: str, seed_offset: int = 0) -> 
         Path(output_path).write_text(json.dumps(result, indent=2))
         return 4
 
-    # Step 5: Dev test (100 sims)
-    log("Step 5: Running 100 simulations (development test)...")
+    # Step 5: Screening test (default 200 sims)
+    log(f"Step 5: Running {screen_sims} simulations (screening test)...")
     try:
         sim_start = time.time()
-        edge_100 = run_simulations(strategy, n_sims=100, seed_offset=seed_offset)
+        edge_screen = run_simulations(strategy, n_sims=screen_sims, seed_offset=seed_offset)
         sim_duration = time.time() - sim_start
 
-        result["testing"]["edge_100"] = edge_100
-        result["runtime"]["dev_100_seconds"] = sim_duration
-        log(f"  ✓ Dev test complete: Edge {edge_100:.2f} ({sim_duration:.1f}s)")
+        # Keep edge_100 key for backward compatibility with existing consumers.
+        result["testing"]["edge_100"] = edge_screen
+        result["testing"]["edge_screen"] = edge_screen
+        result["testing"]["screen_sims"] = screen_sims
+        result["runtime"]["screen_seconds"] = sim_duration
+        log(f"  ✓ Screening test complete: Edge {edge_screen:.2f} ({sim_duration:.1f}s)")
 
     except Exception as e:
-        log(f"  ✗ Dev test failed: {e}", "ERROR")
-        result["testing"]["dev_error"] = str(e)
+        log(f"  ✗ Screening test failed: {e}", "ERROR")
+        result["testing"]["screen_error"] = str(e)
         result["runtime"]["total_seconds"] = time.time() - start_time
         Path(output_path).write_text(json.dumps(result, indent=2))
         return 5
 
-    # Step 6: Baseline (1000 sims) - conditional with enhanced metrics
+    # Step 6: Baseline (1000 sims) - staged gate from screening edge
     # IMPORTANT: Only 1000-sim results are authoritative for final_edge
-    threshold = 375.0
-    if edge_100 > threshold:
-        log(f"Step 6: Running 1000 simulations (edge {edge_100:.2f} > {threshold} threshold)...")
+    predicted_edge_1000 = edge_screen + predicted_drop
+    gate_pass_screen = edge_screen >= screen_min_edge
+    gate_pass_predicted = predicted_edge_1000 >= predicted_min_edge
+    run_1000 = gate_pass_screen and gate_pass_predicted
+
+    result["testing"]["predicted_edge_1000"] = predicted_edge_1000
+    result["testing"]["gate"] = {
+        "screen_sims": screen_sims,
+        "screen_min_edge": screen_min_edge,
+        "predicted_drop": predicted_drop,
+        "predicted_min_edge": predicted_min_edge,
+        "screen_pass": gate_pass_screen,
+        "predicted_pass": gate_pass_predicted,
+        "run_1000": run_1000,
+    }
+
+    if run_1000:
+        log(
+            f"Step 6: Running 1000 simulations "
+            f"(screen={edge_screen:.2f}, predicted_1000={predicted_edge_1000:.2f})..."
+        )
         try:
             sim_start = time.time()
             edge_1000, match_result = run_simulations(strategy, n_sims=1000, store_results=True, seed_offset=seed_offset)
@@ -540,15 +586,44 @@ def run_pipeline(strategy_path: str, output_path: str, seed_offset: int = 0) -> 
                 log(f"  ⚠ Regime tests failed (non-fatal): {e}", "WARN")
                 result["testing"]["regime_tests_error"] = str(e)
 
+            # Robustness-adjusted score for selection/champion logic.
+            spread = None
+            try:
+                spread = float(result.get("testing", {}).get("regime_tests", {}).get("spread"))
+            except Exception:
+                spread = None
+
+            penalty = 0.0
+            if spread is not None:
+                penalty = max(0.0, spread - robust_free_spread) * robust_penalty_per_point
+            final_score = edge_1000 - penalty
+            result["final_score"] = final_score
+            result["testing"]["robustness"] = {
+                "base_edge_1000": edge_1000,
+                "spread": spread,
+                "free_spread": robust_free_spread,
+                "penalty_per_point": robust_penalty_per_point,
+                "penalty": penalty,
+                "final_score": final_score,
+            }
+
         except Exception as e:
             log(f"  ✗ Baseline test failed: {e}", "ERROR")
             result["testing"]["baseline_error"] = str(e)
             # Don't set final_edge from 100-sim fallback - leave it unset
             result["final_edge"] = None
+            result["final_score"] = None
     else:
-        log(f"  → Skipping 1000 sims (edge {edge_100:.2f} < {threshold} threshold)")
+        reasons = []
+        if not gate_pass_screen:
+            reasons.append(f"screen {edge_screen:.2f} < {screen_min_edge:.2f}")
+        if not gate_pass_predicted:
+            reasons.append(f"predicted_1000 {predicted_edge_1000:.2f} < {predicted_min_edge:.2f}")
+        reason_text = "; ".join(reasons) if reasons else "gate not satisfied"
+        log(f"  → Skipping 1000 sims ({reason_text})")
         # Don't set final_edge - only 1000-sim results are authoritative
         result["final_edge"] = None
+        result["final_score"] = None
 
     # Add git SHA and hypothesis ID
     result["git_sha"] = get_git_sha()
@@ -571,7 +646,11 @@ def run_pipeline(strategy_path: str, output_path: str, seed_offset: int = 0) -> 
 
     log("=" * 60)
     log(f"Pipeline Complete: {strategy_name}")
-    log(f"  Final Edge: {result['final_edge']:.2f}")
+    final_edge = result.get("final_edge")
+    final_score = result.get("final_score")
+    log(f"  Final Edge: {final_edge:.2f}" if final_edge is not None else "  Final Edge: N/A (no 1000-sim run)")
+    if final_score is not None:
+        log(f"  Final Score (robust): {final_score:.2f}")
     log(f"  Total Runtime: {result['runtime']['total_seconds']:.1f}s")
     log("=" * 60)
 
@@ -611,6 +690,42 @@ Examples:
         default=0,
         help="Seed offset for robustness testing (default: 0 for standard seeds)",
     )
+    parser.add_argument(
+        "--screen-sims",
+        type=int,
+        default=200,
+        help="Simulations for first-stage screening (default: 200)",
+    )
+    parser.add_argument(
+        "--screen-min-edge",
+        type=float,
+        default=375.0,
+        help="Minimum screening edge to consider 1000-sim run (default: 375.0)",
+    )
+    parser.add_argument(
+        "--predicted-drop",
+        type=float,
+        default=-8.2,
+        help="Expected edge delta from screen_sims to 1000 sims (default: -8.2)",
+    )
+    parser.add_argument(
+        "--predicted-min-edge",
+        type=float,
+        default=500.0,
+        help="Minimum predicted 1000-sim edge to run baseline (default: 500.0)",
+    )
+    parser.add_argument(
+        "--robust-free-spread",
+        type=float,
+        default=50.0,
+        help="Corner spread with zero robustness penalty (default: 50.0)",
+    )
+    parser.add_argument(
+        "--robust-penalty-per-point",
+        type=float,
+        default=0.02,
+        help="Penalty per spread point above free spread (default: 0.02)",
+    )
 
     args = parser.parse_args()
 
@@ -623,7 +738,17 @@ Examples:
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
 
     # Run pipeline
-    exit_code = run_pipeline(args.strategy, args.output, seed_offset=args.seed_offset)
+    exit_code = run_pipeline(
+        args.strategy,
+        args.output,
+        seed_offset=args.seed_offset,
+        screen_sims=args.screen_sims,
+        screen_min_edge=args.screen_min_edge,
+        predicted_drop=args.predicted_drop,
+        predicted_min_edge=args.predicted_min_edge,
+        robust_free_spread=args.robust_free_spread,
+        robust_penalty_per_point=args.robust_penalty_per_point,
+    )
     sys.exit(exit_code)
 
 

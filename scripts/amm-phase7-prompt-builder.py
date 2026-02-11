@@ -23,7 +23,7 @@ PROMPT_TEMPLATE = """# AMM Strategy Generation
 
 Generate a Solidity AMM fee strategy to maximize Edge against a 30bps fixed-fee competitor.
 
-**Target**: Edge > {current_target} | **Best**: {best_edge:.2f} | **Iter**: {iteration}
+**Target**: Edge > {current_target} | **Best (1000-sim canonical)**: {best_edge_display} | **Iter**: {iteration}
 
 ## Quick Start
 1. Read `README.md` for simulation mechanics and math
@@ -92,17 +92,27 @@ def load_knowledge_context(state_dir: Path) -> dict:
 
 def load_state(state_dir: Path) -> Dict:
     """Load current Phase 7 state"""
+    best_edge = 0.0
+    best_edge_path = state_dir / '.best_edge.txt'
+    if best_edge_path.exists():
+        try:
+            best_edge = float(best_edge_path.read_text().strip())
+        except ValueError:
+            best_edge = 0.0
+
     state = {
-        'best_edge': float((state_dir / '.best_edge.txt').read_text().strip()),
+        'best_edge': best_edge,  # Canonical: 1000-sim best edge
+        'best_edge_any': best_edge,
         'iteration': int((state_dir / '.iteration_count.txt').read_text().strip()),
         'start_time': int((state_dir / '.start_timestamp.txt').read_text().strip()),
         'strategies_log': [],
         'knowledge_context': {},
-        'best_edge_sims': None,
+        'best_edge_sims': 1000,
     }
 
     # If the loop is currently failing before it can update .best_edge.txt, allow a
     # human/auxiliary discoveries file to override the displayed best edge in prompts.
+    # Canonical best remains 1000-sim only.
     manual_discoveries = state_dir / "discoveries_iter8_9.md"
     if manual_discoveries.exists():
         try:
@@ -122,15 +132,13 @@ def load_state(state_dir: Path) -> Dict:
                     sims = 0
                 candidates.append((sims, edge))
 
-            if candidates:
-                max_sims = max(s for s, _ in candidates)
-                best_edge_at_max_sims = max(e for s, e in candidates if s == max_sims)
-                current_sims = int(state["best_edge_sims"] or 0)
-                if (max_sims > current_sims) or (
-                    max_sims == current_sims and best_edge_at_max_sims > state["best_edge"]
-                ):
+            candidates_1000 = [(s, e) for s, e in candidates if s >= 1000]
+            if candidates_1000:
+                max_sims = max(s for s, _ in candidates_1000)
+                best_edge_at_max_sims = max(e for s, e in candidates_1000 if s == max_sims)
+                if best_edge_at_max_sims > state["best_edge"]:
                     state["best_edge"] = best_edge_at_max_sims
-                    state["best_edge_sims"] = max_sims or None
+                    state["best_edge_sims"] = max_sims
         except Exception:
             pass
 
@@ -147,27 +155,19 @@ def load_state(state_dir: Path) -> Dict:
     if knowledge:
         state['knowledge_context'] = knowledge
         try:
-            candidates = []
-            for row in knowledge.get("all_tested_strategies", []) or []:
-                try:
-                    edge = float(row.get("edge", 0))
-                except (TypeError, ValueError):
-                    continue
-                try:
-                    sims = int(row.get("sims", 0))
-                except (TypeError, ValueError):
-                    sims = 0
-                candidates.append((sims, edge))
+            # Prefer explicit 1000-sim canonical fields if present.
+            k_best_1000 = knowledge.get("true_best_edge_1000", None)
+            if k_best_1000 is not None:
+                state["best_edge"] = max(state["best_edge"], float(k_best_1000))
+                state["best_edge_sims"] = 1000
+            elif knowledge.get("true_best_edge", None) is not None:
+                # Backward compatibility with older harvester schema.
+                state["best_edge"] = max(state["best_edge"], float(knowledge["true_best_edge"]))
+                state["best_edge_sims"] = 1000
 
-            if candidates:
-                max_sims = max(s for s, _ in candidates)
-                best_edge_at_max_sims = max(e for s, e in candidates if s == max_sims)
-                current_sims = int(state["best_edge_sims"] or 0)
-                if (max_sims > current_sims) or (
-                    max_sims == current_sims and best_edge_at_max_sims > state["best_edge"]
-                ):
-                    state["best_edge"] = best_edge_at_max_sims
-                    state["best_edge_sims"] = max_sims or None
+            k_best_any = knowledge.get("true_best_edge_any", None)
+            if k_best_any is not None:
+                state["best_edge_any"] = max(state["best_edge_any"], float(k_best_any))
         except Exception:
             pass
 
@@ -240,10 +240,14 @@ def format_knowledge_section(knowledge: dict) -> str:
             sections.append(f"- {lesson}")
         sections.append("")
 
-    # Strategies tested table
-    all_tested = knowledge.get('all_tested_strategies', [])
+    # Strategies tested table (prefer authoritative 1000-sim results)
+    all_tested_1000 = knowledge.get('all_tested_strategies_1000', [])
+    all_tested = all_tested_1000 or knowledge.get('all_tested_strategies', [])
     if all_tested:
-        sections.append("### Strategies Tested (Harvested from Sessions)")
+        title = "### Strategies Tested (1000-Sim Canonical)"
+        if not all_tested_1000:
+            title = "### Strategies Tested (Best Available Sims)"
+        sections.append(title)
         sections.append("")
         sections.append("| Strategy | Edge | Sims | Iter |")
         sections.append("|----------|------|------|------|")
@@ -468,21 +472,52 @@ def format_insights_section(insights: Dict) -> str:
 
 
 def format_recent_results(state: Dict) -> str:
-    """Format last 5 test results for context"""
-    recent = state['strategies_log'][-5:]
+    """Format recent authoritative (1000-sim) results for context."""
+    entries = state.get("strategies_log", [])
+    if not entries:
+        return "**No authoritative 1000-sim results logged yet.**"
+
+    def get_authoritative_edge(entry: Dict):
+        if not isinstance(entry, dict):
+            return (None, None)
+        metrics = entry.get("metrics", {})
+        if isinstance(metrics, dict):
+            edge_1000 = metrics.get("edge_1000", None)
+            if edge_1000 is not None:
+                try:
+                    return (float(edge_1000), 1000)
+                except (TypeError, ValueError):
+                    pass
+        n_sims = entry.get("n_simulations", None)
+        final_edge = entry.get("final_edge", None)
+        try:
+            if n_sims is not None and int(n_sims) >= 1000 and final_edge is not None:
+                return (float(final_edge), int(n_sims))
+        except (TypeError, ValueError):
+            pass
+        return (None, None)
+
+    recent = []
+    for entry in reversed(entries):
+        edge, sims = get_authoritative_edge(entry)
+        if edge is None:
+            continue
+        row = dict(entry)
+        row["_edge"] = edge
+        row["_sims"] = sims
+        recent.append(row)
+        if len(recent) >= 8:
+            break
 
     if not recent:
-        return "**No strategies tested yet.** This is the first iteration."
+        return "**No authoritative 1000-sim results logged yet.**"
 
-    lines = ["**Recent Test Results**:", ""]
+    lines = ["**Recent 1000-Sim Results**:", ""]
     for entry in recent:
         name = entry.get('strategy_name', 'Unknown')
         status = str(entry.get("status") or "unknown")
-        raw_edge = entry.get('final_edge', None)
-        try:
-            edge = float(raw_edge) if raw_edge is not None else None
-        except (TypeError, ValueError):
-            edge = None
+        edge = entry.get("_edge", None)
+        sims = entry.get("_sims", None)
         hyp_ids = entry.get('hypothesis_ids', [])
 
         if isinstance(hyp_ids, list):
@@ -491,6 +526,7 @@ def format_recent_results(state: Dict) -> str:
             hyp_str = 'H-baseline'
 
         edge_str = f"{edge:.2f}" if edge is not None else "N/A"
+        sims_str = str(sims) if sims is not None else "?"
 
         note_parts = []
         if status != "ok":
@@ -505,7 +541,7 @@ def format_recent_results(state: Dict) -> str:
                 note_parts.append(f"msg={msg[:80]}")
         note = f" [{' | '.join(note_parts)}]" if note_parts else ""
 
-        lines.append(f"- {name}: Edge {edge_str}{note} (Hypothesis: {hyp_str})")
+        lines.append(f"- {name}: Edge {edge_str} @ {sims_str} sims{note} (Hypothesis: {hyp_str})")
 
     return '\n'.join(lines)
 
@@ -521,14 +557,38 @@ def build_prompt(
     target_edge: float,
     max_runtime_seconds: int,
 ):
-    """Build reference-based prompt for Codex - points to files instead of embedding."""
+    """Build context-rich prompt for Codex from current loop state."""
     state = load_state(state_dir)
+    insights = load_insights(state_dir)
 
     prompt = PROMPT_TEMPLATE.format(
         current_target=target_edge,
-        best_edge=state['best_edge'],
+        best_edge_display=f"{state['best_edge']:.2f} @ {int(state['best_edge_sims'] or 1000)} sims",
         iteration=iteration,
     )
+
+    sections: List[str] = []
+
+    recent_results = format_recent_results(state)
+    if recent_results:
+        sections.append(recent_results)
+
+    knowledge_section = format_knowledge_section(state.get("knowledge_context", {}))
+    if knowledge_section:
+        sections.append(knowledge_section)
+
+    insight_section = format_insights_section(insights)
+    if insight_section:
+        sections.append(insight_section.strip())
+
+    hypothesis_gaps = select_hypothesis_gaps(state)[:5]
+    if hypothesis_gaps:
+        sections.append(
+            "## Priority Hypothesis Gaps\n\n" + format_hypothesis_gaps(hypothesis_gaps)
+        )
+
+    if sections:
+        prompt += "\n\n---\n\n" + "\n\n".join(sections) + "\n"
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(prompt)

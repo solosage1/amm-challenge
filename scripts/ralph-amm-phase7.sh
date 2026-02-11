@@ -30,14 +30,23 @@ VENV_PY="${VENV_PY:-venv_fresh/bin/python3}"
 AMM_MATCH="${AMM_MATCH:-venv_fresh/bin/amm-match}"
 
 # Codex configuration
-# If CODEX_MODEL is empty, Codex uses its configured default model/provider.
-CODEX_MODEL="${CODEX_MODEL:-}"
+# Use gpt-5.3-codex model
+CODEX_MODEL="${CODEX_MODEL:-gpt-5.3-codex}"
 CODEX_MAX_OUTPUT_TOKENS="${CODEX_MAX_OUTPUT_TOKENS:-8000}"
 CODEX_TIMEOUT_MINUTES="${CODEX_TIMEOUT_MINUTES:-50}"  # Max time per Codex invocation (increased for full write+test cycles)
 CODEX_DISABLE_SHELL_TOOL="${CODEX_DISABLE_SHELL_TOOL:-0}"  # 0=enable shell tools (recommended; avoids "turn.started" stalls)
 
 # Performance targets
 COMPETITIVE_EDGE=527
+
+# Pipeline screening/selection knobs
+PIPE_SCREEN_SIMS="${PIPE_SCREEN_SIMS:-200}"
+PIPE_SCREEN_MIN_EDGE="${PIPE_SCREEN_MIN_EDGE:-375.0}"
+PIPE_PREDICTED_DROP="${PIPE_PREDICTED_DROP:--8.2}"
+PIPE_PREDICTED_MIN_EDGE="${PIPE_PREDICTED_MIN_EDGE:-500.0}"
+ROBUST_FREE_SPREAD="${ROBUST_FREE_SPREAD:-50.0}"
+ROBUST_PENALTY_PER_POINT="${ROBUST_PENALTY_PER_POINT:-0.02}"
+KNOWLEDGE_GUARDRAIL_EPSILON="${KNOWLEDGE_GUARDRAIL_EPSILON:-0.02}"
 
 # Template extraction (reachable) rules
 TEMPLATE_MIN_EDGE="${TEMPLATE_MIN_EDGE:-350.0}"
@@ -51,6 +60,7 @@ MAX_ITERATIONS=${MAX_ITERATIONS:-999999}  # Override with --max-iterations
 # State files
 STATE_ITERATION="$PHASE7_STATE_DIR/.iteration_count.txt"
 STATE_CHAMPION="$PHASE7_STATE_DIR/.best_edge.txt"
+STATE_CHAMPION_SCORE="$PHASE7_STATE_DIR/.best_score.txt"
 STATE_STRATEGIES="$PHASE7_STATE_DIR/.strategies_log.json"
 STATE_TEMPLATES="$PHASE7_STATE_DIR/.templates_created.json"
 STATE_RATE_LIMIT="$PHASE7_STATE_DIR/.rate_limit_tracker.json"
@@ -133,7 +143,7 @@ init_phase7_state() {
     mkdir -p "$PHASE7_STATE_DIR" "$PHASE7_GENERATED_DIR" "$PHASE7_TEMPLATES_DIR" "$PHASE7_PROMPTS_DIR"
 
     # Initialize / repair state files (must be valid JSON / scalars).
-    "$VENV_PY" - "$STATE_ITERATION" "$STATE_CHAMPION" "$STATE_STRATEGIES" "$STATE_TEMPLATES" \
+    "$VENV_PY" - "$STATE_ITERATION" "$STATE_CHAMPION" "$STATE_CHAMPION_SCORE" "$STATE_STRATEGIES" "$STATE_TEMPLATES" \
         "$STATE_RATE_LIMIT" "$STATE_START_TIME" <<'PY'
 import json
 import os
@@ -143,10 +153,11 @@ import time
 
 state_iteration = Path(sys.argv[1])
 state_champion = Path(sys.argv[2])
-state_strategies = Path(sys.argv[3])
-state_templates = Path(sys.argv[4])
-state_rate_limit = Path(sys.argv[5])
-state_start_time = Path(sys.argv[6])
+state_champion_score = Path(sys.argv[3])
+state_strategies = Path(sys.argv[4])
+state_templates = Path(sys.argv[5])
+state_rate_limit = Path(sys.argv[6])
+state_start_time = Path(sys.argv[7])
 
 def atomic_write_text(path: Path, text: str) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -178,6 +189,7 @@ def ensure_json_file(path: Path, default_obj) -> None:
 
 ensure_int_file(state_iteration, 0)
 ensure_float_file(state_champion, 374.56)
+ensure_float_file(state_champion_score, 374.56)
 ensure_json_file(state_strategies, [])
 ensure_json_file(state_templates, [])
 ensure_json_file(state_rate_limit, {"last_call_timestamp": 0, "calls_count": 0})
@@ -190,6 +202,17 @@ PY
     log "INFO" "Harvesting existing session data..."
     "$VENV_PY" scripts/amm-phase7-session-harvester.py \
         --all --state-dir "$PHASE7_STATE_DIR" 2>/dev/null || true
+
+    # Fail fast if canonical 1000-sim knowledge is inconsistent.
+    if ! run_knowledge_guardrail; then
+        die "Knowledge context guardrail failed after startup harvest"
+    fi
+}
+
+run_knowledge_guardrail() {
+    "$VENV_PY" scripts/amm-phase7-knowledge-check.py \
+        --state-dir "$PHASE7_STATE_DIR" \
+        --epsilon "$KNOWLEDGE_GUARDRAIL_EPSILON"
 }
 
 # ============================================================================
@@ -462,21 +485,35 @@ metadata = load_json(Path(metadata_path)) if Path(metadata_path).exists() else N
 # Derive fields (prefer result, then metadata, then defaults)
 strategy_name = None
 final_edge = None
-metrics = {"edge_10": None, "edge_100": None, "edge_1000": None}
+final_score = None
+effective_score = None
+score_source = None
+metrics = {
+    "edge_10": None,
+    "edge_100": None,
+    "edge_1000": None,
+    "edge_screen": None,
+    "predicted_edge_1000": None,
+}
 timestamp = None
 git_sha = None
 git_dirty = None
+selection_gate = None
 
 if isinstance(result, dict):
     strategy_name = result.get("strategy_name") or strategy_name
     timestamp = result.get("timestamp") or timestamp
     final_edge = result.get("final_edge", None)
+    final_score = result.get("final_score", None)
     git_sha = result.get("git_sha") or git_sha
     git_dirty = result.get("git_dirty") if "git_dirty" in result else git_dirty
     testing = result.get("testing", {}) if isinstance(result.get("testing", {}), dict) else {}
     metrics["edge_10"] = testing.get("edge_10", None)
     metrics["edge_100"] = testing.get("edge_100", None)
     metrics["edge_1000"] = testing.get("edge_1000", None)
+    metrics["edge_screen"] = testing.get("edge_screen", None)
+    metrics["predicted_edge_1000"] = testing.get("predicted_edge_1000", None)
+    selection_gate = testing.get("gate", None)
 
 if isinstance(metadata, dict):
     strategy_name = metadata.get("name") or strategy_name
@@ -486,6 +523,13 @@ if not timestamp:
 
 if strategy_name is None:
     strategy_name = "Unknown"
+
+if final_score is not None:
+    effective_score = final_score
+    score_source = "final_score"
+elif final_edge is not None:
+    effective_score = final_edge
+    score_source = "final_edge_fallback"
 
 # Normalize hypothesis_ids as array
 hypothesis_ids = []
@@ -508,6 +552,9 @@ entry = {
     "status": status,
     "timestamp": timestamp,
     "final_edge": final_edge if status == "ok" else None,
+    "final_score": final_score if status == "ok" else None,
+    "effective_score": effective_score if status == "ok" else None,
+    "score_source": score_source if status == "ok" else None,
     "strategy_name": strategy_name,
     "hypothesis_ids": hypothesis_ids,
     "git_sha": git_sha,
@@ -525,6 +572,7 @@ entry = {
         "result_path": result_path,
     },
     "metrics": metrics,
+    "selection_gate": selection_gate if status == "ok" else None,
     "error": {
         "stage": (error_stage or None) if status != "ok" else None,
         "message": (error_message or None) if status != "ok" else None,
@@ -636,6 +684,7 @@ main_loop() {
     log "INFO" "======================================"
     log "INFO" "Target: Edge > $COMPETITIVE_EDGE OR $(format_duration $MAX_RUNTIME_SECONDS)"
     log "INFO" "Current best: $(cat "$STATE_CHAMPION")"
+    log "INFO" "Current best robust score: $(cat "$STATE_CHAMPION_SCORE")"
     log "INFO" ""
 
     while true; do
@@ -668,14 +717,27 @@ main_loop() {
         local error_stage=""
         local error_message=""
         local final_edge=""
+        local final_score=""
+        local effective_score=""
+        local score_source="none"
         local is_new_champion="0"
 
         # === STEP 0: Harvest results from previous Codex session ===
-        if [[ $iteration -gt 1 ]]; then
-            log "INFO" "Harvesting results from iteration $((iteration - 1))..."
-            "$VENV_PY" scripts/amm-phase7-session-harvester.py \
-                --iteration $((iteration - 1)) \
-                --state-dir "$PHASE7_STATE_DIR" 2>/dev/null || true
+        log "INFO" "Refreshing harvested session knowledge..."
+        "$VENV_PY" scripts/amm-phase7-session-harvester.py \
+            --all \
+            --state-dir "$PHASE7_STATE_DIR" 2>/dev/null || true
+
+        # Guardrail: stop this iteration before prompting if canonical knowledge is inconsistent.
+        if ! run_knowledge_guardrail; then
+            log "ERROR" "Knowledge guardrail failed; skipping iteration before prompt generation"
+            status="prompt_failed"
+            error_stage="knowledge_guardrail"
+            error_message="knowledge context canonical mismatch"
+            append_strategies_log_entry "$iteration" "$status" "$error_stage" "$error_message" \
+                "$prompt_path" "$codex_jsonl_path" "$codex_stderr_path" "$codex_last_msg_path" \
+                "$strategy_path" "$metadata_path" "$result_path"
+            continue
         fi
 
         # === STEP 1: Generate prompt context ===
@@ -737,7 +799,13 @@ PY
         log "INFO" "Testing strategy..."
         if ! "$VENV_PY" scripts/amm-test-pipeline.py \
             "$strategy_path" \
-            --output "$result_path"; then
+            --output "$result_path" \
+            --screen-sims "$PIPE_SCREEN_SIMS" \
+            --screen-min-edge "$PIPE_SCREEN_MIN_EDGE" \
+            --predicted-drop "$PIPE_PREDICTED_DROP" \
+            --predicted-min-edge "$PIPE_PREDICTED_MIN_EDGE" \
+            --robust-free-spread "$ROBUST_FREE_SPREAD" \
+            --robust-penalty-per-point "$ROBUST_PENALTY_PER_POINT"; then
             log "WARN" "Strategy failed testing"
             status="test_failed"
             error_stage="test"
@@ -759,10 +827,30 @@ v=data.get("final_edge", None)
 print(v if v is not None else "")
 PY
 )"
+        final_score="$("$VENV_PY" - "$result_path" <<'PY'
+import json, sys
+from pathlib import Path
+p=Path(sys.argv[1])
+data=json.loads(p.read_text())
+v=data.get("final_score", None)
+print(v if v is not None else "")
+PY
+)"
         if [[ -n "$final_edge" ]]; then
             log "INFO" "  → Final Edge (1000 sims): $final_edge"
         else
             log "INFO" "  → Final Edge: N/A (did not qualify for 1000-sim test)"
+        fi
+        if [[ -n "$final_score" ]]; then
+            log "INFO" "  → Final Score (robust): $final_score"
+        fi
+        if [[ -n "$final_score" ]]; then
+            effective_score="$final_score"
+            score_source="final_score"
+        elif [[ -n "$final_edge" ]]; then
+            effective_score="$final_edge"
+            score_source="final_edge_fallback"
+            log "INFO" "  → Effective champion score fallback: using final_edge=$final_edge"
         fi
 
         # === STEP 6: Record to learning engine ===
@@ -770,13 +858,19 @@ PY
             --result "$result_path" \
             --state-dir "$PHASE7_STATE_DIR" 2>/dev/null || true
 
-        # === STEP 7: Check if new champion (only if 1000-sim result exists) ===
+        # === STEP 7: Check if new champion (selection on robust score with fallback) ===
         local current_best=$(cat "$STATE_CHAMPION")
-        if [[ -n "$final_edge" ]] && float_gt "$final_edge" "$current_best"; then
-            log "INFO" "  🏆 NEW CHAMPION! $final_edge beats $current_best"
-            echo "$final_edge" > "$STATE_CHAMPION"
+        local current_best_score=$(cat "$STATE_CHAMPION_SCORE")
+        if [[ -n "$effective_score" ]] && float_gt "$effective_score" "$current_best_score"; then
+            log "INFO" "  🏆 NEW CHAMPION (score source: $score_source)! $effective_score beats $current_best_score"
+            echo "$effective_score" > "$STATE_CHAMPION_SCORE"
             cp "$strategy_path" "$PHASE7_STATE_DIR/.best_strategy.sol"
             is_new_champion="1"
+        fi
+        # Keep raw edge benchmark for target/compatibility.
+        if [[ -n "$final_edge" ]] && float_gt "$final_edge" "$current_best"; then
+            log "INFO" "  📈 New best raw edge: $final_edge beats $current_best"
+            echo "$final_edge" > "$STATE_CHAMPION"
         fi
 
         # Append Phase 7 source-of-truth log entry (exactly one per iteration).
@@ -885,7 +979,8 @@ PY
             fi
         fi
 
-        log "INFO" "Iteration $iteration complete. Current best: $(cat "$STATE_CHAMPION")"
+        log "INFO" "Iteration $iteration complete. Current best raw edge: $(cat "$STATE_CHAMPION")"
+        log "INFO" "Iteration $iteration complete. Current best robust score: $(cat "$STATE_CHAMPION_SCORE")"
         log "INFO" ""
 
         # Brief pause between iterations
@@ -903,6 +998,7 @@ PY
 final_summary() {
     local total_iterations=$(cat "$STATE_ITERATION")
     local final_best=$(cat "$STATE_CHAMPION")
+    local final_best_score=$(cat "$STATE_CHAMPION_SCORE")
     local elapsed=$(get_elapsed_seconds)
     local templates_created
     templates_created="$("$VENV_PY" - "$STATE_TEMPLATES" <<'PY'
@@ -923,9 +1019,15 @@ PY
     log "INFO" "======================================"
     log "INFO" "Iterations: $total_iterations"
     log "INFO" "Final Best Edge: $final_best"
+    log "INFO" "Final Best Robust Score: $final_best_score"
     log "INFO" "Templates Created: $templates_created"
     log "INFO" "Runtime: $(format_duration $elapsed)"
     log "INFO" "======================================"
+
+    if ! run_knowledge_guardrail; then
+        log "ERROR" "Knowledge guardrail failed at final summary; skipping report generation"
+        return
+    fi
 
     # Generate detailed report
     log "INFO" "Generating final report..."
@@ -950,6 +1052,13 @@ Options:
     --max-iterations N      Maximum iterations (default: unlimited)
     --max-runtime N         Maximum runtime in seconds (default: 36000 = 10 hours)
     --target-edge N         Target edge to achieve (default: 527)
+    --screen-sims N         Stage-1 screening simulations (default: 200)
+    --screen-min-edge N     Minimum screening edge to consider 1000-sim run (default: 375)
+    --predicted-drop N      Expected screen->1000 edge delta (default: -8.2)
+    --predicted-min-edge N  Minimum predicted 1000-sim edge to run baseline (default: 500)
+    --robust-free-spread N  Corner spread ignored before score penalty (default: 50)
+    --robust-penalty N      Penalty per spread point above free spread (default: 0.02)
+    --knowledge-epsilon N   Knowledge guardrail epsilon tolerance (default: 0.02)
     --enable-shell-tool     Allow Codex to run local commands (default)
     --disable-shell-tool    Prevent Codex from running local commands (may cause stalls in some setups)
     --help                  Show this help message
@@ -981,6 +1090,34 @@ while [[ $# -gt 0 ]]; do
             COMPETITIVE_EDGE="$2"
             shift 2
             ;;
+        --screen-sims)
+            PIPE_SCREEN_SIMS="$2"
+            shift 2
+            ;;
+        --screen-min-edge)
+            PIPE_SCREEN_MIN_EDGE="$2"
+            shift 2
+            ;;
+        --predicted-drop)
+            PIPE_PREDICTED_DROP="$2"
+            shift 2
+            ;;
+        --predicted-min-edge)
+            PIPE_PREDICTED_MIN_EDGE="$2"
+            shift 2
+            ;;
+        --robust-free-spread)
+            ROBUST_FREE_SPREAD="$2"
+            shift 2
+            ;;
+        --robust-penalty)
+            ROBUST_PENALTY_PER_POINT="$2"
+            shift 2
+            ;;
+        --knowledge-epsilon)
+            KNOWLEDGE_GUARDRAIL_EPSILON="$2"
+            shift 2
+            ;;
         --enable-shell-tool)
             CODEX_DISABLE_SHELL_TOOL="0"
             shift 1
@@ -1010,6 +1147,8 @@ require_file "$AMM_MATCH" "ensure venv_fresh has project installed"
 require_cmd codex
 
 log "INFO" "Codex config: model=${CODEX_MODEL:-<default>} max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS timeout_minutes=$CODEX_TIMEOUT_MINUTES CODEX_DISABLE_SHELL_TOOL=$CODEX_DISABLE_SHELL_TOOL"
+log "INFO" "Pipeline config: screen_sims=$PIPE_SCREEN_SIMS screen_min_edge=$PIPE_SCREEN_MIN_EDGE predicted_drop=$PIPE_PREDICTED_DROP predicted_min_edge=$PIPE_PREDICTED_MIN_EDGE robust_free_spread=$ROBUST_FREE_SPREAD robust_penalty=$ROBUST_PENALTY_PER_POINT"
+log "INFO" "Knowledge guardrail config: epsilon=$KNOWLEDGE_GUARDRAIL_EPSILON"
 if [[ "${CODEX_DISABLE_SHELL_TOOL}" == "1" ]]; then
     log "WARN" "Shell tool is disabled. If Codex stalls after {turn.started} with no tokens, re-run with --enable-shell-tool or set CODEX_DISABLE_SHELL_TOOL=0."
 fi
