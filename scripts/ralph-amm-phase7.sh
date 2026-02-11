@@ -53,6 +53,21 @@ AUTO_OPP_ENGINE_ENABLED="${AUTO_OPP_ENGINE_ENABLED:-0}"   # 0=disabled (baseline
 AUTO_OPP_SHADOW_ITERS="${AUTO_OPP_SHADOW_ITERS:-20}"      # read-only decision period
 AUTO_OPP_CANARY_PCT="${AUTO_OPP_CANARY_PCT:-20}"          # execute on <=20% iterations in canary
 AUTO_OPP_WINDOW_SIZE="${AUTO_OPP_WINDOW_SIZE:-20}"        # non-regression window
+AUTO_OPP_NO_UPLIFT_EPSILON="${AUTO_OPP_NO_UPLIFT_EPSILON:-0.02}"
+AUTO_OPP_NO_UPLIFT_STREAK_THRESHOLD="${AUTO_OPP_NO_UPLIFT_STREAK_THRESHOLD:-3}"
+AUTO_OPP_NO_UPLIFT_COOLDOWN_ITERS="${AUTO_OPP_NO_UPLIFT_COOLDOWN_ITERS:-4}"
+AUTO_OPP_NOVELTY_LOOKBACK="${AUTO_OPP_NOVELTY_LOOKBACK:-6}"
+AUTO_OPP_NOVELTY_PENALTY="${AUTO_OPP_NOVELTY_PENALTY:-1.0}"
+AUTO_OPP_EXPLORE_QUOTA_ENABLED="${AUTO_OPP_EXPLORE_QUOTA_ENABLED:-1}"
+AUTO_OPP_EXPLORE_LOOKBACK="${AUTO_OPP_EXPLORE_LOOKBACK:-4}"
+AUTO_OPP_EXPLORE_REPEAT_CLASSES="${AUTO_OPP_EXPLORE_REPEAT_CLASSES:-undercut_sweep,gating_adaptive}"
+AUTO_OPP_EXPLORE_TARGET_CLASSES="${AUTO_OPP_EXPLORE_TARGET_CLASSES:-gamma_formula,asymmetric,ema_smoothing}"
+AUTO_OPP_RECORD_GATES_FALLBACK="${AUTO_OPP_RECORD_GATES_FALLBACK:-1}"
+AUTO_OPP_SUBFAMILY_OVERRIDE="${AUTO_OPP_SUBFAMILY_OVERRIDE:-}"
+AUTO_OPP_BREAKTHROUGH_TIE_EPSILON="${AUTO_OPP_BREAKTHROUGH_TIE_EPSILON:-0.10}"
+AUTO_OPP_SEVERE_SUBFAMILY_FAILURE_THRESHOLD="${AUTO_OPP_SEVERE_SUBFAMILY_FAILURE_THRESHOLD:-2}"
+AUTO_OPP_GATES_FALLBACK_POLLS="${AUTO_OPP_GATES_FALLBACK_POLLS:-8}"
+AUTO_OPP_GATES_FALLBACK_POLL_SECONDS="${AUTO_OPP_GATES_FALLBACK_POLL_SECONDS:-0.25}"
 
 # Execution gates (generic threshold-driven safety/efficiency controls)
 EXEC_GATES_ENABLED="${EXEC_GATES_ENABLED:-1}"                       # 1=enable real-time/batch/promotion gates
@@ -283,6 +298,16 @@ run_opportunity_evaluate() {
     if [[ "${AUTO_OPP_ENGINE_ENABLED}" == "1" ]]; then
         enabled_arg+=(--enabled)
     fi
+    local explore_quota_arg=()
+    if [[ "${AUTO_OPP_EXPLORE_QUOTA_ENABLED}" == "1" ]]; then
+        explore_quota_arg+=(--explore-quota-enable)
+    else
+        explore_quota_arg+=(--explore-quota-disable)
+    fi
+    local subfamily_override_arg=()
+    if [[ -n "${AUTO_OPP_SUBFAMILY_OVERRIDE}" ]]; then
+        subfamily_override_arg+=(--subfamily-override "$AUTO_OPP_SUBFAMILY_OVERRIDE")
+    fi
 
     "$VENV_PY" scripts/amm-phase7-opportunity-engine.py evaluate \
         --state-dir "$PHASE7_STATE_DIR" \
@@ -291,8 +316,20 @@ run_opportunity_evaluate() {
         --shadow-iters "$AUTO_OPP_SHADOW_ITERS" \
         --canary-pct "$AUTO_OPP_CANARY_PCT" \
         --window-size "$AUTO_OPP_WINDOW_SIZE" \
+        --no-uplift-epsilon "$AUTO_OPP_NO_UPLIFT_EPSILON" \
+        --no-uplift-streak-threshold "$AUTO_OPP_NO_UPLIFT_STREAK_THRESHOLD" \
+        --no-uplift-cooldown-iters "$AUTO_OPP_NO_UPLIFT_COOLDOWN_ITERS" \
+        --novelty-lookback "$AUTO_OPP_NOVELTY_LOOKBACK" \
+        --novelty-penalty "$AUTO_OPP_NOVELTY_PENALTY" \
+        --explore-lookback "$AUTO_OPP_EXPLORE_LOOKBACK" \
+        --explore-repeat-classes "$AUTO_OPP_EXPLORE_REPEAT_CLASSES" \
+        --explore-target-classes "$AUTO_OPP_EXPLORE_TARGET_CLASSES" \
+        --breakthrough-tie-epsilon "$AUTO_OPP_BREAKTHROUGH_TIE_EPSILON" \
+        --severe-subfamily-failure-threshold "$AUTO_OPP_SEVERE_SUBFAMILY_FAILURE_THRESHOLD" \
         --ranking-out "$ranking_path" \
         --plan-out "$plan_path" \
+        ${subfamily_override_arg[@]+"${subfamily_override_arg[@]}"} \
+        ${explore_quota_arg[@]+"${explore_quota_arg[@]}"} \
         ${enabled_arg[@]+"${enabled_arg[@]}"}
 }
 
@@ -331,12 +368,27 @@ record_opportunity_outcome() {
     local plan_path="$4"
 
     [[ -f "$plan_path" ]] || return 0
+    local gates_fallback_arg=()
+    if [[ "${AUTO_OPP_RECORD_GATES_FALLBACK}" == "1" ]]; then
+        gates_fallback_arg+=(--use-gate-family-fallback)
+    else
+        gates_fallback_arg+=(--disable-gate-family-fallback)
+    fi
     "$VENV_PY" scripts/amm-phase7-opportunity-engine.py record \
         --state-dir "$PHASE7_STATE_DIR" \
         --iteration "$iteration" \
         --status "$status" \
         --plan-file "$plan_path" \
-        --result-file "$result_path" >/dev/null 2>&1 || true
+        --result-file "$result_path" \
+        --no-uplift-epsilon "$AUTO_OPP_NO_UPLIFT_EPSILON" \
+        --no-uplift-streak-threshold "$AUTO_OPP_NO_UPLIFT_STREAK_THRESHOLD" \
+        --no-uplift-cooldown-iters "$AUTO_OPP_NO_UPLIFT_COOLDOWN_ITERS" \
+        --breakthrough-tie-epsilon "$AUTO_OPP_BREAKTHROUGH_TIE_EPSILON" \
+        --severe-subfamily-failure-threshold "$AUTO_OPP_SEVERE_SUBFAMILY_FAILURE_THRESHOLD" \
+        --gates-fallback-polls "$AUTO_OPP_GATES_FALLBACK_POLLS" \
+        --gates-fallback-poll-seconds "$AUTO_OPP_GATES_FALLBACK_POLL_SECONDS" \
+        --gates-state-file "$STATE_EXEC_GATES" \
+        ${gates_fallback_arg[@]+"${gates_fallback_arg[@]}"} >/dev/null 2>&1 || true
 }
 
 gate_iteration_field() {
@@ -1567,6 +1619,23 @@ Options:
     --auto-opp-shadow N     Shadow iterations before execution (default: 20)
     --auto-opp-canary N     Canary execute percentage after shadow (default: 20)
     --auto-opp-window N     Non-regression window size in iterations (default: 20)
+    --auto-opp-no-uplift-eps N        No-uplift epsilon for learning/cooldown (default: 0.02)
+    --auto-opp-no-uplift-streak N     Consecutive no-uplift outcomes before cooldown (default: 3)
+    --auto-opp-no-uplift-cooldown N   Cooldown iterations after no-uplift streak trigger (default: 4)
+    --auto-opp-novelty-lookback N     Iterations used for novelty penalty (default: 6)
+    --auto-opp-novelty-penalty N      Novelty penalty multiplier (default: 1.0)
+    --auto-opp-explore-enable         Enable orthogonal exploration quota (default: enabled)
+    --auto-opp-explore-disable        Disable orthogonal exploration quota
+    --auto-opp-explore-lookback N     Lookback window for exploration trigger (default: 4)
+    --auto-opp-explore-repeat-classes CSV   Repeat-class set for trigger (default: undercut_sweep,gating_adaptive)
+    --auto-opp-explore-target-classes CSV   Target classes for forced exploration (default: gamma_formula,asymmetric,ema_smoothing)
+    --auto-opp-subfamily-override SPEC  Optional override (subfamily or opp:subfamily, comma-separated)
+    --auto-opp-breakthrough-eps N     Tie epsilon for novel-subfamily breakthrough probes (default: 0.10)
+    --auto-opp-severe-subfamily-threshold N  Family-level severe-failure trigger threshold (default: 2)
+    --auto-opp-gates-fallback-polls N  Poll count when waiting for gate fallback edge (default: 8)
+    --auto-opp-gates-fallback-poll-seconds N  Poll interval seconds for gate fallback (default: 0.25)
+    --auto-opp-record-gates-fallback-enable   Use execution-gates fallback during record (default: enabled)
+    --auto-opp-record-gates-fallback-disable  Disable execution-gates fallback during record
     --exec-gates-enable     Enable shell-level execution gates (default: enabled)
     --exec-gates-disable    Disable shell-level execution gates
     --gate-early-enable     Enable early-abort gate (default: enabled)
@@ -1652,6 +1721,74 @@ while [[ $# -gt 0 ]]; do
             AUTO_OPP_WINDOW_SIZE="$2"
             shift 2
             ;;
+        --auto-opp-no-uplift-eps)
+            AUTO_OPP_NO_UPLIFT_EPSILON="$2"
+            shift 2
+            ;;
+        --auto-opp-no-uplift-streak)
+            AUTO_OPP_NO_UPLIFT_STREAK_THRESHOLD="$2"
+            shift 2
+            ;;
+        --auto-opp-no-uplift-cooldown)
+            AUTO_OPP_NO_UPLIFT_COOLDOWN_ITERS="$2"
+            shift 2
+            ;;
+        --auto-opp-novelty-lookback)
+            AUTO_OPP_NOVELTY_LOOKBACK="$2"
+            shift 2
+            ;;
+        --auto-opp-novelty-penalty)
+            AUTO_OPP_NOVELTY_PENALTY="$2"
+            shift 2
+            ;;
+        --auto-opp-explore-enable)
+            AUTO_OPP_EXPLORE_QUOTA_ENABLED="1"
+            shift 1
+            ;;
+        --auto-opp-explore-disable)
+            AUTO_OPP_EXPLORE_QUOTA_ENABLED="0"
+            shift 1
+            ;;
+        --auto-opp-explore-lookback)
+            AUTO_OPP_EXPLORE_LOOKBACK="$2"
+            shift 2
+            ;;
+        --auto-opp-explore-repeat-classes)
+            AUTO_OPP_EXPLORE_REPEAT_CLASSES="$2"
+            shift 2
+            ;;
+        --auto-opp-explore-target-classes)
+            AUTO_OPP_EXPLORE_TARGET_CLASSES="$2"
+            shift 2
+            ;;
+        --auto-opp-subfamily-override)
+            AUTO_OPP_SUBFAMILY_OVERRIDE="$2"
+            shift 2
+            ;;
+        --auto-opp-breakthrough-eps)
+            AUTO_OPP_BREAKTHROUGH_TIE_EPSILON="$2"
+            shift 2
+            ;;
+        --auto-opp-severe-subfamily-threshold)
+            AUTO_OPP_SEVERE_SUBFAMILY_FAILURE_THRESHOLD="$2"
+            shift 2
+            ;;
+        --auto-opp-gates-fallback-polls)
+            AUTO_OPP_GATES_FALLBACK_POLLS="$2"
+            shift 2
+            ;;
+        --auto-opp-gates-fallback-poll-seconds)
+            AUTO_OPP_GATES_FALLBACK_POLL_SECONDS="$2"
+            shift 2
+            ;;
+        --auto-opp-record-gates-fallback-enable)
+            AUTO_OPP_RECORD_GATES_FALLBACK="1"
+            shift 1
+            ;;
+        --auto-opp-record-gates-fallback-disable)
+            AUTO_OPP_RECORD_GATES_FALLBACK="0"
+            shift 1
+            ;;
         --exec-gates-enable)
             EXEC_GATES_ENABLED="1"
             shift 1
@@ -1731,6 +1868,9 @@ log "INFO" "Codex config: model=${CODEX_MODEL:-<default>} max_output_tokens=$COD
 log "INFO" "Pipeline config: screen_sims=$PIPE_SCREEN_SIMS screen_min_edge=$PIPE_SCREEN_MIN_EDGE predicted_drop=$PIPE_PREDICTED_DROP predicted_min_edge=$PIPE_PREDICTED_MIN_EDGE robust_free_spread=$ROBUST_FREE_SPREAD robust_penalty=$ROBUST_PENALTY_PER_POINT"
 log "INFO" "Knowledge guardrail config: epsilon=$KNOWLEDGE_GUARDRAIL_EPSILON"
 log "INFO" "Autonomous opportunity config: enabled=$AUTO_OPP_ENGINE_ENABLED shadow_iters=$AUTO_OPP_SHADOW_ITERS canary_pct=$AUTO_OPP_CANARY_PCT window_size=$AUTO_OPP_WINDOW_SIZE"
+log "INFO" "Autonomous opportunity policy: no_uplift_eps=$AUTO_OPP_NO_UPLIFT_EPSILON streak=$AUTO_OPP_NO_UPLIFT_STREAK_THRESHOLD cooldown_iters=$AUTO_OPP_NO_UPLIFT_COOLDOWN_ITERS novelty_lookback=$AUTO_OPP_NOVELTY_LOOKBACK novelty_penalty=$AUTO_OPP_NOVELTY_PENALTY"
+log "INFO" "Autonomous exploration policy: enabled=$AUTO_OPP_EXPLORE_QUOTA_ENABLED lookback=$AUTO_OPP_EXPLORE_LOOKBACK repeat_classes=$AUTO_OPP_EXPLORE_REPEAT_CLASSES target_classes=$AUTO_OPP_EXPLORE_TARGET_CLASSES subfamily_override=${AUTO_OPP_SUBFAMILY_OVERRIDE:-<none>}"
+log "INFO" "Autonomous innovation safeguards: breakthrough_eps=$AUTO_OPP_BREAKTHROUGH_TIE_EPSILON severe_subfamily_threshold=$AUTO_OPP_SEVERE_SUBFAMILY_FAILURE_THRESHOLD gates_fallback=$AUTO_OPP_RECORD_GATES_FALLBACK polls=$AUTO_OPP_GATES_FALLBACK_POLLS poll_seconds=$AUTO_OPP_GATES_FALLBACK_POLL_SECONDS"
 log "INFO" "Execution gate config: enabled=$EXEC_GATES_ENABLED early_enabled=$GATE_EARLY_ABORT_ENABLED early_n=$GATE_EARLY_MIN_RESULTS early_delta=$GATE_EARLY_DELTA batch_delta=$GATE_BATCH_FAIL_DELTA confirmations=$GATE_PROMOTION_CONFIRMATIONS min_sims=$GATE_MIN_SIMS poll_s=$GATE_MONITOR_POLL_SECONDS"
 if [[ "${CODEX_DISABLE_SHELL_TOOL}" == "1" ]]; then
     log "WARN" "Shell tool is disabled. If Codex stalls after {turn.started} with no tokens, re-run with --enable-shell-tool or set CODEX_DISABLE_SHELL_TOOL=0."
