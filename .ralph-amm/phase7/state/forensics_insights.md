@@ -11,12 +11,12 @@
 - Low-vol periods: 0.0 avg edge
 
 ### Fee Timing Analysis
-- Timing correctness score: 4.70
+- Timing correctness score: 5.02
 - GOOD: High fees align with high mispricing
 
 ### Arbitrage Detection
-- Price corrections: 27.0% of steps
-- Arb corrects price 27.0% of steps - unreliable arb signal
+- Price corrections: 29.8% of steps
+- Arb corrects price 29.8% of steps - unreliable arb signal
 
 ### Top vs Bottom Strategy Comparison
 

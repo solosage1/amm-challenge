@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-02-10T18:47:57.865819",
-  "n_strategies": 2,
+  "timestamp": "2026-02-10T19:32:05.017093",
+  "n_strategies": 111,
   "tests": {
     "fee_volume": {
       "status": "INSUFFICIENT_DATA",

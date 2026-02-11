@@ -1589,5 +1589,67 @@
     "artifact_paths": {
       "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol"
     }
+  },
+  {
+    "iteration": 10,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T00:28:35.582126Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_10_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_10_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_10_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_10_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_10.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_10.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_10_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "codex failed"
+    }
+  },
+  {
+    "iteration": 11,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T00:35:15.291658Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_11_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_11_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_11_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_11_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_11.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_11.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_11_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "codex failed"
+    }
   }
 ]
