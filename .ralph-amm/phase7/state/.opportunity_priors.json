@@ -4,17 +4,139 @@
     "failures": 1,
     "neutral": 2,
     "severe_failures": 1,
-    "cooldown_until_iteration": 25,
+    "cooldown_until_iteration": 40,
     "cooldown_reason": "harvested family failure: heavy/light 3-state regime machine underperformed champion by >0.8",
     "status": "FAILED",
-    "failed_at_iteration": 21
+    "failed_at_iteration": 36
   },
   "adaptive_undercut_search": {
     "successes": 0,
-    "failures": 0,
-    "neutral": 4,
+    "failures": 15,
+    "neutral": 5,
+    "severe_failures": 2,
+    "cooldown_until_iteration": 0,
+    "cooldown_reason": null,
+    "subfamilies": {
+      "plain_undercut": {
+        "attempts": 7,
+        "successes": 0,
+        "failures": 6,
+        "neutral": 1,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 41,
+        "cooldown_reason": "no uplift streak: 6 consecutive outcomes with delta <= 0.02",
+        "non_uplift_streak": 6,
+        "no_uplift_outcomes": 6,
+        "last_uplift_iteration": null,
+        "last_attempt_iteration": 37,
+        "breakthrough_probe_hits": 0,
+        "status": "COOLDOWN"
+      },
+      "mispricing_gate": {
+        "attempts": 3,
+        "successes": 0,
+        "failures": 3,
+        "neutral": 0,
+        "severe_failures": 2,
+        "cooldown_until_iteration": 23,
+        "cooldown_reason": "severe failure: delta -2.08 <= -0.80",
+        "non_uplift_streak": 0,
+        "no_uplift_outcomes": 2,
+        "last_uplift_iteration": 32,
+        "last_attempt_iteration": 32,
+        "breakthrough_probe_hits": 0,
+        "status": "FAILED",
+        "failed_at_iteration": 19
+      },
+      "flow_burst_memory": {
+        "attempts": 4,
+        "successes": 0,
+        "failures": 4,
+        "neutral": 0,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 0,
+        "cooldown_reason": null,
+        "non_uplift_streak": 1,
+        "no_uplift_outcomes": 1,
+        "last_uplift_iteration": 31,
+        "last_attempt_iteration": 34,
+        "breakthrough_probe_hits": 1
+      },
+      "step_aware_undercut": {
+        "attempts": 2,
+        "successes": 0,
+        "failures": 2,
+        "neutral": 0,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 0,
+        "cooldown_reason": null,
+        "non_uplift_streak": 1,
+        "no_uplift_outcomes": 1,
+        "last_uplift_iteration": null,
+        "last_attempt_iteration": 33,
+        "breakthrough_probe_hits": 1
+      }
+    },
+    "last_selected_subfamily": "plain_undercut",
+    "non_uplift_streak": 6,
+    "no_uplift_outcomes": 10
+  },
+  "ema_smoothing_search": {
+    "successes": 1,
+    "failures": 5,
+    "neutral": 0,
     "severe_failures": 0,
     "cooldown_until_iteration": 0,
-    "cooldown_reason": null
+    "cooldown_reason": null,
+    "non_uplift_streak": 4,
+    "no_uplift_outcomes": 4,
+    "last_uplift_iteration": 25,
+    "subfamilies": {
+      "ema_smoothing": {
+        "attempts": 6,
+        "successes": 1,
+        "failures": 5,
+        "neutral": 0,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 40,
+        "cooldown_reason": "no uplift streak: 4 consecutive outcomes with delta <= 0.02",
+        "non_uplift_streak": 4,
+        "no_uplift_outcomes": 4,
+        "last_uplift_iteration": 25,
+        "last_attempt_iteration": 36,
+        "breakthrough_probe_hits": 1,
+        "status": "COOLDOWN"
+      }
+    },
+    "last_selected_subfamily": "ema_smoothing",
+    "status": "ACTIVE"
+  },
+  "parallel_parameter_beam": {
+    "successes": 0,
+    "failures": 2,
+    "neutral": 0,
+    "severe_failures": 0,
+    "cooldown_until_iteration": 0,
+    "cooldown_reason": null,
+    "non_uplift_streak": 1,
+    "no_uplift_outcomes": 1,
+    "last_uplift_iteration": null,
+    "subfamilies": {
+      "parameter_beam": {
+        "attempts": 2,
+        "successes": 0,
+        "failures": 2,
+        "neutral": 0,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 0,
+        "cooldown_reason": null,
+        "non_uplift_streak": 1,
+        "no_uplift_outcomes": 1,
+        "last_uplift_iteration": null,
+        "last_attempt_iteration": 38,
+        "breakthrough_probe_hits": 1
+      }
+    },
+    "last_selected_subfamily": "parameter_beam"
   }
 }

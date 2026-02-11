@@ -1,13 +1,97 @@
 {
-  "true_best_edge": 508.25,
-  "true_best_strategy": "bgate_v1",
+  "true_best_edge": 508.67,
+  "true_best_strategy": "mode2_v1",
   "has_1000_results": true,
-  "state_best_edge_benchmark": 508.25,
-  "true_best_edge_1000": 508.25,
-  "true_best_strategy_1000": "bgate_v1",
-  "true_best_edge_any": 514.29,
-  "true_best_strategy_any": "GammaSquaredDualRegime",
+  "state_best_edge_benchmark": 508.67,
+  "true_best_edge_1000": 508.67,
+  "true_best_strategy_1000": "mode2_v1",
+  "true_best_edge_any": 534.49,
+  "true_best_strategy_any": "adu_p1",
   "all_tested_strategies": [
+    {
+      "name": "mode2_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 32,
+      "file": "mode2_v1.sol"
+    },
+    {
+      "name": "mode2_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 33,
+      "file": "mode2_v1.sol"
+    },
+    {
+      "name": "esplus_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 35,
+      "file": "esplus_v1.sol"
+    },
+    {
+      "name": "egrd_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 36,
+      "file": "egrd_v1.sol"
+    },
+    {
+      "name": "emax_v4",
+      "edge": 508.62,
+      "sims": 1000,
+      "iteration": 25,
+      "file": "emax_v4.sol"
+    },
+    {
+      "name": "emax_v4",
+      "edge": 508.62,
+      "sims": 1000,
+      "iteration": 27,
+      "file": "emax_v4.sol"
+    },
+    {
+      "name": "esmart_v1",
+      "edge": 508.62,
+      "sims": 1000,
+      "iteration": 28,
+      "file": "esmart_v1.sol"
+    },
+    {
+      "name": "ebeam_v1",
+      "edge": 508.62,
+      "sims": 1000,
+      "iteration": 29,
+      "file": "ebeam_v1.sol"
+    },
+    {
+      "name": "aburst_v7",
+      "edge": 508.28,
+      "sims": 1000,
+      "iteration": 22,
+      "file": "aburst_v7.sol"
+    },
+    {
+      "name": "canary_adu_v1",
+      "edge": 508.28,
+      "sims": 1000,
+      "iteration": 24,
+      "file": "canary_adu_v1.sol"
+    },
+    {
+      "name": "centi1_v1",
+      "edge": 508.27,
+      "sims": 1000,
+      "iteration": 19,
+      "file": "centi1_v1.sol"
+    },
+    {
+      "name": "adu_p1",
+      "edge": 508.27,
+      "sims": 1000,
+      "iteration": 23,
+      "file": "adu_p1.sol"
+    },
     {
       "name": "bgate_v1",
       "edge": 508.25,
@@ -63,94 +147,94 @@
       "sims": 1000,
       "iteration": 3,
       "file": "tmp_u12_band25.sol"
-    },
-    {
-      "name": "Tmp_U10_Band26",
-      "edge": 508.22,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_band26.sol"
-    },
-    {
-      "name": "Tmp_U11_B25_Buf0",
-      "edge": 508.22,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25_buf0.sol"
-    },
-    {
-      "name": "Tmp_U10_Band24",
-      "edge": 508.2,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_band24.sol"
-    },
-    {
-      "name": "Tmp_U10_Band27",
-      "edge": 508.19,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_band27.sol"
-    },
-    {
-      "name": "gate2r_v10",
-      "edge": 508.17,
-      "sims": 1000,
-      "iteration": 10,
-      "file": "./gate2r_v10.sol"
-    },
-    {
-      "name": "Tmp_U11_B25_Buf2",
-      "edge": 508.16,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25_buf2.sol"
-    },
-    {
-      "name": "Tmp_U10_Band28",
-      "edge": 508.13,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_band28.sol"
-    },
-    {
-      "name": "Tmp_U11_B25_T29",
-      "edge": 508.09,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25_t29.sol"
-    },
-    {
-      "name": "Tmp_CompUnder10",
-      "edge": 508.06,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_compundercut10.sol"
-    },
-    {
-      "name": "Tmp_CompUnder11",
-      "edge": 508.04,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_compundercut11.sol"
-    },
-    {
-      "name": "Tmp_CompUnder9",
-      "edge": 508.03,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_compundercut9.sol"
-    },
-    {
-      "name": "Tmp_U10_T29",
-      "edge": 508.02,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_t29.sol"
     }
   ],
   "all_tested_strategies_1000": [
     {
+      "name": "mode2_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 32,
+      "file": "mode2_v1.sol"
+    },
+    {
+      "name": "mode2_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 33,
+      "file": "mode2_v1.sol"
+    },
+    {
+      "name": "esplus_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 35,
+      "file": "esplus_v1.sol"
+    },
+    {
+      "name": "egrd_v1",
+      "edge": 508.67,
+      "sims": 1000,
+      "iteration": 36,
+      "file": "egrd_v1.sol"
+    },
+    {
+      "name": "emax_v4",
+      "edge": 508.62,
+      "sims": 1000,
+      "iteration": 25,
+      "file": "emax_v4.sol"
+    },
+    {
+      "name": "emax_v4",
+      "edge": 508.62,
+      "sims": 1000,
+      "iteration": 27,
+      "file": "emax_v4.sol"
+    },
+    {
+      "name": "esmart_v1",
+      "edge": 508.62,
+      "sims": 1000,
+      "iteration": 28,
+      "file": "esmart_v1.sol"
+    },
+    {
+      "name": "ebeam_v1",
+      "edge": 508.62,
+      "sims": 1000,
+      "iteration": 29,
+      "file": "ebeam_v1.sol"
+    },
+    {
+      "name": "aburst_v7",
+      "edge": 508.28,
+      "sims": 1000,
+      "iteration": 22,
+      "file": "aburst_v7.sol"
+    },
+    {
+      "name": "canary_adu_v1",
+      "edge": 508.28,
+      "sims": 1000,
+      "iteration": 24,
+      "file": "canary_adu_v1.sol"
+    },
+    {
+      "name": "centi1_v1",
+      "edge": 508.27,
+      "sims": 1000,
+      "iteration": 19,
+      "file": "centi1_v1.sol"
+    },
+    {
+      "name": "adu_p1",
+      "edge": 508.27,
+      "sims": 1000,
+      "iteration": 23,
+      "file": "adu_p1.sol"
+    },
+    {
       "name": "bgate_v1",
       "edge": 508.25,
       "sims": 1000,
@@ -205,146 +289,10 @@
       "sims": 1000,
       "iteration": 3,
       "file": "tmp_u12_band25.sol"
-    },
-    {
-      "name": "Tmp_U10_Band26",
-      "edge": 508.22,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_band26.sol"
-    },
-    {
-      "name": "Tmp_U11_B25_Buf0",
-      "edge": 508.22,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25_buf0.sol"
-    },
-    {
-      "name": "Tmp_U10_Band24",
-      "edge": 508.2,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_band24.sol"
-    },
-    {
-      "name": "Tmp_U10_Band27",
-      "edge": 508.19,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_band27.sol"
-    },
-    {
-      "name": "gate2r_v10",
-      "edge": 508.17,
-      "sims": 1000,
-      "iteration": 10,
-      "file": "./gate2r_v10.sol"
-    },
-    {
-      "name": "Tmp_U11_B25_Buf2",
-      "edge": 508.16,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25_buf2.sol"
-    },
-    {
-      "name": "Tmp_U10_Band28",
-      "edge": 508.13,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_band28.sol"
-    },
-    {
-      "name": "Tmp_U11_B25_T29",
-      "edge": 508.09,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25_t29.sol"
-    },
-    {
-      "name": "Tmp_CompUnder10",
-      "edge": 508.06,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_compundercut10.sol"
-    },
-    {
-      "name": "Tmp_CompUnder11",
-      "edge": 508.04,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_compundercut11.sol"
-    },
-    {
-      "name": "Tmp_CompUnder9",
-      "edge": 508.03,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_compundercut9.sol"
-    },
-    {
-      "name": "Tmp_U10_T29",
-      "edge": 508.02,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u10_t29.sol"
     }
   ],
-  "lessons_learned": [
-    "arbitrage happens before retail, so the tight fees are for retail, not arbitrage. Setting a low tight fee could enhance retail volume and possibly cre",
-    "undercutting in a tight regime can impact subsequent trades, especially retail. If we undercut, we might attract more retail volume, but then we could",
-    "the classification logic might be off since the best results are around 513, and the user's target of 527 may be too ambitious. They asked for a code",
-    "the Python command timed out because the default timeout is 10 seconds. I thought I set the timeout to 600000 milliseconds, but it seems I missed incl",
-    "as retail trades occur, the discrepancy between mispricing and fair prices shifts due to reserve changes. It makes sense to update fees based on the c",
-    "this isn't feasible because I don\u2019t know the fair price for retail. Maybe classifying the first trade as arbitrage versus retail could help in adjusti",
-    "the protective side impacts trades only when they move in an adverse direction. Retail flows in that direction aren't desirable for us, so increasing",
-    "setting our ask fee just slightly lower than the competitor's can capture most buy orders, while possibly sacrificing just a small amount of revenue",
-    "our spot prices might vary based on previous fees but likely stay similar. If our spot is 1.003p with an ask price of 1.005p, the fee calculates to ab",
-    "the baseline's effective price after arbitrage can be fair on one side and worse on the other. To gain an edge, we want our spot to be closer to fair",
-    "the fees I set can have a lasting effect, possibly being used by arbitrage in the opposite direction if the fair price changes. To stay adaptable, I t",
-    "maintaining a low bid fee can help attract arbitrage, keeping our spot price accurate for retail buys. When the spot is above fair, we are technically",
-    "to maintain this, I should set low fees in the bid direction while keeping the ask fees high to attract retail buyers. The challenge lies in balancing",
-    "if trading completely stops, I can't make adjustments. However, a large retail trade might eventually help us get filled and allow for downward adjust",
-    "observing trades shows variance in retail versus arbitrage situations, and trades should be classified based on size and direction. I see potential to"
-  ],
-  "regressions": [
-    {
-      "from": "GammaSquaredDualRegime",
-      "from_edge": 514.29,
-      "to": "ArbOracleBandMatch",
-      "to_edge": 180.26,
-      "iteration": 18
-    },
-    {
-      "from": "GammaSquaredDualRegime",
-      "from_edge": 514.29,
-      "to": "Const_30bps",
-      "to_edge": 343.6,
-      "iteration": 19
-    },
-    {
-      "from": "GammaSquaredDualRegime",
-      "from_edge": 514.29,
-      "to": "ArbInferredSkew",
-      "to_edge": 316.79,
-      "iteration": 19
-    },
-    {
-      "from": "GammaSquaredDualRegime",
-      "from_edge": 514.29,
-      "to": "IntervalFilterGamma2",
-      "to_edge": 237.77,
-      "iteration": 19
-    },
-    {
-      "from": "GammaSquaredDualRegime",
-      "from_edge": 514.29,
-      "to": "Const_10bps",
-      "to_edge": 161.1,
-      "iteration": 19
-    }
-  ],
-  "harvested_at": "2026-02-11T06:34:43.104227Z",
-  "total_results_harvested": 133
+  "lessons_learned": [],
+  "regressions": [],
+  "harvested_at": "2026-02-11T11:04:29.952293Z",
+  "total_results_harvested": 90
 }

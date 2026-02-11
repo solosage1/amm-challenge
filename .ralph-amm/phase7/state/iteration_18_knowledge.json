@@ -1,91 +1,7 @@
 {
-  "edge_experiments": [
-    {
-      "strategy": "arb_oracle_dualregime_tight30_buf4.sol",
-      "edge": 513.81,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run arb_oracle_dualregime_tight30_buf4.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_dualregime.sol",
-      "edge": 510.72,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run arb_oracle_dualregime.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_dualregime_recenter.sol",
-      "edge": 513.04,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run arb_oracle_dualregime_recenter.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_gapaware_dualregime.sol",
-      "edge": 508.94,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run arb_oracle_gapaware_dualregime.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_bandmatch.sol",
-      "edge": 180.26,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run arb_oracle_bandmatch.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_dualregime_exact_tight18.sol",
-      "edge": 506.32,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run arb_oracle_dualregime_exact_tight18.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_dualregime_exact.sol",
-      "edge": 510.98,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run arb_oracle_dualregime_exact.sol --simulations 200'"
-    },
-    {
-      "strategy": "candidate_best25.sol",
-      "edge": 510.56,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run candidate_best25.sol --simulations 200'"
-    },
-    {
-      "strategy": "candidate_best7.sol",
-      "edge": 510.13,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run candidate_best7.sol --simulations 200'"
-    },
-    {
-      "strategy": "candidate_best26.sol",
-      "edge": 506.93,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run candidate_best26.sol --simulations 200'"
-    },
-    {
-      "strategy": "compadj_search.sol",
-      "edge": 502.58,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run compadj_search.sol --simulations 200'"
-    },
-    {
-      "strategy": "gamma2_dualregime.sol",
-      "edge": 514.29,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run gamma2_dualregime.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_dualregime_tight30_buf4.sol",
-      "edge": 505.61,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run arb_oracle_dualregime_tight30_buf4.sol --simulations 1000'"
-    },
-    {
-      "strategy": "gamma2_dualregime.sol",
-      "edge": 506.17,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run gamma2_dualregime.sol --simulations 1000'"
-    },
-    {
-      "strategy": "gamma2_dualregime_markup.sol",
-      "edge": 486.48,
-      "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run gamma2_dualregime_markup.sol --simulations 200'"
-    }
-  ],
-  "files_created": [
-    "/Users/rbgross/amm-challenge/gamma2_dualregime.sol",
-    "/Users/rbgross/amm-challenge/gamma2_dualregime_markup.sol"
-  ],
-  "best_strategy": {
-    "name": "gamma2_dualregime.sol",
-    "edge": 514.29,
-    "content": "",
-    "path": "/Users/rbgross/amm-challenge/gamma2_dualregime.sol"
-  },
+  "edge_experiments": [],
+  "files_created": [],
+  "best_strategy": null,
   "reasoning_summary": [],
   "parameter_discoveries": {
     "buffer_values": [],
@@ -94,7 +10,7 @@
     "threshold_values": [],
     "edge_by_params": []
   },
-  "n_events": 286,
-  "n_experiments": 15,
-  "n_files": 2
+  "n_events": 109,
+  "n_experiments": 0,
+  "n_files": 0
 }

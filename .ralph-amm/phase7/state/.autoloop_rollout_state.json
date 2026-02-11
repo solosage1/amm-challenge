@@ -4,7 +4,7 @@
   "feature_enabled": true,
   "mode": "canary",
   "shadow_completed": 3,
-  "canary_executed": 11,
+  "canary_executed": 36,
   "baseline_metrics": {
     "success_rate": 0.0,
     "median_runtime_seconds": null,
@@ -15,5 +15,5 @@
   "non_regression_fail_streak": 0,
   "rollback_triggered": false,
   "rollback_reason": null,
-  "last_updated": "2026-02-11T06:34:43.191794Z"
+  "last_updated": "2026-02-11T11:04:30.032797Z"
 }

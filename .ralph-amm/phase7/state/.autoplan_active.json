@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-02-11T06:34:43.191982Z",
-  "iteration": 14,
+  "generated_at": "2026-02-11T11:04:30.032974Z",
+  "iteration": 39,
   "mode": "canary",
   "execute_this_iteration": true,
   "non_regression_ok": true,
@@ -9,21 +9,23 @@
   "rollout_state": {
     "started_iteration": 3,
     "shadow_completed": 3,
-    "canary_executed": 11,
+    "canary_executed": 36,
     "rollback_triggered": false,
     "rollback_reason": null
   },
   "target_edge": 527.0,
-  "reference_best_edge": 508.25,
+  "reference_best_edge": 508.67,
   "selection_reason": "top_weighted_score",
   "exploration_forced": false,
   "selected_opportunity": {
-    "id": "adaptive_undercut_search",
-    "family_class": "undercut_sweep",
-    "rationale": "Undercut signal is strong; prefer lightweight regime-aware undercut before heavy state-machine logic.",
-    "expected_uplift": 4.05,
-    "confidence": 5.25,
-    "weighted_score": 55.3
+    "id": "parallel_parameter_beam",
+    "family_class": "gating_adaptive",
+    "subfamily": "parameter_beam",
+    "subfamily_reason": "policy_select:probe_confirm|score=-0.150",
+    "rationale": "If sweep throughput is bottlenecked, parallel beams can improve search efficiency.",
+    "expected_uplift": 1.75,
+    "confidence": 6.0,
+    "weighted_score": 46.625
   },
   "policy": {
     "promotion_requires_repeats": 3,
@@ -44,23 +46,17 @@
       "asymmetric",
       "ema_smoothing",
       "gamma_formula"
-    ]
+    ],
+    "subfamily_override": "",
+    "breakthrough_tie_epsilon": 0.1,
+    "severe_subfamily_failure_threshold": 2
   },
   "ranked_opportunities": [
     {
-      "id": "adaptive_undercut_search",
-      "family_class": "undercut_sweep",
-      "rationale": "Undercut signal is strong; prefer lightweight regime-aware undercut before heavy state-machine logic.",
-      "expected_uplift": 4.05,
-      "confidence": 5.25,
-      "time_to_signal": 8.0,
-      "complexity": 3.0,
-      "overfit_risk": 4.0,
-      "weighted_score": 55.3
-    },
-    {
       "id": "parallel_parameter_beam",
       "family_class": "gating_adaptive",
+      "recommended_subfamily": "parameter_beam",
+      "recommended_subfamily_reason": "policy_select:probe_confirm|score=-0.150",
       "rationale": "If sweep throughput is bottlenecked, parallel beams can improve search efficiency.",
       "expected_uplift": 1.75,
       "confidence": 6.0,
@@ -70,19 +66,10 @@
       "weighted_score": 46.625
     },
     {
-      "id": "ema_smoothing_search",
-      "family_class": "ema_smoothing",
-      "rationale": "Fair-value smoothing/jump-limiter dynamics are likely under-tuned near the local optimum.",
-      "expected_uplift": 3.05,
-      "confidence": 4.05,
-      "time_to_signal": 7.0,
-      "complexity": 5.0,
-      "overfit_risk": 3.5,
-      "weighted_score": 46.05
-    },
-    {
       "id": "asymmetric_bid_ask_search",
       "family_class": "asymmetric",
+      "recommended_subfamily": "bid_ask_asymmetry",
+      "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Directional asymmetry can create edge where symmetric undercut sweeps plateau.",
       "expected_uplift": 3.25,
       "confidence": 3.95,
@@ -94,6 +81,8 @@
     {
       "id": "robustness_repair_search",
       "family_class": "ema_smoothing",
+      "recommended_subfamily": "spread_stabilizer",
+      "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Spread instability indicates robust-score improvements may unlock reliable gains.",
       "expected_uplift": 2.75,
       "confidence": 3.75,
@@ -105,6 +94,8 @@
     {
       "id": "gamma_formula_search",
       "family_class": "gamma_formula",
+      "recommended_subfamily": "gamma_transform",
+      "recommended_subfamily_reason": "policy_select:untried|score=4.000",
       "rationale": "Local sweep stagnation suggests changing competitive/protective gamma math itself.",
       "expected_uplift": 3.45,
       "confidence": 3.85,
@@ -114,9 +105,37 @@
       "weighted_score": 43.45
     },
     {
+      "id": "adaptive_undercut_search",
+      "family_class": "undercut_sweep",
+      "recommended_subfamily": "step_aware_undercut",
+      "recommended_subfamily_reason": "policy_select:probe_confirm|score=1.100",
+      "rationale": "Undercut signal is strong; prefer lightweight regime-aware undercut before heavy state-machine logic. [novelty penalty: 3.00; 3/3 recent attempts had no uplift]",
+      "expected_uplift": 2.55,
+      "confidence": 2.25,
+      "time_to_signal": 8.0,
+      "complexity": 3.0,
+      "overfit_risk": 4.0,
+      "weighted_score": 42.55
+    },
+    {
+      "id": "ema_smoothing_search",
+      "family_class": "ema_smoothing",
+      "recommended_subfamily": "ema_smoothing",
+      "recommended_subfamily_reason": "all_subfamilies_cooldown_select_best:recent_no_uplift,cooldown_until_40,probe_confirm",
+      "rationale": "Fair-value smoothing/jump-limiter dynamics are likely under-tuned near the local optimum. [novelty penalty: 2.00; 2/2 recent attempts had no uplift]",
+      "expected_uplift": 2.3,
+      "confidence": 2.3,
+      "time_to_signal": 7.0,
+      "complexity": 5.0,
+      "overfit_risk": 3.5,
+      "weighted_score": 39.05
+    },
+    {
       "id": "regime_state_transition_search",
       "family_class": "gating_adaptive",
-      "rationale": "Plateau/brittleness suggest structure-level transition logic is under-optimized. [cooldown active: 12 iteration(s), until 25]",
+      "recommended_subfamily": "heavy_state_machine",
+      "recommended_subfamily_reason": "policy_select:untried|score=4.000",
+      "rationale": "Plateau/brittleness suggest structure-level transition logic is under-optimized. [cooldown active: 2 iteration(s), until 40]",
       "expected_uplift": 1.75,
       "confidence": 0.25,
       "time_to_signal": 6.0,
@@ -127,34 +146,27 @@
   ],
   "search_plan": {
     "frozen_core": [
-      "gamma^2 competitive anchoring",
-      "strict protective-side buffer",
-      "single-step fair update logic"
+      "existing champion mechanics"
     ],
     "mutation_dimensions": [
-      "competitive_undercut_bps sweep (8-13)",
-      "tight_band_bps sweep (24-29)",
-      "minimal 2-state mispricing gate (NORMAL/DEFENSIVE)",
-      "protective_buffer_bps sweep (0-2)"
+      "parallelized parameter beams",
+      "coarse-to-fine threshold sweeps",
+      "early elimination rules"
     ],
     "run_budget": {
-      "variants": 10,
-      "parallel_workers": 4,
+      "variants": 12,
+      "parallel_workers": 6,
       "authoritative_sims": 1000
     },
     "promotion_criteria": {
-      "median_delta_vs_reference": 0.3,
-      "required_repeats": 3,
-      "max_spread": 55.0
+      "median_delta_vs_reference": 1.5,
+      "required_repeats": 3
     },
     "kill_criteria": {
-      "abort_family_if_first_4_below_reference_by": 0.8,
-      "abort_family_if_batch_best_below_reference_by": 0.5,
-      "first_run_delta_below": -1.0
+      "first_run_delta_below": -1.0,
+      "abort_family_if_first_4_below_reference_by": 0.8
     },
-    "fallback_strategy": {
-      "action": "retain_champion",
-      "strategy_edge": 508.25
-    }
+    "subfamily_focus": "parameter_beam",
+    "subfamily_focus_reason": "policy_select:probe_confirm|score=-0.150"
   }
 }

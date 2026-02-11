@@ -84,6 +84,7 @@ strategies/
 .ralph-amm/phase7/state/.iteration_count.txt
 .ralph-amm/phase7/state/.start_timestamp.txt
 .ralph-amm/phase7/state/.rate_limit_tracker.json
+.ralph-amm/phase7/state/loop.pid
 .ralph-amm/phase7/phase7.pid
 .ralph-amm/phase7/phase7_run.log
 
@@ -99,6 +100,53 @@ interval_*.sol
 arb_*.sol
 phase7_iter*_candidate.sol
 _tmp_*.txt
+
+# Batch-generated experimental variants (regenerable)
+# Versioned variants (*_v1.sol through *_v10.sol etc)
+aburst_*.sol
+adu38_*.sol
+adu_p*.sol
+adu_persist_template.sol
+aucan*.sol
+aus_u*.sol
+bgate_*.sol
+c30_*.sol
+c32_*.sol
+c33_*.sol
+c34_*.sol
+c_best_r*.sol
+canary_adu*.sol
+centi*.sol
+du1_*.sol
+dynamic_undercut_template.sol
+ealpha_*.sol
+ebeam*.sol
+egrd*.sol
+ema_jump_template.sol
+emaj*.sol
+emax*.sol
+emg_*.sol
+esmart_*.sol
+esplus*.sol
+fmem_*.sol
+gdef*.sol
+gfine_*.sol
+h15_*.sol
+iskew*.sol
+m2can_*.sol
+mode2*.sol
+burst_gate_template.sol
+
+# Temporary generation scripts
+.tmp_generate_*.sh
+
+# --- PER-ITERATION STATE FILES (regenerable) ---
+# Autoplan and ranking snapshots
+.ralph-amm/phase7/state/autoplan_iter*.json
+.ralph-amm/phase7/state/opportunity_rankings_iter*.json
+
+# Parallel simulation output directories (large, regenerable)
+.ralph-amm/phase7/state/parallel_sims/
 
 # =============================================================================
 # PRESERVED (tracked) - Valuable learned knowledge:

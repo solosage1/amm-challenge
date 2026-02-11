@@ -1,16 +1,8 @@
-# Recovered from timeout checkpoint
-# Best edge: 514.29
-# Strategy: gamma2_dualregime.sol
+---STRATEGY_IDEA---
+Gamma-squared competitive-side quoting with sub-bps calibration: 27.8 bps in-band fee, 11.3 bps competitive undercut, and 0.8 bps protective buffer, using EWMA fair-price inference with jump clamping.
+---END_STRATEGY_IDEA---
 
----DRAFT_STRATEGY_IDEA---
-Recovered from timeout. Best performing strategy: gamma2_dualregime.sol
----END_DRAFT_STRATEGY_IDEA---
-
----DESIGN_REVIEW---
-Recovered from timeout checkpoint.
----END_DESIGN_REVIEW---
-
----REVISED_IMPLEMENTATION---
+---IMPLEMENTATION---
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
@@ -18,16 +10,29 @@ pragma solidity ^0.8.24;
 import {AMMStrategyBase} from "./AMMStrategyBase.sol";
 import {IAMMStrategy, TradeInfo} from "./IAMMStrategy.sol";
 
-/// @notice Dual-regime arb-oracle with **gamma^2 competitor anchoring** on the competitive side.
-///         Intuition: the 30bps normalizer's post-arb spot sits at ~p/γ or γ·p, so its *worse* side
-///         quote is ~p/γ^2 or γ^2·p. Matching that (instead of assuming spot≈p) lets us charge
-///         materially higher fees while still winning flow on the side where normalizer is weak.
 contract Strategy is AMMStrategyBase {
     // slots:
     // 0 lastTimestamp
     // 1 currentBidFee
     // 2 currentAskFee
     // 3 fairPrice (WAD, Y per X)
+    // 4 mode (0 normal, 1 defensive)
+
+    uint256 private constant TIGHT_BAND_BPS = 25;
+    uint256 private constant TIGHT_FEE_TENTHS_BPS = 278;
+
+    uint256 private constant BASE_UNDERCUT_TENTHS_BPS = 113;
+    uint256 private constant DEF_UNDERCUT_TENTHS_BPS = 113;
+
+    uint256 private constant BASE_BUFFER_TENTHS_BPS = 8;
+    uint256 private constant DEF_BUFFER_TENTHS_BPS = 8;
+
+    uint256 private constant ENTER_DEF_BPS = 9999;
+    uint256 private constant EXIT_DEF_BPS = 9998;
+
+    function tenthsBpsToWad(uint256 tenthsBps) internal pure returns (uint256) {
+        return (tenthsBps * BPS) / 10;
+    }
 
     function afterInitialize(uint256 initialX, uint256 initialY)
         external
@@ -37,8 +42,8 @@ contract Strategy is AMMStrategyBase {
         uint256 p0 = initialX == 0 ? WAD : wdiv(initialY, initialX);
         slots[0] = type(uint256).max;
         slots[3] = p0;
+        slots[4] = 0;
 
-        // Slightly competitive start to get early retail flow / anchors.
         bidFee = bpsToWad(25);
         askFee = bpsToWad(25);
         slots[1] = bidFee;
@@ -53,14 +58,13 @@ contract Strategy is AMMStrategyBase {
         uint256 lastTs = slots[0];
         uint256 prevBid = slots[1];
         uint256 prevAsk = slots[2];
+        uint256 fair = slots[3];
+        uint256 mode = slots[4];
 
         uint256 rx = trade.reserveX;
         uint256 ry = trade.reserveY;
         uint256 spot = rx == 0 ? 0 : wdiv(ry, rx);
 
-        uint256 fair = slots[3];
-
-        // Update fair once per step from first observed trade (arb anchor when present).
         if (trade.timestamp != lastTs) {
             uint256 gamma = trade.isBuy ? (WAD - prevBid) : (WAD - prevAsk);
             uint256 fairCandidate = fair;
@@ -68,8 +72,7 @@ contract Strategy is AMMStrategyBase {
                 fairCandidate = trade.isBuy ? wmul(spot, gamma) : wdiv(spot, gamma);
             }
 
-            // Robust jump clamp (retail can be first-trade when no arb hits us).
-            uint256 maxJump = 400 * BPS; // 4%
+            uint256 maxJump = 400 * BPS;
             if (fair != 0) {
                 uint256 rel = wdiv(absDiff(fairCandidate, fair), fair);
                 if (rel > maxJump) {
@@ -78,7 +81,6 @@ contract Strategy is AMMStrategyBase {
                 }
             }
 
-            // EWMA (old 80% / new 20%).
             fair = (fair * 80 + fairCandidate * 20) / 100;
             slots[0] = trade.timestamp;
             slots[3] = fair;
@@ -89,39 +91,45 @@ contract Strategy is AMMStrategyBase {
             askFee = bpsToWad(30);
             slots[1] = bidFee;
             slots[2] = askFee;
+            slots[4] = mode;
             return (bidFee, askFee);
         }
 
         uint256 mis = wdiv(absDiff(spot, fair), fair);
-        uint256 tightBand = bpsToWad(25);
 
-        if (mis <= tightBand) {
-            // Near fair: match the normalizer so we don't pay unnecessary fee undercuts.
-            bidFee = bpsToWad(30);
-            askFee = bpsToWad(30);
+        if (mode == 0) {
+            if (mis > bpsToWad(ENTER_DEF_BPS)) mode = 1;
+        } else {
+            if (mis < bpsToWad(EXIT_DEF_BPS)) mode = 0;
+        }
+
+        uint256 undercut = tenthsBpsToWad(mode == 0 ? BASE_UNDERCUT_TENTHS_BPS : DEF_UNDERCUT_TENTHS_BPS);
+        uint256 buffer = tenthsBpsToWad(mode == 0 ? BASE_BUFFER_TENTHS_BPS : DEF_BUFFER_TENTHS_BPS);
+
+        if (mis <= bpsToWad(TIGHT_BAND_BPS)) {
+            uint256 tightFee = tenthsBpsToWad(TIGHT_FEE_TENTHS_BPS);
+            bidFee = tightFee;
+            askFee = tightFee;
         } else {
             uint256 gammaBase = WAD - bpsToWad(30);
             uint256 gammaBaseSq = wmul(gammaBase, gammaBase);
-            uint256 buffer = bpsToWad(4);
 
             if (spot > fair) {
-                // Spot > fair: protect bid side (arb would sell X to us).
                 uint256 gammaReq = wdiv(fair, spot);
                 uint256 req = gammaReq >= WAD ? 0 : (WAD - gammaReq);
                 bidFee = clampFee(req + buffer);
 
-                // Competitive ask side: match normalizer's *weak* ask quote (~p/γ^2).
                 uint256 gammaMatch = wdiv(wmul(spot, gammaBaseSq), fair);
-                askFee = gammaMatch >= WAD ? 0 : (WAD - gammaMatch);
+                uint256 askRaw = gammaMatch >= WAD ? 0 : (WAD - gammaMatch);
+                askFee = askRaw > undercut ? askRaw - undercut : 0;
             } else {
-                // Spot < fair: protect ask side (arb would buy X from us).
                 uint256 gammaReq = wdiv(spot, fair);
                 uint256 req = gammaReq >= WAD ? 0 : (WAD - gammaReq);
                 askFee = clampFee(req + buffer);
 
-                // Competitive bid side: match normalizer's *weak* bid quote (~γ^2·p).
                 uint256 gammaMatch = wdiv(wmul(fair, gammaBaseSq), spot);
-                bidFee = gammaMatch >= WAD ? 0 : (WAD - gammaMatch);
+                uint256 bidRaw = gammaMatch >= WAD ? 0 : (WAD - gammaMatch);
+                bidFee = bidRaw > undercut ? bidRaw - undercut : 0;
             }
         }
 
@@ -129,28 +137,16 @@ contract Strategy is AMMStrategyBase {
         askFee = clampFee(askFee);
         slots[1] = bidFee;
         slots[2] = askFee;
+        slots[4] = mode;
     }
 
     function getName() external pure override returns (string memory) {
-        return "GammaSquaredDualRegime";
+        return "aus_u7_v3";
     }
 }
-
-
 ```
----END_REVISED_IMPLEMENTATION---
+---END_IMPLEMENTATION---
 
----STRATEGY_METADATA---
-{
-  "name": "GammaSquaredDualRegime",
-  "hypothesis_ids": [
-    "H-timeout-recovery"
-  ],
-  "slots_used": 0,
-  "key_innovation": "Recovered from timeout with edge 514.29",
-  "expected_edge_range": [
-    494.28999999999996,
-    534.29
-  ]
-}
----END_STRATEGY_METADATA---
+---METADATA---
+{"name":"aus_u7_v3","key_innovation":"Sub-bps calibration of gamma^2 competitive undercut/buffer (11.3/0.8 bps) with a 27.8 bps tight-band quote and robust fair EWMA."}
+---END_METADATA---

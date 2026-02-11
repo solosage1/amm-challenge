@@ -1,78 +1,7 @@
 {
-  "edge_experiments": [
-    {
-      "strategy": "edge_vol_oracle_strategy.sol",
-      "edge": 484.63,
-      "command": "/bin/zsh -lc 'amm-match run edge_vol_oracle_strategy.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_dualregime_tight30_buf4.sol",
-      "edge": 513.81,
-      "command": "/bin/zsh -lc 'amm-match run arb_oracle_dualregime_tight30_buf4.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_dualregime_exact.sol",
-      "edge": 510.98,
-      "command": "/bin/zsh -lc 'amm-match run arb_oracle_dualregime_exact.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_dualregime_exact_tight18.sol",
-      "edge": 506.32,
-      "command": "/bin/zsh -lc 'amm-match run arb_oracle_dualregime_exact_tight18.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_dualregime.sol",
-      "edge": 510.72,
-      "command": "/bin/zsh -lc 'amm-match run arb_oracle_dualregime.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_dualregime_tight30_voluc.sol",
-      "edge": 511.69,
-      "command": "/bin/zsh -lc 'amm-match run arb_oracle_dualregime_tight30_voluc.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_pulse_twophase.sol",
-      "edge": 440.65,
-      "command": "/bin/zsh -lc 'amm-match run arb_pulse_twophase.sol --simulations 200'"
-    },
-    {
-      "strategy": "arb_oracle_adaptive_confidence.sol",
-      "edge": 480.25,
-      "command": "/bin/zsh -lc 'amm-match run arb_oracle_adaptive_confidence.sol --simulations 200'"
-    },
-    {
-      "strategy": "unknown",
-      "edge": 510.99,
-      "command": "/bin/zsh -lc \"python - <<'PY'\nimport subprocess, re, tempfile, pathlib\n\ntemplate = pathlib.Path('arb_oracle_dualregime_tight30_buf4.sol').read_text()\n"
-    },
-    {
-      "strategy": "unknown",
-      "edge": 515.22,
-      "command": "/bin/zsh -lc \"python - <<'PY'\nimport subprocess, re, tempfile, pathlib\n\ntemplate = pathlib.Path('arb_oracle_dualregime_tight30_buf4.sol').read_text()\n"
-    },
-    {
-      "strategy": "unknown",
-      "edge": 515.63,
-      "command": "/bin/zsh -lc \"python - <<'PY'\nimport subprocess, re, tempfile, pathlib\n\ntemplate = pathlib.Path('arb_oracle_dualregime_tight30_buf4.sol').read_text()\n"
-    },
-    {
-      "strategy": "/tmp/tight29_buf4.sol",
-      "edge": 512.06,
-      "command": "/bin/zsh -lc \"cat > /tmp/tight29_buf4.sol <<'SOL'\n// SPDX-License-Identifier: MIT\npragma solidity \"'^0.8.24;\n\nimport {AMMStrategyBase} from \"./AMMStra"
-    }
-  ],
-  "files_created": [
-    "/Users/rbgross/amm-challenge/edge_vol_oracle_strategy.sol",
-    "/Users/rbgross/amm-challenge/arb_oracle_dualregime_tight30_voluc.sol",
-    "/Users/rbgross/amm-challenge/arb_oracle_dualregime_tight30_voluc.sol",
-    "/Users/rbgross/amm-challenge/edge_vol_oracle_strategy.sol"
-  ],
-  "best_strategy": {
-    "name": "unknown",
-    "edge": 515.63,
-    "content": null,
-    "path": null
-  },
+  "edge_experiments": [],
+  "files_created": [],
+  "best_strategy": null,
   "reasoning_summary": [],
   "parameter_discoveries": {
     "buffer_values": [],
@@ -81,7 +10,7 @@
     "threshold_values": [],
     "edge_by_params": []
   },
-  "n_events": 167,
-  "n_experiments": 12,
-  "n_files": 4
+  "n_events": 115,
+  "n_experiments": 0,
+  "n_files": 0
 }
