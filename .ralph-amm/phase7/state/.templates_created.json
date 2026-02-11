@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "template_name": "gamma_squared_dual_regime",
+    "source_strategy": "GammaSquaredDualRegime",
+    "source_edge": 506.16513026031976,
+    "timestamp": "2026-02-10T21:23:21.273364",
+    "parameters_count": 4
+  }
+]

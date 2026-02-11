@@ -23,7 +23,18 @@ PROMPT_TEMPLATE = """# AMM Strategy Generation
 
 Generate a Solidity AMM fee strategy to maximize Edge against a 30bps fixed-fee competitor.
 
-**Target**: Edge > {current_target} | **Best**: {best_edge} | **Iter**: {iteration} | **Time**: {hours}h {minutes}m
+**Target**: Edge > {current_target} | **Best**: {best_edge:.2f} | **Iter**: {iteration}
+
+## Quick Start
+1. Read `README.md` for simulation mechanics and math
+2. Read `.ralph-amm/phase7/state/.best_strategy.sol` for current best approach
+3. Read `.ralph-amm/phase7/state/.knowledge_context.json` for lessons learned
+
+## Testing
+**ALWAYS use 1000 simulations** for reliable results:
+```bash
+amm-match run your_strategy.sol --simulations 1000
+```
 
 ## Contract Template
 ```solidity
@@ -43,28 +54,15 @@ contract Strategy is AMMStrategyBase {{
 }}
 ```
 
-## TradeInfo & Helpers
-```solidity
-struct TradeInfo {{ bool isBuy; uint256 amountX; uint256 amountY; uint256 timestamp; uint256 reserveX; uint256 reserveY; }}
-// Helpers: WAD=1e18, BPS=1e14, MAX_FEE=1000*BPS, clampFee(), bpsToWad(), wmul(), wdiv(), sqrt()
-```
-
 ## Constraints
 - Storage: ONLY slots[0..31] (no state variables)
 - Blocked: .call(), delegatecall(), assembly, new, selfdestruct, transfer, send
-
-## Key Mechanics
-- Constant product AMM (x*y=k), fee-on-input
-- Arb executes before retail each step; infer fair price post-arb: p = k/(gamma*x^2)
-- Lower fees attract more retail volume (nonlinear split)
-
-{recent_champions}
+- Helpers: WAD=1e18, BPS=1e14, clampFee(), bpsToWad(), wmul(), wdiv(), sqrt()
 
 ## Output Format
-Provide your strategy with these sections:
 ```
 ---STRATEGY_IDEA---
-Brief description of approach
+Brief description
 ---END_STRATEGY_IDEA---
 
 ---IMPLEMENTATION---
@@ -228,12 +226,8 @@ def format_knowledge_section(knowledge: dict) -> str:
 
     sections = []
 
-    # True best edge header
-    true_best = knowledge.get('true_best_edge', 0)
-    best_strategy = knowledge.get('true_best_strategy', 'Unknown')
-    if true_best > 0:
-        sections.append(f"**True Best Edge**: {true_best:.2f} ({best_strategy})")
-        sections.append("")
+    # Note: Best edge is already shown in the prompt header, so we skip it here
+    # to avoid confusion from potentially different values
 
     # Lessons learned
     lessons = knowledge.get('lessons_learned', [])
@@ -527,37 +521,19 @@ def build_prompt(
     target_edge: float,
     max_runtime_seconds: int,
 ):
-    """Build minimal prompt for Codex (under 3KB to avoid API stalls)"""
+    """Build reference-based prompt for Codex - points to files instead of embedding."""
     state = load_state(state_dir)
 
-    # Calculate time remaining
-    elapsed = int(time.time()) - state['start_time']
-    remaining = max(0, int(max_runtime_seconds) - elapsed)
-    hours = remaining // 3600
-    minutes = (remaining % 3600) // 60
-
-    # Format recent results (keep brief)
-    recent_str = format_recent_results(state)
-    # Truncate if too long
-    if len(recent_str) > 500:
-        recent_str = recent_str[:500] + "\n..."
-
-    # Build minimal prompt from template
     prompt = PROMPT_TEMPLATE.format(
         current_target=target_edge,
         best_edge=state['best_edge'],
         iteration=iteration,
-        hours=hours,
-        minutes=minutes,
-        recent_champions=recent_str,
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(prompt)
 
-    # Check size
-    size_bytes = len(prompt.encode('utf-8'))
-    print(f"Prompt built: {output_path} ({size_bytes} bytes, {len(prompt.splitlines())} lines)")
+    print(f"Prompt built: {output_path} ({len(prompt)} bytes)")
 
 # ============================================================================
 # MAIN

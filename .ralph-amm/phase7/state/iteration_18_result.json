@@ -1,0 +1,64 @@
+{
+  "success": true,
+  "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_18.sol",
+  "timestamp": "2026-02-10T21:23:21.273364",
+  "validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "compilation": {
+    "success": true,
+    "errors": [],
+    "warnings": []
+  },
+  "testing": {
+    "edge_10": 534.2540861679348,
+    "edge_100": 519.6653045563332,
+    "edge_1000": 506.16513026031976,
+    "metrics_1000": {
+      "submission_edge": 506.1651302603198,
+      "normalizer_edge": 389.8302575270211,
+      "edge_advantage": 116.33487273329871,
+      "submission_retail_volume": 70381.15758286994,
+      "normalizer_retail_volume": 89534.92450987012,
+      "retail_volume_advantage": -19153.76692700018,
+      "submission_arb_volume": 22282.013261714823,
+      "normalizer_arb_volume": 47621.02329600121,
+      "arb_volume_advantage": -25339.010034286384,
+      "submission_avg_bid_fee": 0.004855388644067679,
+      "submission_avg_ask_fee": 0.004936217256374455,
+      "fee_asymmetry": 8.082861230677629e-05,
+      "edge_percentiles": {
+        "p05": 368.8823923518763,
+        "p50": 505.0749544609473,
+        "p95": 653.8313768640055
+      },
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0
+    },
+    "regime_tests": {
+      "high_vol": 501.37263947303774,
+      "low_vol": 503.72027421977003,
+      "high_retail": 686.2730994949491,
+      "low_retail": 347.5407073790307,
+      "spread": 338.73239211591834,
+      "weakest_regime": "low_retail",
+      "weakest_edge": 347.5407073790307,
+      "strongest_edge": 686.2730994949491,
+      "spread_warning": true
+    }
+  },
+  "runtime": {
+    "smoke_10_seconds": 0.4930870532989502,
+    "dev_100_seconds": 2.8566391468048096,
+    "baseline_1000_seconds": 58.15804958343506,
+    "regime_tests_seconds": 11.37415599822998,
+    "total_seconds": 73.36816501617432
+  },
+  "strategy_name": "GammaSquaredDualRegime",
+  "final_edge": 506.16513026031976,
+  "git_sha": "45db8c5",
+  "git_dirty": true
+}

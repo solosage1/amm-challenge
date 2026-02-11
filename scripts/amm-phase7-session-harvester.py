@@ -259,12 +259,9 @@ def build_knowledge_context(
 ) -> dict:
     """Build the knowledge context for prompt builder."""
 
-    # Find true best - ONLY from 1000+ simulation results (leaderboard threshold)
-    MIN_SIMS_FOR_BEST = 1000
-    high_confidence_results = [r for r in results if r.n_simulations >= MIN_SIMS_FOR_BEST]
-
-    if high_confidence_results:
-        best_result = max(high_confidence_results, key=lambda r: r.edge)
+    # Find true best - simply the highest edge (all tests now use 1000 sims)
+    if results:
+        best_result = max(results, key=lambda r: r.edge)
         true_best_edge = max(best_result.edge, current_best_edge)
         true_best_strategy = best_result.strategy_name if best_result.edge >= current_best_edge else "Unknown"
     else:

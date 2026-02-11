@@ -1682,5 +1682,548 @@
       "stage": "codex",
       "message": "codex failed"
     }
+  },
+  {
+    "iteration": 17,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T01:33:20.831000Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_17_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_17_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_17_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_17_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_17.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_17.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_17_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 17,
+    "status": "harvested",
+    "timestamp": "2026-02-11T01:33:20.895122Z",
+    "final_edge": 484.63,
+    "strategy_name": "EdgeVolOracle",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "edge_vol_oracle_strategy.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "edge_vol_oracle_strategy.sol"
+    }
+  },
+  {
+    "iteration": 17,
+    "status": "harvested",
+    "timestamp": "2026-02-11T01:33:20.895262Z",
+    "final_edge": 513.81,
+    "strategy_name": "ArbOracleDualRegime_Tight30_Buf4",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol"
+    }
+  },
+  {
+    "iteration": 17,
+    "status": "harvested",
+    "timestamp": "2026-02-11T01:33:20.895275Z",
+    "final_edge": 510.98,
+    "strategy_name": "ArbOracleDualRegimeExact",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_exact.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact.sol"
+    }
+  },
+  {
+    "iteration": 17,
+    "status": "harvested",
+    "timestamp": "2026-02-11T01:33:20.895288Z",
+    "final_edge": 506.32,
+    "strategy_name": "ArbOracleDualRegimeExact_Tight18",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_exact_tight18.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact_tight18.sol"
+    }
+  },
+  {
+    "iteration": 17,
+    "status": "harvested",
+    "timestamp": "2026-02-11T01:33:20.895296Z",
+    "final_edge": 510.72,
+    "strategy_name": "ArbOracleDualRegime",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 17,
+    "status": "harvested",
+    "timestamp": "2026-02-11T01:33:20.895309Z",
+    "final_edge": 511.69,
+    "strategy_name": "ArbOracleDualRegime_Tight30_VolUC",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_tight30_voluc.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_tight30_voluc.sol"
+    }
+  },
+  {
+    "iteration": 17,
+    "status": "harvested",
+    "timestamp": "2026-02-11T01:33:20.895317Z",
+    "final_edge": 440.65,
+    "strategy_name": "ArbPulseTwoPhase",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_pulse_twophase.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_pulse_twophase.sol"
+    }
+  },
+  {
+    "iteration": 17,
+    "status": "harvested",
+    "timestamp": "2026-02-11T01:33:20.895327Z",
+    "final_edge": 480.25,
+    "strategy_name": "ArbOracleAdaptiveConfidence",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_adaptive_confidence.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_adaptive_confidence.sol"
+    }
+  },
+  {
+    "iteration": 17,
+    "status": "harvested",
+    "timestamp": "2026-02-11T01:33:20.895348Z",
+    "final_edge": 512.06,
+    "strategy_name": "ArbOracleDualRegime_Tight29_Buf4",
+    "source": "codex_session",
+    "n_simulations": 300,
+    "strategy_file": "/tmp/tight29_buf4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "/tmp/tight29_buf4.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "ok",
+    "timestamp": "2026-02-10T21:23:21.273364",
+    "final_edge": 506.16513026031976,
+    "strategy_name": "GammaSquaredDualRegime",
+    "hypothesis_ids": [
+      "H-timeout-recovery"
+    ],
+    "git_sha": "45db8c5",
+    "git_dirty": true,
+    "slots_used": 0,
+    "key_innovation": "Recovered from timeout with edge 514.29",
+    "expected_edge_range": [
+      494.28999999999996,
+      534.29
+    ],
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_18_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_18_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_18_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_18_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_18.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_18.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_18_result.json"
+    },
+    "metrics": {
+      "edge_10": 534.2540861679348,
+      "edge_100": 519.6653045563332,
+      "edge_1000": 506.16513026031976
+    },
+    "error": {
+      "stage": null,
+      "message": null
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590687Z",
+    "final_edge": 513.81,
+    "strategy_name": "ArbOracleDualRegime_Tight30_Buf4",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590841Z",
+    "final_edge": 510.72,
+    "strategy_name": "ArbOracleDualRegime",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590856Z",
+    "final_edge": 513.04,
+    "strategy_name": "ArbOracleDualRegimeRecenter",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_recenter.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_recenter.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590870Z",
+    "final_edge": 508.94,
+    "strategy_name": "ArbOracleGapAwareDualRegime",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_gapaware_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_gapaware_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590879Z",
+    "final_edge": 180.26,
+    "strategy_name": "ArbOracleBandMatch",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_bandmatch.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_bandmatch.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590893Z",
+    "final_edge": 506.32,
+    "strategy_name": "ArbOracleDualRegimeExact_Tight18",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_exact_tight18.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact_tight18.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590904Z",
+    "final_edge": 510.98,
+    "strategy_name": "ArbOracleDualRegimeExact",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_exact.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590912Z",
+    "final_edge": 510.56,
+    "strategy_name": "Candidate",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "candidate_best25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "candidate_best25.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590920Z",
+    "final_edge": 510.13,
+    "strategy_name": "Candidate",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "candidate_best7.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "candidate_best7.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590927Z",
+    "final_edge": 506.93,
+    "strategy_name": "Candidate",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "candidate_best26.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "candidate_best26.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590936Z",
+    "final_edge": 502.58,
+    "strategy_name": "CompAdjSearch",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "compadj_search.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "compadj_search.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590947Z",
+    "final_edge": 514.29,
+    "strategy_name": "GammaSquaredDualRegime",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590961Z",
+    "final_edge": 505.61,
+    "strategy_name": "ArbOracleDualRegime_Tight30_Buf4",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590971Z",
+    "final_edge": 506.17,
+    "strategy_name": "GammaSquaredDualRegime",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 18,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:24:57.590990Z",
+    "final_edge": 486.48,
+    "strategy_name": "GammaSquaredDualRegime_Markup",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_dualregime_markup.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_markup.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:49:13.468015Z",
+    "final_edge": 513.81,
+    "strategy_name": "ArbOracleDualRegime_Tight30_Buf4",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:49:13.468034Z",
+    "final_edge": 514.29,
+    "strategy_name": "GammaSquaredDualRegime",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:49:13.468046Z",
+    "final_edge": 506.17,
+    "strategy_name": "GammaSquaredDualRegime",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:49:13.468069Z",
+    "final_edge": 505.61,
+    "strategy_name": "ArbOracleDualRegime_Tight30_Buf4",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:49:13.468083Z",
+    "final_edge": 161.1,
+    "strategy_name": "Const_10bps",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "const${f}.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const${f}.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:49:13.468100Z",
+    "final_edge": 397.49,
+    "strategy_name": "GammaSquaredDualRegime_UndercutCap",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_dualregime_undercut.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_undercut.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:49:13.468113Z",
+    "final_edge": 507.14,
+    "strategy_name": "GammaSquaredDualRegime_Tight40",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_dualregime_tight40.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_tight40.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:49:13.468126Z",
+    "final_edge": 498.96,
+    "strategy_name": "GammaSquaredDualRegime_Tight40",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime_tight40.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_tight40.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:49:13.468139Z",
+    "final_edge": 512.74,
+    "strategy_name": "GammaSquaredDualRegime_Tight25",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_dualregime_tight25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_tight25.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T02:49:13.468152Z",
+    "final_edge": 504.64,
+    "strategy_name": "GammaSquaredDualRegime_Tight25",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime_tight25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_tight25.sol"
+    }
   }
 ]

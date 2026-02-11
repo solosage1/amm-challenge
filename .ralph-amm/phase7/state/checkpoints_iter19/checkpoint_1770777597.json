@@ -1,0 +1,42 @@
+{
+  "edge_experiments": [
+    {
+      "strategy": "arb_oracle_dualregime_tight30_buf4.sol",
+      "edge": 513.81,
+      "command": "/bin/zsh -lc 'amm-match run arb_oracle_dualregime_tight30_buf4.sol --simulations 200'"
+    },
+    {
+      "strategy": "gamma2_dualregime.sol",
+      "edge": 514.29,
+      "command": "/bin/zsh -lc 'amm-match run gamma2_dualregime.sol --simulations 200'"
+    },
+    {
+      "strategy": "gamma2_dualregime.sol",
+      "edge": 506.17,
+      "command": "/bin/zsh -lc 'amm-match run gamma2_dualregime.sol --simulations 1000'"
+    },
+    {
+      "strategy": "arb_oracle_dualregime_tight30_buf4.sol",
+      "edge": 505.61,
+      "command": "/bin/zsh -lc 'amm-match run arb_oracle_dualregime_tight30_buf4.sol --simulations 1000'"
+    }
+  ],
+  "files_created": [],
+  "best_strategy": {
+    "name": "gamma2_dualregime.sol",
+    "edge": 514.29,
+    "content": null,
+    "path": null
+  },
+  "reasoning_summary": [],
+  "parameter_discoveries": {
+    "buffer_values": [],
+    "ewma_alpha_values": [],
+    "fee_values": [],
+    "threshold_values": [],
+    "edge_by_params": []
+  },
+  "n_events": 157,
+  "n_experiments": 4,
+  "n_files": 0
+}

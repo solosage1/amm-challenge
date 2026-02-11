@@ -1,3 +1,17 @@
+# Recovered from timeout checkpoint
+# Best edge: 514.29
+# Strategy: gamma2_dualregime.sol
+
+---DRAFT_STRATEGY_IDEA---
+Recovered from timeout. Best performing strategy: gamma2_dualregime.sol
+---END_DRAFT_STRATEGY_IDEA---
+
+---DESIGN_REVIEW---
+Recovered from timeout checkpoint.
+---END_DESIGN_REVIEW---
+
+---REVISED_IMPLEMENTATION---
+```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
@@ -121,3 +135,22 @@ contract Strategy is AMMStrategyBase {
         return "GammaSquaredDualRegime";
     }
 }
+
+
+```
+---END_REVISED_IMPLEMENTATION---
+
+---STRATEGY_METADATA---
+{
+  "name": "GammaSquaredDualRegime",
+  "hypothesis_ids": [
+    "H-timeout-recovery"
+  ],
+  "slots_used": 0,
+  "key_innovation": "Recovered from timeout with edge 514.29",
+  "expected_edge_range": [
+    494.28999999999996,
+    534.29
+  ]
+}
+---END_STRATEGY_METADATA---

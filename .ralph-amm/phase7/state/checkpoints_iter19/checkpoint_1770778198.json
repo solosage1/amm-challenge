@@ -1,0 +1,81 @@
+{
+  "edge_experiments": [
+    {
+      "strategy": "arb_oracle_dualregime_tight30_buf4.sol",
+      "edge": 513.81,
+      "command": "/bin/zsh -lc 'amm-match run arb_oracle_dualregime_tight30_buf4.sol --simulations 200'"
+    },
+    {
+      "strategy": "gamma2_dualregime.sol",
+      "edge": 514.29,
+      "command": "/bin/zsh -lc 'amm-match run gamma2_dualregime.sol --simulations 200'"
+    },
+    {
+      "strategy": "gamma2_dualregime.sol",
+      "edge": 506.17,
+      "command": "/bin/zsh -lc 'amm-match run gamma2_dualregime.sol --simulations 1000'"
+    },
+    {
+      "strategy": "arb_oracle_dualregime_tight30_buf4.sol",
+      "edge": 505.61,
+      "command": "/bin/zsh -lc 'amm-match run arb_oracle_dualregime_tight30_buf4.sol --simulations 1000'"
+    },
+    {
+      "strategy": "const0.sol",
+      "edge": -22.28,
+      "command": "/bin/zsh -lc 'amm-match run const0.sol --simulations 1000'"
+    },
+    {
+      "strategy": "const${f}.sol",
+      "edge": 161.1,
+      "command": "/bin/zsh -lc 'for f in 10 20 25 30 35 40 50 70 100; do echo \"--- $f\"; amm-match run const${f}.sol --simulations 200 | tail -n 1; done'"
+    },
+    {
+      "strategy": "gamma2_dualregime_undercut.sol",
+      "edge": 397.49,
+      "command": "/bin/zsh -lc 'amm-match run gamma2_dualregime_undercut.sol --simulations 200'"
+    },
+    {
+      "strategy": "gamma2_dualregime_tight40.sol",
+      "edge": 507.14,
+      "command": "/bin/zsh -lc 'amm-match run gamma2_dualregime_tight40.sol --simulations 200'"
+    },
+    {
+      "strategy": "gamma2_dualregime_tight40.sol",
+      "edge": 498.96,
+      "command": "/bin/zsh -lc 'amm-match run gamma2_dualregime_tight40.sol --simulations 1000'"
+    },
+    {
+      "strategy": "gamma2_dualregime_tight25.sol",
+      "edge": 512.74,
+      "command": "/bin/zsh -lc 'amm-match run gamma2_dualregime_tight25.sol --simulations 200'"
+    },
+    {
+      "strategy": "gamma2_dualregime_tight25.sol",
+      "edge": 504.64,
+      "command": "/bin/zsh -lc 'amm-match run gamma2_dualregime_tight25.sol --simulations 1000'"
+    }
+  ],
+  "files_created": [
+    "/Users/rbgross/amm-challenge/gamma2_dualregime_undercut.sol",
+    "/Users/rbgross/amm-challenge/gamma2_dualregime_tight40.sol",
+    "/Users/rbgross/amm-challenge/gamma2_dualregime_tight25.sol"
+  ],
+  "best_strategy": {
+    "name": "gamma2_dualregime.sol",
+    "edge": 514.29,
+    "content": null,
+    "path": null
+  },
+  "reasoning_summary": [],
+  "parameter_discoveries": {
+    "buffer_values": [],
+    "ewma_alpha_values": [],
+    "fee_values": [],
+    "threshold_values": [],
+    "edge_by_params": []
+  },
+  "n_events": 219,
+  "n_experiments": 11,
+  "n_files": 3
+}

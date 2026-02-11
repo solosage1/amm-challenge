@@ -25,8 +25,8 @@ contract Strategy is AMMStrategyBase {
         slots[3] = p0;
 
         // Slightly competitive start to get early retail flow / anchors.
-        bidFee = bpsToWad(25);
-        askFee = bpsToWad(25);
+        bidFee = bpsToWad({fee_25_bps});
+        askFee = bpsToWad({fee_25_bps});
         slots[1] = bidFee;
         slots[2] = askFee;
     }
@@ -55,7 +55,7 @@ contract Strategy is AMMStrategyBase {
             }
 
             // Robust jump clamp (retail can be first-trade when no arb hits us).
-            uint256 maxJump = 400 * BPS; // 4%
+            uint256 maxJump = {fee_400_bps} * BPS; // 4%
             if (fair != 0) {
                 uint256 rel = wdiv(absDiff(fairCandidate, fair), fair);
                 if (rel > maxJump) {
@@ -71,24 +71,24 @@ contract Strategy is AMMStrategyBase {
         }
 
         if (spot == 0 || fair == 0) {
-            bidFee = bpsToWad(30);
-            askFee = bpsToWad(30);
+            bidFee = bpsToWad({fee_30_bps});
+            askFee = bpsToWad({fee_30_bps});
             slots[1] = bidFee;
             slots[2] = askFee;
             return (bidFee, askFee);
         }
 
         uint256 mis = wdiv(absDiff(spot, fair), fair);
-        uint256 tightBand = bpsToWad(25);
+        uint256 tightBand = bpsToWad({fee_25_bps});
 
         if (mis <= tightBand) {
             // Near fair: match the normalizer so we don't pay unnecessary fee undercuts.
-            bidFee = bpsToWad(30);
-            askFee = bpsToWad(30);
+            bidFee = bpsToWad({fee_30_bps});
+            askFee = bpsToWad({fee_30_bps});
         } else {
-            uint256 gammaBase = WAD - bpsToWad(30);
+            uint256 gammaBase = WAD - bpsToWad({fee_30_bps});
             uint256 gammaBaseSq = wmul(gammaBase, gammaBase);
-            uint256 buffer = bpsToWad(4);
+            uint256 buffer = bpsToWad({fee_4_bps});
 
             if (spot > fair) {
                 // Spot > fair: protect bid side (arb would sell X to us).
@@ -118,6 +118,6 @@ contract Strategy is AMMStrategyBase {
     }
 
     function getName() external pure override returns (string memory) {
-        return "GammaSquaredDualRegime";
+        return "{name}";
     }
 }

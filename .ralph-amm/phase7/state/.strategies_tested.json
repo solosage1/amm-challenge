@@ -1,0 +1,12 @@
+[
+  {
+    "id": "GammaSquaredDualRegime",
+    "timestamp": "2026-02-10T21:23:21.273364",
+    "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_18.sol",
+    "edge_10": 534.2540861679348,
+    "edge_100": 519.6653045563332,
+    "edge_1000": 506.16513026031976,
+    "final_edge": 506.16513026031976,
+    "runtime_seconds": 73.36816501617432
+  }
+]

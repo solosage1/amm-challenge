@@ -121,3 +121,4 @@ contract Strategy is AMMStrategyBase {
         return "GammaSquaredDualRegime";
     }
 }
+

@@ -1,0 +1,49 @@
+{
+  "nominal": {
+    "edge": 502.58919458040873,
+    "gbm_sigma": 0.000945,
+    "retail_rate": 0.8,
+    "retail_size": 20.0
+  },
+  "high_vol": {
+    "edge": 501.37263947303774,
+    "gbm_sigma": 0.001008,
+    "retail_rate": 0.8,
+    "retail_size": 20.0
+  },
+  "low_vol": {
+    "edge": 503.72027421977003,
+    "gbm_sigma": 0.000882,
+    "retail_rate": 0.8,
+    "retail_size": 20.0
+  },
+  "high_retail": {
+    "edge": 686.2730994949491,
+    "gbm_sigma": 0.000945,
+    "retail_rate": 1.0,
+    "retail_size": 21.0
+  },
+  "low_retail": {
+    "edge": 347.5407073790307,
+    "gbm_sigma": 0.000945,
+    "retail_rate": 0.6,
+    "retail_size": 19.0
+  },
+  "summary": {
+    "nominal_edge": 502.58919458040873,
+    "corner_min": 347.5407073790307,
+    "corner_max": 686.2730994949491,
+    "corner_spread": 338.73239211591834,
+    "overall_min": 347.5407073790307,
+    "overall_max": 686.2730994949491,
+    "overall_spread": 338.73239211591834,
+    "weakest_regime": "low_retail",
+    "spread_warning": true
+  },
+  "metadata": {
+    "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_18.sol",
+    "strategy_name": "GammaSquaredDualRegime",
+    "sims_per_regime": 100,
+    "timestamp": "2026-02-10T21:24:55.426248"
+  }
+}
