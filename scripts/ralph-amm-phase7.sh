@@ -54,6 +54,16 @@ AUTO_OPP_SHADOW_ITERS="${AUTO_OPP_SHADOW_ITERS:-20}"      # read-only decision p
 AUTO_OPP_CANARY_PCT="${AUTO_OPP_CANARY_PCT:-20}"          # execute on <=20% iterations in canary
 AUTO_OPP_WINDOW_SIZE="${AUTO_OPP_WINDOW_SIZE:-20}"        # non-regression window
 
+# Execution gates (generic threshold-driven safety/efficiency controls)
+EXEC_GATES_ENABLED="${EXEC_GATES_ENABLED:-1}"                       # 1=enable real-time/batch/promotion gates
+GATE_EARLY_ABORT_ENABLED="${GATE_EARLY_ABORT_ENABLED:-1}"           # 1=kill codex if first N runs all below threshold
+GATE_EARLY_MIN_RESULTS="${GATE_EARLY_MIN_RESULTS:-4}"               # first N authoritative runs for early-abort decision
+GATE_EARLY_DELTA="${GATE_EARLY_DELTA:-0.8}"                         # threshold: champion - delta
+GATE_BATCH_FAIL_DELTA="${GATE_BATCH_FAIL_DELTA:-0.5}"               # batch fail if batch best < champion - delta
+GATE_PROMOTION_CONFIRMATIONS="${GATE_PROMOTION_CONFIRMATIONS:-3}"   # confirmations required before promotion
+GATE_MIN_SIMS="${GATE_MIN_SIMS:-1000}"                              # authoritative sim cutoff for gate sampling
+GATE_MONITOR_POLL_SECONDS="${GATE_MONITOR_POLL_SECONDS:-1.0}"       # real-time monitor poll cadence
+
 # Template extraction (reachable) rules
 TEMPLATE_MIN_EDGE="${TEMPLATE_MIN_EDGE:-350.0}"
 TEMPLATE_WITHIN_BEST="${TEMPLATE_WITHIN_BEST:-5.0}"
@@ -75,6 +85,11 @@ STATE_OPP_HISTORY="$PHASE7_STATE_DIR/.opportunity_history.json"
 STATE_OPP_PRIORS="$PHASE7_STATE_DIR/.opportunity_priors.json"
 STATE_OPP_ROLLOUT="$PHASE7_STATE_DIR/.autoloop_rollout_state.json"
 STATE_OPP_ACTIVE_PLAN="$PHASE7_STATE_DIR/.autoplan_active.json"
+STATE_EXEC_GATES="$PHASE7_STATE_DIR/.execution_gates.json"
+STATE_PROMO_CONFIRMATIONS="$PHASE7_STATE_DIR/.promotion_confirmations.json"
+
+# Shared per-iteration gate abort reason set by invoke_codex_generator.
+LAST_GATE_ABORT_REASON=""
 
 # ============================================================================
 # UTILITY FUNCTIONS
@@ -155,7 +170,7 @@ init_phase7_state() {
     # Initialize / repair state files (must be valid JSON / scalars).
     "$VENV_PY" - "$STATE_ITERATION" "$STATE_CHAMPION" "$STATE_CHAMPION_SCORE" "$STATE_STRATEGIES" "$STATE_TEMPLATES" \
         "$STATE_RATE_LIMIT" "$STATE_START_TIME" "$STATE_OPP_HISTORY" "$STATE_OPP_PRIORS" "$STATE_OPP_ROLLOUT" \
-        "$STATE_OPP_ACTIVE_PLAN" \
+        "$STATE_OPP_ACTIVE_PLAN" "$STATE_EXEC_GATES" "$STATE_PROMO_CONFIRMATIONS" \
         <<'PY'
 import json
 import os
@@ -174,6 +189,8 @@ state_opp_history = Path(sys.argv[8])
 state_opp_priors = Path(sys.argv[9])
 state_opp_rollout = Path(sys.argv[10])
 state_opp_active_plan = Path(sys.argv[11])
+state_exec_gates = Path(sys.argv[12])
+state_promo_confirmations = Path(sys.argv[13])
 
 def atomic_write_text(path: Path, text: str) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -226,6 +243,16 @@ ensure_json_file(state_opp_rollout, {
     "last_updated": None
 })
 ensure_json_file(state_opp_active_plan, {})
+ensure_json_file(state_exec_gates, {
+    "schema_version": "1.0",
+    "iterations": {},
+    "last_updated": None
+})
+ensure_json_file(state_promo_confirmations, {
+    "schema_version": "1.0",
+    "candidates": {},
+    "last_updated": None
+})
 PY
 
     log "INFO" "State initialized."
@@ -310,6 +337,180 @@ record_opportunity_outcome() {
         --status "$status" \
         --plan-file "$plan_path" \
         --result-file "$result_path" >/dev/null 2>&1 || true
+}
+
+gate_iteration_field() {
+    local iteration="$1"
+    local field="$2"
+    "$VENV_PY" - "$STATE_EXEC_GATES" "$iteration" "$field" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+state_path = Path(sys.argv[1])
+iteration = str(int(float(sys.argv[2])))
+field = sys.argv[3]
+
+if not state_path.exists():
+    print("")
+    raise SystemExit(0)
+try:
+    data = json.loads(state_path.read_text())
+except Exception:
+    print("")
+    raise SystemExit(0)
+
+it = (((data if isinstance(data, dict) else {}).get("iterations") or {}).get(iteration))
+if not isinstance(it, dict):
+    print("")
+    raise SystemExit(0)
+
+cur = it
+for part in field.split("."):
+    if not isinstance(cur, dict) or part not in cur:
+        print("")
+        raise SystemExit(0)
+    cur = cur[part]
+
+if isinstance(cur, bool):
+    print("true" if cur else "false")
+elif cur is None:
+    print("")
+else:
+    print(cur)
+PY
+}
+
+set_gate_iteration_promotion_status() {
+    local iteration="$1"
+    local blocked="$2"
+    local reason="$3"
+    local confirmations="$4"
+    local required="$5"
+
+    "$VENV_PY" - "$STATE_EXEC_GATES" "$iteration" "$blocked" "$reason" "$confirmations" "$required" <<'PY'
+import json
+import os
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+state_path = Path(sys.argv[1])
+iteration = str(int(float(sys.argv[2])))
+blocked = sys.argv[3].strip().lower() == "true"
+reason = sys.argv[4]
+confirmations = int(float(sys.argv[5] or 0))
+required = int(float(sys.argv[6] or 0))
+
+def now():
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+try:
+    data = json.loads(state_path.read_text()) if state_path.exists() else {}
+except Exception:
+    data = {}
+if not isinstance(data, dict):
+    data = {}
+data.setdefault("schema_version", "1.0")
+data.setdefault("iterations", {})
+it = data["iterations"].setdefault(iteration, {"iteration": int(iteration)})
+if not isinstance(it, dict):
+    it = {"iteration": int(iteration)}
+    data["iterations"][iteration] = it
+promo = it.setdefault("promotion_gate", {})
+promo["blocked"] = blocked
+promo["reason"] = reason or None
+promo["confirmations"] = confirmations
+promo["required"] = required
+promo["updated_at"] = now()
+it["updated_at"] = now()
+data["last_updated"] = now()
+tmp = state_path.with_suffix(state_path.suffix + ".tmp")
+tmp.write_text(json.dumps(data, indent=2))
+os.replace(tmp, state_path)
+PY
+}
+
+record_promotion_confirmation() {
+    local iteration="$1"
+    local strategy_name="$2"
+    local strategy_path="$3"
+    local final_edge="$4"
+    local effective_score="$5"
+
+    "$VENV_PY" - "$STATE_PROMO_CONFIRMATIONS" "$iteration" "$strategy_name" "$strategy_path" "$final_edge" "$effective_score" <<'PY'
+import hashlib
+import json
+import os
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+state_path = Path(sys.argv[1])
+iteration = int(float(sys.argv[2]))
+strategy_name = sys.argv[3]
+strategy_path = Path(sys.argv[4])
+final_edge = float(sys.argv[5])
+effective_score = float(sys.argv[6])
+
+def now():
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+if strategy_path.exists():
+    digest = hashlib.sha256(strategy_path.read_bytes()).hexdigest()
+else:
+    digest = f"missing:{strategy_name}:{iteration}"
+
+try:
+    data = json.loads(state_path.read_text()) if state_path.exists() else {}
+except Exception:
+    data = {}
+if not isinstance(data, dict):
+    data = {}
+data.setdefault("schema_version", "1.0")
+data.setdefault("candidates", {})
+candidates = data["candidates"]
+rec = candidates.setdefault(digest, {
+    "strategy_name": strategy_name,
+    "strategy_path": str(strategy_path),
+    "first_seen_iteration": iteration,
+    "confirmations": [],
+    "best_effective_score": effective_score,
+    "best_edge": final_edge,
+})
+if not isinstance(rec, dict):
+    rec = {
+        "strategy_name": strategy_name,
+        "strategy_path": str(strategy_path),
+        "first_seen_iteration": iteration,
+        "confirmations": [],
+        "best_effective_score": effective_score,
+        "best_edge": final_edge,
+    }
+    candidates[digest] = rec
+
+confs = rec.setdefault("confirmations", [])
+seen_iters = {int(c.get("iteration", -1)) for c in confs if isinstance(c, dict)}
+if iteration not in seen_iters:
+    confs.append({
+        "iteration": iteration,
+        "timestamp": now(),
+        "final_edge": final_edge,
+        "effective_score": effective_score,
+    })
+rec["strategy_name"] = strategy_name
+rec["strategy_path"] = str(strategy_path)
+rec["best_effective_score"] = max(float(rec.get("best_effective_score", effective_score)), effective_score)
+rec["best_edge"] = max(float(rec.get("best_edge", final_edge)), final_edge)
+rec["last_seen_iteration"] = iteration
+rec["updated_at"] = now()
+data["last_updated"] = now()
+
+tmp = state_path.with_suffix(state_path.suffix + ".tmp")
+tmp.write_text(json.dumps(data, indent=2))
+os.replace(tmp, state_path)
+print(len(rec.get("confirmations", [])))
+PY
 }
 
 # ============================================================================
@@ -426,6 +627,11 @@ invoke_codex_generator() {
     # CRITICAL: Add timeout to prevent iteration from running indefinitely.
     local codex_ok=1
     local timeout_minutes="${CODEX_TIMEOUT_MINUTES:-40}"  # 40 minute default (down from 50 for graceful termination)
+    local codex_pid=""
+    local gate_monitor_pid=""
+    local champion_baseline
+    champion_baseline="$(cat "$STATE_CHAMPION" 2>/dev/null || echo "0")"
+    LAST_GATE_ABORT_REASON=""
 
     # Shell tool is enabled by default. Set CODEX_DISABLE_SHELL_TOOL=1 (or pass --disable-shell-tool)
     # to prevent Codex from running local commands.
@@ -441,14 +647,43 @@ invoke_codex_generator() {
             --output-last-message "$codex_last_msg_path" \
             ${codex_disable_args[@]+"${codex_disable_args[@]}"} \
             --model "$CODEX_MODEL" \
-            - < "$prompt_path" > "$codex_jsonl_path" 2> "$codex_stderr_path" && codex_ok=0 || codex_ok=$?
+            - < "$prompt_path" > "$codex_jsonl_path" 2> "$codex_stderr_path" &
     else
         timeout "${timeout_minutes}m" codex exec \
             --json \
             --config "max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS" \
             --output-last-message "$codex_last_msg_path" \
             ${codex_disable_args[@]+"${codex_disable_args[@]}"} \
-            - < "$prompt_path" > "$codex_jsonl_path" 2> "$codex_stderr_path" && codex_ok=0 || codex_ok=$?
+            - < "$prompt_path" > "$codex_jsonl_path" 2> "$codex_stderr_path" &
+    fi
+    codex_pid=$!
+
+    if [[ "${EXEC_GATES_ENABLED}" == "1" && -f "scripts/amm-phase7-gate-monitor.py" ]]; then
+        local gate_monitor_args=(
+            --jsonl "$codex_jsonl_path"
+            --state-file "$STATE_EXEC_GATES"
+            --iteration "$iteration"
+            --codex-pid "$codex_pid"
+            --champion-baseline "$champion_baseline"
+            --min-sims "$GATE_MIN_SIMS"
+            --early-min-results "$GATE_EARLY_MIN_RESULTS"
+            --early-delta "$GATE_EARLY_DELTA"
+            --batch-fail-delta "$GATE_BATCH_FAIL_DELTA"
+            --poll-seconds "$GATE_MONITOR_POLL_SECONDS"
+        )
+        if [[ "${GATE_EARLY_ABORT_ENABLED}" == "1" ]]; then
+            gate_monitor_args+=(--early-enabled)
+        fi
+        "$VENV_PY" scripts/amm-phase7-gate-monitor.py \
+            ${gate_monitor_args[@]+"${gate_monitor_args[@]}"} \
+            >> "$PHASE7_STATE_DIR/gate_monitor.log" 2>&1 &
+        gate_monitor_pid=$!
+        log "INFO" "  Started execution gate monitor (PID $gate_monitor_pid)"
+    fi
+
+    wait "$codex_pid" && codex_ok=0 || codex_ok=$?
+    if [[ -n "$gate_monitor_pid" ]]; then
+        wait "$gate_monitor_pid" 2>/dev/null || true
     fi
 
     # === STOP LIVE EXTRACTOR ===
@@ -456,6 +691,24 @@ invoke_codex_generator() {
         kill "$extractor_pid" 2>/dev/null || true
         wait "$extractor_pid" 2>/dev/null || true
         log "INFO" "  Stopped live extractor"
+    fi
+
+    if [[ "${EXEC_GATES_ENABLED}" == "1" ]]; then
+        local gate_early_triggered
+        local gate_early_reason
+        local gate_batch_best
+        local gate_batch_count
+        gate_early_triggered="$(gate_iteration_field "$iteration" "early_abort.triggered")"
+        gate_early_reason="$(gate_iteration_field "$iteration" "early_abort.trigger_reason")"
+        gate_batch_best="$(gate_iteration_field "$iteration" "batch.best_edge")"
+        gate_batch_count="$(gate_iteration_field "$iteration" "batch.count")"
+        if [[ "$gate_early_triggered" == "true" ]]; then
+            LAST_GATE_ABORT_REASON="${gate_early_reason:-execution gate early-abort triggered}"
+            log "WARN" "Execution gate early-abort triggered: ${LAST_GATE_ABORT_REASON}"
+        fi
+        if [[ -n "$gate_batch_count" ]]; then
+            log "INFO" "  Execution gate batch snapshot: count=${gate_batch_count} best=${gate_batch_best:-N/A}"
+        fi
     fi
 
     # === HANDLE TIMEOUT (exit code 124) - RECOVER FROM CHECKPOINT ===
@@ -819,10 +1072,14 @@ main_loop() {
         local final_score=""
         local effective_score=""
         local score_source="none"
+        local strategy_name="Unknown"
         local opp_mode="off"
         local opp_execute="false"
         local autoplan_for_prompt=""
         local is_new_champion="0"
+        local batch_gate_failed="false"
+        local batch_gate_reason=""
+        local promotion_gate_blocked="false"
 
         # === STEP 0: Harvest results from previous Codex session ===
         log "INFO" "Refreshing harvested session knowledge..."
@@ -888,7 +1145,10 @@ main_loop() {
             log "WARN" "Codex invocation failed, continuing to next iteration"
             status="codex_failed"
             error_stage="codex"
-            error_message="$("$VENV_PY" - "$codex_stderr_path" <<'PY'
+            if [[ -n "${LAST_GATE_ABORT_REASON:-}" ]]; then
+                error_message="$LAST_GATE_ABORT_REASON"
+            else
+                error_message="$("$VENV_PY" - "$codex_stderr_path" <<'PY'
 from pathlib import Path
 import sys
 p=Path(sys.argv[1])
@@ -899,11 +1159,26 @@ lines=p.read_text(errors="ignore").strip().splitlines()
 print((lines[-1] if lines else "codex failed").strip()[:300])
 PY
 )"
+            fi
             append_strategies_log_entry "$iteration" "$status" "$error_stage" "$error_message" \
                 "$prompt_path" "$codex_jsonl_path" "$codex_stderr_path" "$codex_last_msg_path" \
                 "$strategy_path" "$metadata_path" "$result_path"
             record_opportunity_outcome "$iteration" "$status" "$result_path" "$opp_plan_path"
             continue
+        fi
+
+        if [[ "${EXEC_GATES_ENABLED}" == "1" ]]; then
+            batch_gate_failed="$(gate_iteration_field "$iteration" "batch.failed")"
+            batch_gate_reason="$(gate_iteration_field "$iteration" "batch.fail_reason")"
+            local batch_gate_best
+            local batch_gate_count
+            batch_gate_best="$(gate_iteration_field "$iteration" "batch.best_edge")"
+            batch_gate_count="$(gate_iteration_field "$iteration" "batch.count")"
+            if [[ "$batch_gate_failed" == "true" ]]; then
+                log "WARN" "Batch fail gate active for iteration $iteration: ${batch_gate_reason:-batch best below threshold}"
+            else
+                log "INFO" "Batch gate check: count=${batch_gate_count:-0} best=${batch_gate_best:-N/A} (pass)"
+            fi
         fi
 
         # === STEP 3: Extract strategy code from Codex response ===
@@ -964,6 +1239,15 @@ v=data.get("final_score", None)
 print(v if v is not None else "")
 PY
 )"
+        strategy_name="$("$VENV_PY" - "$result_path" <<'PY'
+import json, sys
+from pathlib import Path
+p=Path(sys.argv[1])
+data=json.loads(p.read_text())
+v=data.get("strategy_name", "Unknown")
+print(v if v is not None else "Unknown")
+PY
+)"
         if [[ -n "$final_edge" ]]; then
             log "INFO" "  → Final Edge (1000 sims): $final_edge"
         else
@@ -986,19 +1270,68 @@ PY
             --result "$result_path" \
             --state-dir "$PHASE7_STATE_DIR" 2>/dev/null || true
 
-        # === STEP 7: Check if new champion (selection on robust score with fallback) ===
-        local current_best=$(cat "$STATE_CHAMPION")
-        local current_best_score=$(cat "$STATE_CHAMPION_SCORE")
+        # === STEP 7: Check if new champion (gated promotion enforcement) ===
+        local current_best
+        local current_best_score
+        current_best="$(cat "$STATE_CHAMPION")"
+        current_best_score="$(cat "$STATE_CHAMPION_SCORE")"
+        local beats_score="false"
+        local beats_edge="false"
         if [[ -n "$effective_score" ]] && float_gt "$effective_score" "$current_best_score"; then
-            log "INFO" "  🏆 NEW CHAMPION (score source: $score_source)! $effective_score beats $current_best_score"
-            echo "$effective_score" > "$STATE_CHAMPION_SCORE"
-            cp "$strategy_path" "$PHASE7_STATE_DIR/.best_strategy.sol"
-            is_new_champion="1"
+            beats_score="true"
         fi
-        # Keep raw edge benchmark for target/compatibility.
         if [[ -n "$final_edge" ]] && float_gt "$final_edge" "$current_best"; then
-            log "INFO" "  📈 New best raw edge: $final_edge beats $current_best"
-            echo "$final_edge" > "$STATE_CHAMPION"
+            beats_edge="true"
+        fi
+
+        local confirmation_count=0
+        local promotion_confirmed="false"
+        local promotion_reason=""
+        if [[ "$beats_score" == "true" || "$beats_edge" == "true" ]]; then
+            if [[ "$batch_gate_failed" == "true" ]]; then
+                promotion_gate_blocked="true"
+                promotion_reason="${batch_gate_reason:-batch fail gate active; promotion blocked}"
+            elif [[ "${EXEC_GATES_ENABLED}" == "1" ]] && (( GATE_PROMOTION_CONFIRMATIONS > 1 )); then
+                if [[ -z "$final_edge" ]]; then
+                    promotion_gate_blocked="true"
+                    promotion_reason="candidate beat champion but lacks authoritative ${GATE_MIN_SIMS}-sim edge result"
+                else
+                    confirmation_count="$(record_promotion_confirmation "$iteration" "$strategy_name" "$strategy_path" "$final_edge" "$effective_score")"
+                    if (( confirmation_count >= GATE_PROMOTION_CONFIRMATIONS )); then
+                        promotion_confirmed="true"
+                    else
+                        promotion_gate_blocked="true"
+                        promotion_reason="promotion pending confirmations: ${confirmation_count}/${GATE_PROMOTION_CONFIRMATIONS}"
+                    fi
+                fi
+            else
+                promotion_confirmed="true"
+            fi
+        fi
+
+        if [[ "$promotion_confirmed" == "true" ]]; then
+            if [[ "$beats_score" == "true" ]]; then
+                log "INFO" "  🏆 NEW CHAMPION (score source: $score_source)! $effective_score beats $current_best_score"
+                echo "$effective_score" > "$STATE_CHAMPION_SCORE"
+                cp "$strategy_path" "$PHASE7_STATE_DIR/.best_strategy.sol"
+                is_new_champion="1"
+            fi
+            if [[ "$beats_edge" == "true" ]]; then
+                log "INFO" "  📈 New best raw edge: $final_edge beats $current_best"
+                echo "$final_edge" > "$STATE_CHAMPION"
+                is_new_champion="1"
+            fi
+        elif [[ "$promotion_gate_blocked" == "true" ]]; then
+            log "INFO" "  ⛔ Promotion gate blocked champion update: ${promotion_reason}"
+        fi
+
+        if [[ "${EXEC_GATES_ENABLED}" == "1" ]]; then
+            set_gate_iteration_promotion_status \
+                "$iteration" \
+                "$promotion_gate_blocked" \
+                "$promotion_reason" \
+                "$confirmation_count" \
+                "$GATE_PROMOTION_CONFIRMATIONS"
         fi
 
         # Append Phase 7 source-of-truth log entry (exactly one per iteration).
@@ -1218,6 +1551,16 @@ Options:
     --auto-opp-shadow N     Shadow iterations before execution (default: 20)
     --auto-opp-canary N     Canary execute percentage after shadow (default: 20)
     --auto-opp-window N     Non-regression window size in iterations (default: 20)
+    --exec-gates-enable     Enable shell-level execution gates (default: enabled)
+    --exec-gates-disable    Disable shell-level execution gates
+    --gate-early-enable     Enable early-abort gate (default: enabled)
+    --gate-early-disable    Disable early-abort gate
+    --gate-early-n N        Early-abort sample size (default: 4)
+    --gate-early-delta N    Early-abort delta below champion (default: 0.8)
+    --gate-batch-delta N    Batch-fail delta below champion (default: 0.5)
+    --gate-confirmations N  Confirmations required for promotion (default: 3)
+    --gate-min-sims N       Minimum sims for authoritative gate samples (default: 1000)
+    --gate-monitor-poll N   Gate monitor poll seconds (default: 1.0)
     --enable-shell-tool     Allow Codex to run local commands (default)
     --disable-shell-tool    Prevent Codex from running local commands (may cause stalls in some setups)
     --help                  Show this help message
@@ -1293,6 +1636,46 @@ while [[ $# -gt 0 ]]; do
             AUTO_OPP_WINDOW_SIZE="$2"
             shift 2
             ;;
+        --exec-gates-enable)
+            EXEC_GATES_ENABLED="1"
+            shift 1
+            ;;
+        --exec-gates-disable)
+            EXEC_GATES_ENABLED="0"
+            shift 1
+            ;;
+        --gate-early-enable)
+            GATE_EARLY_ABORT_ENABLED="1"
+            shift 1
+            ;;
+        --gate-early-disable)
+            GATE_EARLY_ABORT_ENABLED="0"
+            shift 1
+            ;;
+        --gate-early-n)
+            GATE_EARLY_MIN_RESULTS="$2"
+            shift 2
+            ;;
+        --gate-early-delta)
+            GATE_EARLY_DELTA="$2"
+            shift 2
+            ;;
+        --gate-batch-delta)
+            GATE_BATCH_FAIL_DELTA="$2"
+            shift 2
+            ;;
+        --gate-confirmations)
+            GATE_PROMOTION_CONFIRMATIONS="$2"
+            shift 2
+            ;;
+        --gate-min-sims)
+            GATE_MIN_SIMS="$2"
+            shift 2
+            ;;
+        --gate-monitor-poll)
+            GATE_MONITOR_POLL_SECONDS="$2"
+            shift 2
+            ;;
         --enable-shell-tool)
             CODEX_DISABLE_SHELL_TOOL="0"
             shift 1
@@ -1323,11 +1706,15 @@ require_cmd codex
 if [[ "${AUTO_OPP_ENGINE_ENABLED}" == "1" ]]; then
     require_file "scripts/amm-phase7-opportunity-engine.py" "missing opportunity engine script"
 fi
+if [[ "${EXEC_GATES_ENABLED}" == "1" ]]; then
+    require_file "scripts/amm-phase7-gate-monitor.py" "missing execution gate monitor script"
+fi
 
 log "INFO" "Codex config: model=${CODEX_MODEL:-<default>} max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS timeout_minutes=$CODEX_TIMEOUT_MINUTES CODEX_DISABLE_SHELL_TOOL=$CODEX_DISABLE_SHELL_TOOL"
 log "INFO" "Pipeline config: screen_sims=$PIPE_SCREEN_SIMS screen_min_edge=$PIPE_SCREEN_MIN_EDGE predicted_drop=$PIPE_PREDICTED_DROP predicted_min_edge=$PIPE_PREDICTED_MIN_EDGE robust_free_spread=$ROBUST_FREE_SPREAD robust_penalty=$ROBUST_PENALTY_PER_POINT"
 log "INFO" "Knowledge guardrail config: epsilon=$KNOWLEDGE_GUARDRAIL_EPSILON"
 log "INFO" "Autonomous opportunity config: enabled=$AUTO_OPP_ENGINE_ENABLED shadow_iters=$AUTO_OPP_SHADOW_ITERS canary_pct=$AUTO_OPP_CANARY_PCT window_size=$AUTO_OPP_WINDOW_SIZE"
+log "INFO" "Execution gate config: enabled=$EXEC_GATES_ENABLED early_enabled=$GATE_EARLY_ABORT_ENABLED early_n=$GATE_EARLY_MIN_RESULTS early_delta=$GATE_EARLY_DELTA batch_delta=$GATE_BATCH_FAIL_DELTA confirmations=$GATE_PROMOTION_CONFIRMATIONS min_sims=$GATE_MIN_SIMS poll_s=$GATE_MONITOR_POLL_SECONDS"
 if [[ "${CODEX_DISABLE_SHELL_TOOL}" == "1" ]]; then
     log "WARN" "Shell tool is disabled. If Codex stalls after {turn.started} with no tokens, re-run with --enable-shell-tool or set CODEX_DISABLE_SHELL_TOOL=0."
 fi
