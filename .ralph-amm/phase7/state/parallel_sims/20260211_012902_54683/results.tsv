@@ -1,0 +1,11 @@
+strategy	status	edge	duration_s	log_file
+bgate_v1.sol	0	508.25	104	.ralph-amm/phase7/state/parallel_sims/20260211_012902_54683/1_bgate_v1.log
+bgate_v2.sol	0	508.18	104	.ralph-amm/phase7/state/parallel_sims/20260211_012902_54683/2_bgate_v2.log
+bgate_v3.sol	0	508.16	104	.ralph-amm/phase7/state/parallel_sims/20260211_012902_54683/3_bgate_v3.log
+bgate_v4.sol	0	508.13	104	.ralph-amm/phase7/state/parallel_sims/20260211_012902_54683/4_bgate_v4.log
+bgate_v5.sol	0	507.70	107	.ralph-amm/phase7/state/parallel_sims/20260211_012902_54683/5_bgate_v5.log
+bgate_v6.sol	0	507.69	107	.ralph-amm/phase7/state/parallel_sims/20260211_012902_54683/6_bgate_v6.log
+bgate_v7.sol	0	507.73	107	.ralph-amm/phase7/state/parallel_sims/20260211_012902_54683/7_bgate_v7.log
+bgate_v8.sol	0	508.13	107	.ralph-amm/phase7/state/parallel_sims/20260211_012902_54683/8_bgate_v8.log
+bgate_v9.sol	0	507.63	54	.ralph-amm/phase7/state/parallel_sims/20260211_012902_54683/9_bgate_v9.log
+bgate_v10.sol	0	507.61	54	.ralph-amm/phase7/state/parallel_sims/20260211_012902_54683/10_bgate_v10.log

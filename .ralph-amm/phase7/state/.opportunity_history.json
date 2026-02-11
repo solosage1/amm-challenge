@@ -65,5 +65,43 @@
     "delta_vs_reference": null,
     "validated": null,
     "severe_failure": false
+  },
+  {
+    "schema_version": "1.0",
+    "recorded_at": "2026-02-11T06:25:48.007851Z",
+    "iteration": 12,
+    "status": "extract_failed",
+    "plan_file": ".ralph-amm/phase7/state/autoplan_iter12.json",
+    "mode": "canary",
+    "execute_this_iteration": true,
+    "selected_opportunity": "adaptive_undercut_search",
+    "expected_uplift": 4.05,
+    "reference_best_edge": 508.25,
+    "final_edge": null,
+    "final_score": null,
+    "delta_vs_reference": null,
+    "validated": null,
+    "severe_failure": false
+  },
+  {
+    "schema_version": "1.0",
+    "recorded_at": "2026-02-11T06:34:42.969487Z",
+    "iteration": 13,
+    "status": "extract_failed",
+    "plan_file": ".ralph-amm/phase7/state/autoplan_iter13.json",
+    "mode": "canary",
+    "execute_this_iteration": true,
+    "selected_opportunity": "adaptive_undercut_search",
+    "selected_family_class": "undercut_sweep",
+    "expected_uplift": 4.05,
+    "reference_best_edge": 508.25,
+    "final_edge": null,
+    "edge_source": "result_file",
+    "edge_fallback": null,
+    "final_score": null,
+    "delta_vs_reference": null,
+    "no_uplift": false,
+    "validated": null,
+    "severe_failure": false
   }
 ]

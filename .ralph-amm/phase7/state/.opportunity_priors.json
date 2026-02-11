@@ -12,7 +12,7 @@
   "adaptive_undercut_search": {
     "successes": 0,
     "failures": 0,
-    "neutral": 2,
+    "neutral": 4,
     "severe_failures": 0,
     "cooldown_until_iteration": 0,
     "cooldown_reason": null

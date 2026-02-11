@@ -4777,5 +4777,107 @@
     "artifact_paths": {
       "strategy_file": "./gate2r_v7.sol"
     }
+  },
+  {
+    "iteration": 12,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T06:25:47.963258Z",
+    "final_edge": null,
+    "final_score": null,
+    "effective_score": null,
+    "score_source": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_12_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_12_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_12_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_12_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_12.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_12.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_12_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 13,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T06:34:42.925881Z",
+    "final_edge": null,
+    "final_score": null,
+    "effective_score": null,
+    "score_source": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_13_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_13_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_13_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_13_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_13.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_13.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_13_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 13,
+    "status": "harvested",
+    "timestamp": "2026-02-11T06:34:43.064544Z",
+    "final_edge": 506.17,
+    "strategy_name": "GammaSquaredDualRegime",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": ".ralph-amm/phase7/state/.best_strategy.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": ".ralph-amm/phase7/state/.best_strategy.sol"
+    }
+  },
+  {
+    "iteration": 13,
+    "status": "harvested",
+    "timestamp": "2026-02-11T06:34:43.064569Z",
+    "final_edge": 508.25,
+    "strategy_name": "bgate_v1",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "bgate_v1.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "bgate_v1.sol"
+    }
   }
 ]

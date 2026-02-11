@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-02-11T06:25:48.216692Z",
+  "iteration": 13,
+  "signals": {
+    "window_size": 20,
+    "ok_count": 0,
+    "success_rate": 0.0,
+    "median_runtime_seconds": null,
+    "guardrail_failures": 0,
+    "plateau_strength": 0.0,
+    "brittleness_strength": 0.0,
+    "sweep_failure_strength": 0.0
+  },
+  "weights": {
+    "expected_uplift": 0.35,
+    "confidence": 0.25,
+    "time_to_signal": 0.15,
+    "complexity_inverse": 0.1,
+    "overfit_risk_inverse": 0.15
+  },
+  "ranked_opportunities": [
+    {
+      "id": "adaptive_undercut_search",
+      "rationale": "Undercut signal is strong; prefer lightweight regime-aware undercut before heavy state-machine logic.",
+      "expected_uplift": 4.05,
+      "confidence": 5.25,
+      "time_to_signal": 8.0,
+      "complexity": 3.0,
+      "overfit_risk": 4.0,
+      "weighted_score": 55.3
+    },
+    {
+      "id": "parallel_parameter_beam",
+      "rationale": "If sweep throughput is bottlenecked, parallel beams can improve search efficiency.",
+      "expected_uplift": 1.75,
+      "confidence": 6.0,
+      "time_to_signal": 9.0,
+      "complexity": 4.0,
+      "overfit_risk": 6.0,
+      "weighted_score": 46.625
+    },
+    {
+      "id": "robustness_repair_search",
+      "rationale": "Spread instability indicates robust-score improvements may unlock reliable gains.",
+      "expected_uplift": 2.75,
+      "confidence": 3.75,
+      "time_to_signal": 7.0,
+      "complexity": 5.0,
+      "overfit_risk": 3.0,
+      "weighted_score": 45.0
+    },
+    {
+      "id": "regime_state_transition_search",
+      "rationale": "Plateau/brittleness suggest structure-level transition logic is under-optimized. [cooldown active: 13 iteration(s), until 25]",
+      "expected_uplift": 1.75,
+      "confidence": 0.25,
+      "time_to_signal": 6.0,
+      "complexity": 6.0,
+      "overfit_risk": 5.0,
+      "weighted_score": 27.25
+    }
+  ]
+}

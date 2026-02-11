@@ -360,7 +360,512 @@
       "status": "monitor_running",
       "families": {},
       "updated_at": "2026-02-11T06:14:52.508832Z"
+    },
+    "12": {
+      "iteration": 12,
+      "created_at": "2026-02-11T06:17:03.522006Z",
+      "champion_baseline": 508.25,
+      "authoritative_simulations": 1000,
+      "observed_edges": [
+        {
+          "timestamp": "2026-02-11T06:22:52.879437Z",
+          "strategy": "aus_u3_v1.sol",
+          "edge": 508.25,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh aus_u3_v1.sol aus_u3_v2.sol aus_u3_v3.sol aus_u3_v4.sol aus_u3_v5.sol aus_u3_v6.sol aus_u3_v7.sol aus_u3_v8.sol aus_u3_v9.sol aus_u3_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T06:22:52.879489Z",
+          "strategy": "aus_u3_v2.sol",
+          "edge": 508.15,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh aus_u3_v1.sol aus_u3_v2.sol aus_u3_v3.sol aus_u3_v4.sol aus_u3_v5.sol aus_u3_v6.sol aus_u3_v7.sol aus_u3_v8.sol aus_u3_v9.sol aus_u3_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T06:22:52.879491Z",
+          "strategy": "aus_u3_v3.sol",
+          "edge": 508.1,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh aus_u3_v1.sol aus_u3_v2.sol aus_u3_v3.sol aus_u3_v4.sol aus_u3_v5.sol aus_u3_v6.sol aus_u3_v7.sol aus_u3_v8.sol aus_u3_v9.sol aus_u3_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T06:22:52.879493Z",
+          "strategy": "aus_u3_v4.sol",
+          "edge": 508.16,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh aus_u3_v1.sol aus_u3_v2.sol aus_u3_v3.sol aus_u3_v4.sol aus_u3_v5.sol aus_u3_v6.sol aus_u3_v7.sol aus_u3_v8.sol aus_u3_v9.sol aus_u3_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T06:22:52.879494Z",
+          "strategy": "aus_u3_v5.sol",
+          "edge": 508.13,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh aus_u3_v1.sol aus_u3_v2.sol aus_u3_v3.sol aus_u3_v4.sol aus_u3_v5.sol aus_u3_v6.sol aus_u3_v7.sol aus_u3_v8.sol aus_u3_v9.sol aus_u3_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T06:22:52.879497Z",
+          "strategy": "aus_u3_v6.sol",
+          "edge": 508.09,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh aus_u3_v1.sol aus_u3_v2.sol aus_u3_v3.sol aus_u3_v4.sol aus_u3_v5.sol aus_u3_v6.sol aus_u3_v7.sol aus_u3_v8.sol aus_u3_v9.sol aus_u3_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T06:22:52.879498Z",
+          "strategy": "aus_u3_v7.sol",
+          "edge": 508.1,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh aus_u3_v1.sol aus_u3_v2.sol aus_u3_v3.sol aus_u3_v4.sol aus_u3_v5.sol aus_u3_v6.sol aus_u3_v7.sol aus_u3_v8.sol aus_u3_v9.sol aus_u3_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T06:22:52.879499Z",
+          "strategy": "aus_u3_v8.sol",
+          "edge": 507.59,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh aus_u3_v1.sol aus_u3_v2.sol aus_u3_v3.sol aus_u3_v4.sol aus_u3_v5.sol aus_u3_v6.sol aus_u3_v7.sol aus_u3_v8.sol aus_u3_v9.sol aus_u3_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T06:22:52.879500Z",
+          "strategy": "aus_u3_v9.sol",
+          "edge": 508.09,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh aus_u3_v1.sol aus_u3_v2.sol aus_u3_v3.sol aus_u3_v4.sol aus_u3_v5.sol aus_u3_v6.sol aus_u3_v7.sol aus_u3_v8.sol aus_u3_v9.sol aus_u3_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T06:22:52.879501Z",
+          "strategy": "aus_u3_v10.sol",
+          "edge": 507.55,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh aus_u3_v1.sol aus_u3_v2.sol aus_u3_v3.sol aus_u3_v4.sol aus_u3_v5.sol aus_u3_v6.sol aus_u3_v7.sol aus_u3_v8.sol aus_u3_v9.sol aus_u3_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T06:25:23.480199Z",
+          "strategy": "canary_mode3_v1.sol",
+          "edge": 506.98,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh canary_mode3_v1.sol canary_mode3_v4.sol canary_mode3_v5.sol --workers 3 --sims 1000 --champion 508.25 --early-n 3 --early-delta 0.8 --batch-delta 0.5'"
+        },
+        {
+          "timestamp": "2026-02-11T06:25:23.480221Z",
+          "strategy": "canary_mode3_v4.sol",
+          "edge": 506.82,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh canary_mode3_v1.sol canary_mode3_v4.sol canary_mode3_v5.sol --workers 3 --sims 1000 --champion 508.25 --early-n 3 --early-delta 0.8 --batch-delta 0.5'"
+        },
+        {
+          "timestamp": "2026-02-11T06:25:23.480223Z",
+          "strategy": "canary_mode3_v5.sol",
+          "edge": 506.79,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh canary_mode3_v1.sol canary_mode3_v4.sol canary_mode3_v5.sol --workers 3 --sims 1000 --champion 508.25 --early-n 3 --early-delta 0.8 --batch-delta 0.5'"
+        }
+      ],
+      "observed_item_ids": [
+        "item_111",
+        "item_47"
+      ],
+      "early_abort": {
+        "enabled": true,
+        "min_results": 4,
+        "delta_below_champion": 0.8,
+        "triggered": false,
+        "trigger_count": null,
+        "trigger_reason": null,
+        "triggered_at": null,
+        "termination_result": null
+      },
+      "batch": {
+        "fail_delta_below_champion": 0.5,
+        "count": 13,
+        "best_edge": 508.25,
+        "failed": false,
+        "fail_reason": null
+      },
+      "status": "completed",
+      "families": {
+        "20260211_011835_38016": {
+          "run_id": "20260211_011835_38016",
+          "started_at": "2026-02-11T06:22:52.879704Z",
+          "completed_at": "2026-02-11T06:22:52.879704Z",
+          "n_strategies": null,
+          "completed_count": 10,
+          "killed_count": 0,
+          "best_edge": 508.25,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T06:22:52.879704Z"
+        },
+        "20260211_012355_45785": {
+          "run_id": "20260211_012355_45785",
+          "started_at": "2026-02-11T06:25:23.480376Z",
+          "completed_at": "2026-02-11T06:25:23.480385Z",
+          "n_strategies": null,
+          "completed_count": 3,
+          "killed_count": 0,
+          "best_edge": 506.98,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": true,
+          "batch_failed": true,
+          "fail_reason": "first 3 successful edges [506.98, 506.82, 506.79] are all < champion 508.25 - 0.80 (507.45)",
+          "status": "aborted",
+          "updated_at": "2026-02-11T06:25:23.480385Z"
+        }
+      },
+      "updated_at": "2026-02-11T06:25:47.558009Z"
+    },
+    "13": {
+      "iteration": 13,
+      "created_at": "2026-02-11T06:25:48.359049Z",
+      "champion_baseline": 508.25,
+      "authoritative_simulations": 1000,
+      "observed_edges": [
+        {
+          "timestamp": "2026-02-11T06:27:44.891247Z",
+          "strategy": "GammaSquaredDualRegime",
+          "edge": 506.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run .ralph-amm/phase7/state/.best_strategy.sol --simulations 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T06:33:29.252327Z",
+          "strategy": "bgate_v1.sol",
+          "edge": 508.25,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh bgate_v1.sol bgate_v2.sol bgate_v3.sol bgate_v4.sol bgate_v5.sol bgate_v6.sol bgate_v7.sol bgate_v8.sol bgate_v9.sol bgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:33:29.252359Z",
+          "strategy": "bgate_v2.sol",
+          "edge": 508.18,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh bgate_v1.sol bgate_v2.sol bgate_v3.sol bgate_v4.sol bgate_v5.sol bgate_v6.sol bgate_v7.sol bgate_v8.sol bgate_v9.sol bgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:33:29.252362Z",
+          "strategy": "bgate_v3.sol",
+          "edge": 508.16,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh bgate_v1.sol bgate_v2.sol bgate_v3.sol bgate_v4.sol bgate_v5.sol bgate_v6.sol bgate_v7.sol bgate_v8.sol bgate_v9.sol bgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:33:29.252363Z",
+          "strategy": "bgate_v4.sol",
+          "edge": 508.13,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh bgate_v1.sol bgate_v2.sol bgate_v3.sol bgate_v4.sol bgate_v5.sol bgate_v6.sol bgate_v7.sol bgate_v8.sol bgate_v9.sol bgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:33:29.252364Z",
+          "strategy": "bgate_v5.sol",
+          "edge": 507.7,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh bgate_v1.sol bgate_v2.sol bgate_v3.sol bgate_v4.sol bgate_v5.sol bgate_v6.sol bgate_v7.sol bgate_v8.sol bgate_v9.sol bgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:33:29.252365Z",
+          "strategy": "bgate_v6.sol",
+          "edge": 507.69,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh bgate_v1.sol bgate_v2.sol bgate_v3.sol bgate_v4.sol bgate_v5.sol bgate_v6.sol bgate_v7.sol bgate_v8.sol bgate_v9.sol bgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:33:29.252366Z",
+          "strategy": "bgate_v7.sol",
+          "edge": 507.73,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh bgate_v1.sol bgate_v2.sol bgate_v3.sol bgate_v4.sol bgate_v5.sol bgate_v6.sol bgate_v7.sol bgate_v8.sol bgate_v9.sol bgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:33:29.252367Z",
+          "strategy": "bgate_v8.sol",
+          "edge": 508.13,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh bgate_v1.sol bgate_v2.sol bgate_v3.sol bgate_v4.sol bgate_v5.sol bgate_v6.sol bgate_v7.sol bgate_v8.sol bgate_v9.sol bgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:33:29.252368Z",
+          "strategy": "bgate_v9.sol",
+          "edge": 507.63,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh bgate_v1.sol bgate_v2.sol bgate_v3.sol bgate_v4.sol bgate_v5.sol bgate_v6.sol bgate_v7.sol bgate_v8.sol bgate_v9.sol bgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:33:29.252369Z",
+          "strategy": "bgate_v10.sol",
+          "edge": 507.61,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh bgate_v1.sol bgate_v2.sol bgate_v3.sol bgate_v4.sol bgate_v5.sol bgate_v6.sol bgate_v7.sol bgate_v8.sol bgate_v9.sol bgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:34:11.441184Z",
+          "strategy": "bgate_v1",
+          "edge": 508.25,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run bgate_v1.sol --simulations 1000'"
+        }
+      ],
+      "observed_item_ids": [
+        "item_39",
+        "item_54",
+        "item_65"
+      ],
+      "early_abort": {
+        "enabled": true,
+        "min_results": 4,
+        "delta_below_champion": 0.8,
+        "triggered": false,
+        "trigger_count": null,
+        "trigger_reason": null,
+        "triggered_at": null,
+        "termination_result": null
+      },
+      "batch": {
+        "fail_delta_below_champion": 0.5,
+        "count": 12,
+        "best_edge": 508.25,
+        "failed": false,
+        "fail_reason": null
+      },
+      "status": "completed",
+      "families": {
+        "20260211_012902_54683": {
+          "run_id": "20260211_012902_54683",
+          "started_at": "2026-02-11T06:33:29.253429Z",
+          "completed_at": "2026-02-11T06:33:29.253429Z",
+          "n_strategies": null,
+          "completed_count": 10,
+          "killed_count": 0,
+          "best_edge": 508.25,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T06:33:29.253429Z"
+        }
+      },
+      "updated_at": "2026-02-11T06:34:42.584492Z"
+    },
+    "14": {
+      "iteration": 14,
+      "created_at": "2026-02-11T06:34:43.342962Z",
+      "champion_baseline": 508.25,
+      "authoritative_simulations": 1000,
+      "observed_edges": [
+        {
+          "timestamp": "2026-02-11T06:41:19.972408Z",
+          "strategy": "h15_v1.sol",
+          "edge": 508.25,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh h15_v1.sol h15_v2.sol h15_v3.sol h15_v4.sol h15_v5.sol h15_v6.sol h15_v7.sol h15_v8.sol h15_v9.sol h15_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early-delta 0.8 --batch-d"
+        },
+        {
+          "timestamp": "2026-02-11T06:41:19.972443Z",
+          "strategy": "h15_v2.sol",
+          "edge": 507.8,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh h15_v1.sol h15_v2.sol h15_v3.sol h15_v4.sol h15_v5.sol h15_v6.sol h15_v7.sol h15_v8.sol h15_v9.sol h15_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early-delta 0.8 --batch-d"
+        },
+        {
+          "timestamp": "2026-02-11T06:41:19.972446Z",
+          "strategy": "h15_v3.sol",
+          "edge": 507.79,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh h15_v1.sol h15_v2.sol h15_v3.sol h15_v4.sol h15_v5.sol h15_v6.sol h15_v7.sol h15_v8.sol h15_v9.sol h15_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early-delta 0.8 --batch-d"
+        },
+        {
+          "timestamp": "2026-02-11T06:41:19.972447Z",
+          "strategy": "h15_v4.sol",
+          "edge": 507.78,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh h15_v1.sol h15_v2.sol h15_v3.sol h15_v4.sol h15_v5.sol h15_v6.sol h15_v7.sol h15_v8.sol h15_v9.sol h15_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early-delta 0.8 --batch-d"
+        },
+        {
+          "timestamp": "2026-02-11T06:41:19.972448Z",
+          "strategy": "h15_v5.sol",
+          "edge": 508.25,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh h15_v1.sol h15_v2.sol h15_v3.sol h15_v4.sol h15_v5.sol h15_v6.sol h15_v7.sol h15_v8.sol h15_v9.sol h15_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early-delta 0.8 --batch-d"
+        },
+        {
+          "timestamp": "2026-02-11T06:41:19.972449Z",
+          "strategy": "h15_v6.sol",
+          "edge": 508.25,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh h15_v1.sol h15_v2.sol h15_v3.sol h15_v4.sol h15_v5.sol h15_v6.sol h15_v7.sol h15_v8.sol h15_v9.sol h15_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early-delta 0.8 --batch-d"
+        },
+        {
+          "timestamp": "2026-02-11T06:41:19.972450Z",
+          "strategy": "h15_v7.sol",
+          "edge": 507.75,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh h15_v1.sol h15_v2.sol h15_v3.sol h15_v4.sol h15_v5.sol h15_v6.sol h15_v7.sol h15_v8.sol h15_v9.sol h15_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early-delta 0.8 --batch-d"
+        },
+        {
+          "timestamp": "2026-02-11T06:41:19.972451Z",
+          "strategy": "h15_v8.sol",
+          "edge": 508.16,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh h15_v1.sol h15_v2.sol h15_v3.sol h15_v4.sol h15_v5.sol h15_v6.sol h15_v7.sol h15_v8.sol h15_v9.sol h15_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early-delta 0.8 --batch-d"
+        },
+        {
+          "timestamp": "2026-02-11T06:41:19.972452Z",
+          "strategy": "h15_v9.sol",
+          "edge": 508.2,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh h15_v1.sol h15_v2.sol h15_v3.sol h15_v4.sol h15_v5.sol h15_v6.sol h15_v7.sol h15_v8.sol h15_v9.sol h15_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early-delta 0.8 --batch-d"
+        },
+        {
+          "timestamp": "2026-02-11T06:41:19.972453Z",
+          "strategy": "h15_v10.sol",
+          "edge": 508.22,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh h15_v1.sol h15_v2.sol h15_v3.sol h15_v4.sol h15_v5.sol h15_v6.sol h15_v7.sol h15_v8.sol h15_v9.sol h15_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early-delta 0.8 --batch-d"
+        },
+        {
+          "timestamp": "2026-02-11T06:46:39.212885Z",
+          "strategy": "pgate_v1.sol",
+          "edge": 508.25,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh pgate_v1.sol pgate_v2.sol pgate_v3.sol pgate_v4.sol pgate_v5.sol pgate_v6.sol pgate_v7.sol pgate_v8.sol pgate_v9.sol pgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:46:39.212925Z",
+          "strategy": "pgate_v2.sol",
+          "edge": 508.25,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh pgate_v1.sol pgate_v2.sol pgate_v3.sol pgate_v4.sol pgate_v5.sol pgate_v6.sol pgate_v7.sol pgate_v8.sol pgate_v9.sol pgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:46:39.212928Z",
+          "strategy": "pgate_v3.sol",
+          "edge": 508.25,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh pgate_v1.sol pgate_v2.sol pgate_v3.sol pgate_v4.sol pgate_v5.sol pgate_v6.sol pgate_v7.sol pgate_v8.sol pgate_v9.sol pgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:46:39.212929Z",
+          "strategy": "pgate_v4.sol",
+          "edge": 508.25,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh pgate_v1.sol pgate_v2.sol pgate_v3.sol pgate_v4.sol pgate_v5.sol pgate_v6.sol pgate_v7.sol pgate_v8.sol pgate_v9.sol pgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:46:39.212930Z",
+          "strategy": "pgate_v5.sol",
+          "edge": 508.25,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh pgate_v1.sol pgate_v2.sol pgate_v3.sol pgate_v4.sol pgate_v5.sol pgate_v6.sol pgate_v7.sol pgate_v8.sol pgate_v9.sol pgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:46:39.212932Z",
+          "strategy": "pgate_v6.sol",
+          "edge": 508.23,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh pgate_v1.sol pgate_v2.sol pgate_v3.sol pgate_v4.sol pgate_v5.sol pgate_v6.sol pgate_v7.sol pgate_v8.sol pgate_v9.sol pgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:46:39.212933Z",
+          "strategy": "pgate_v7.sol",
+          "edge": 508.23,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh pgate_v1.sol pgate_v2.sol pgate_v3.sol pgate_v4.sol pgate_v5.sol pgate_v6.sol pgate_v7.sol pgate_v8.sol pgate_v9.sol pgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:46:39.212934Z",
+          "strategy": "pgate_v8.sol",
+          "edge": 508.24,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh pgate_v1.sol pgate_v2.sol pgate_v3.sol pgate_v4.sol pgate_v5.sol pgate_v6.sol pgate_v7.sol pgate_v8.sol pgate_v9.sol pgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:46:39.212935Z",
+          "strategy": "pgate_v9.sol",
+          "edge": 508.24,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh pgate_v1.sol pgate_v2.sol pgate_v3.sol pgate_v4.sol pgate_v5.sol pgate_v6.sol pgate_v7.sol pgate_v8.sol pgate_v9.sol pgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T06:46:39.212936Z",
+          "strategy": "pgate_v10.sol",
+          "edge": 508.21,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh pgate_v1.sol pgate_v2.sol pgate_v3.sol pgate_v4.sol pgate_v5.sol pgate_v6.sol pgate_v7.sol pgate_v8.sol pgate_v9.sol pgate_v10.sol --workers 4 --sims 1000 --champion 508.25 --early-n 4 --early"
+        }
+      ],
+      "observed_item_ids": [
+        "item_51",
+        "item_74"
+      ],
+      "early_abort": {
+        "enabled": true,
+        "min_results": 4,
+        "delta_below_champion": 0.8,
+        "triggered": false,
+        "trigger_count": null,
+        "trigger_reason": null,
+        "triggered_at": null,
+        "termination_result": null
+      },
+      "batch": {
+        "fail_delta_below_champion": 0.5,
+        "count": 20,
+        "best_edge": 508.25,
+        "failed": false,
+        "fail_reason": null
+      },
+      "status": "monitor_running",
+      "families": {
+        "20260211_013704_65665": {
+          "run_id": "20260211_013704_65665",
+          "started_at": "2026-02-11T06:41:19.972716Z",
+          "completed_at": "2026-02-11T06:41:19.972716Z",
+          "n_strategies": null,
+          "completed_count": 10,
+          "killed_count": 0,
+          "best_edge": 508.25,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T06:41:19.972716Z"
+        },
+        "20260211_014211_72279": {
+          "run_id": "20260211_014211_72279",
+          "started_at": "2026-02-11T06:46:39.214064Z",
+          "completed_at": "2026-02-11T06:46:39.214064Z",
+          "n_strategies": null,
+          "completed_count": 10,
+          "killed_count": 0,
+          "best_edge": 508.25,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T06:46:39.214064Z"
+        }
+      },
+      "updated_at": "2026-02-11T06:46:39.214080Z"
     }
   },
-  "last_updated": "2026-02-11T06:14:52.508834Z"
+  "last_updated": "2026-02-11T06:46:39.214082Z"
 }

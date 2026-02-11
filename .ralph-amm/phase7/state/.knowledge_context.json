@@ -1,14 +1,21 @@
 {
   "true_best_edge": 508.25,
-  "true_best_strategy": "Tmp_U11_Band25",
+  "true_best_strategy": "bgate_v1",
   "has_1000_results": true,
   "state_best_edge_benchmark": 508.25,
   "true_best_edge_1000": 508.25,
-  "true_best_strategy_1000": "Tmp_U11_Band25",
+  "true_best_strategy_1000": "bgate_v1",
   "true_best_edge_any": 514.29,
   "true_best_strategy_any": "GammaSquaredDualRegime",
   "all_tested_strategies": [
     {
+      "name": "bgate_v1",
+      "edge": 508.25,
+      "sims": 1000,
+      "iteration": 13,
+      "file": "bgate_v1.sol"
+    },
+    {
       "name": "Tmp_U11_Band25",
       "edge": 508.25,
       "sims": 1000,
@@ -140,17 +147,17 @@
       "sims": 1000,
       "iteration": 3,
       "file": "tmp_u10_t29.sol"
-    },
-    {
-      "name": "Tmp_CompUnder8",
-      "edge": 508.01,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_compundercut8.sol"
     }
   ],
   "all_tested_strategies_1000": [
     {
+      "name": "bgate_v1",
+      "edge": 508.25,
+      "sims": 1000,
+      "iteration": 13,
+      "file": "bgate_v1.sol"
+    },
+    {
       "name": "Tmp_U11_Band25",
       "edge": 508.25,
       "sims": 1000,
@@ -282,13 +289,6 @@
       "sims": 1000,
       "iteration": 3,
       "file": "tmp_u10_t29.sol"
-    },
-    {
-      "name": "Tmp_CompUnder8",
-      "edge": 508.01,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_compundercut8.sol"
     }
   ],
   "lessons_learned": [
@@ -345,6 +345,6 @@
       "iteration": 19
     }
   ],
-  "harvested_at": "2026-02-11T06:14:52.281416Z",
-  "total_results_harvested": 131
+  "harvested_at": "2026-02-11T06:34:43.104227Z",
+  "total_results_harvested": 133
 }
