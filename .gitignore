@@ -50,12 +50,39 @@ Thumbs.db
 .coverage
 htmlcov/
 
-# Strategies
+# =============================================================================
+# ALL STRATEGIES (Competitive Advantage - DO NOT COMMIT)
+# =============================================================================
+# Main strategy file
+contracts/src/Strategy.sol
+
+# Generated strategies folder
 strategies/
+
+# All ralph-amm generated/state strategies
+.ralph-amm/generated/
+.ralph-amm/state/
+.ralph-amm/phase7/generated/
+.ralph-amm/phase7/state/.best_strategy.sol
+.ralph-amm/phase7/state/candidates_simplified/
+.ralph-amm/phase7/state/migration_snapshot/
+.ralph-amm/phase7/state/migration_snapshot_*/
+.ralph-amm/phase7/state_simplified_deploy_*/
+.ralph-amm/phase7/state_simplified_dryrun*/
+
+# ALL root-level .sol files (our experimental strategies)
+/*.sol
+adaptive_*.sol
 
 # Misc
 *.log
 .env
+
+# =============================================================================
+# Competitive Research (DO NOT COMMIT)
+# =============================================================================
+# Fork analysis and lessons learned - competitive advantage
+.ralph-amm/research/
 
 # =============================================================================
 # Phase 7 AMM Strategy Exploration

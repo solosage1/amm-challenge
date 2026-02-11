@@ -6,6 +6,15 @@
     "fair_price_estimation": {
       "current_implementation": "Per-timestamp gamma-anchored fair-price candidate with jump clamp and 80/20 EWMA update.",
       "code_location": "afterSwap lines 49-70",
+      "allowed_overlap_with": [
+        "flow_memory"
+      ],
+      "anchors": [
+        {
+          "start": "if (trade.timestamp != lastTs) {",
+          "end": "slots[3] = fair;"
+        }
+      ],
       "parameters": {
         "EWMA_OLD_WEIGHT_PCT": 80,
         "EWMA_NEW_WEIGHT_PCT": 20,
@@ -19,21 +28,55 @@
       ]
     },
     "flow_memory": {
-      "current_implementation": "No explicit persistent flow memory; mispricing and static tight-band threshold are used as near-fair proxy.",
-      "code_location": "afterSwap lines 81-83",
+      "current_implementation": "Flow-memory hook points are available at slot metadata/comments, initialization setup, tight-band read path, and end-of-swap state update path.",
+      "code_location": "contract lines 12-16, afterInitialize lines 24-31, afterSwap lines 81-83, 114-117",
+      "allowed_overlap_with": [
+        "fair_price_estimation",
+        "tight_band_pricing"
+      ],
+      "anchors": [
+        {
+          "start": "// slots:",
+          "end": "// 3 fairPrice (WAD, Y per X)"
+        },
+        {
+          "start": "slots[0] = type(uint256).max;",
+          "end": "slots[2] = askFee;"
+        },
+        {
+          "start": "uint256 mis = wdiv(absDiff(spot, fair), fair);",
+          "end": "uint256 tightBand = bpsToWad(25);"
+        },
+        {
+          "start": "bidFee = clampFee(bidFee);",
+          "end": "slots[2] = askFee;"
+        }
+      ],
       "parameters": {
-        "TIGHT_BAND_BPS": 25
+        "FLOW_SLOT_INDEX": 4,
+        "BASE_TIGHT_BAND_BPS": 25
       },
       "modification_directions": [
-        "Introduce lightweight flow state in slots",
-        "Add decay-based memory from recent trade direction",
-        "Condition tight-band by short-term order-flow proxy",
-        "Use volatility-conditioned memory reset"
+        "Introduce persistent decaying flow memory in slots",
+        "Initialize/reset flow state in afterInitialize",
+        "Condition tight-band by flow-memory state",
+        "Update flow state each swap with bounded decay"
       ]
     },
     "arbitrage_response": {
       "current_implementation": "Protective side sets required fee from gamma requirement plus buffer when spot deviates from fair.",
       "code_location": "afterSwap lines 91-97, 103-107",
+      "allowed_overlap_with": [],
+      "anchors": [
+        {
+          "start": "uint256 gammaReq = wdiv(fair, spot);",
+          "end": "bidFee = clampFee(req + buffer);"
+        },
+        {
+          "start": "uint256 gammaReq = wdiv(spot, fair);",
+          "end": "askFee = clampFee(req + buffer);"
+        }
+      ],
       "parameters": {
         "BUFFER_BPS": 4
       },
@@ -47,6 +90,19 @@
     "tight_band_pricing": {
       "current_implementation": "Within tight band, both bid and ask are pinned to 30 bps to avoid unnecessary undercutting.",
       "code_location": "afterSwap lines 84-88",
+      "allowed_overlap_with": [
+        "outer_regime_pricing"
+      ],
+      "anchors": [
+        {
+          "start": "re:if\\s*\\(\\s*(?:mis|wdiv\\(absDiff\\(spot,\\s*fair\\),\\s*fair\\))\\s*<=\\s*(?:tightBand|_tightBandFromFlowMemory\\(\\))\\s*\\)\\s*\\{",
+          "end": "askFee = bpsToWad(30);"
+        },
+        {
+          "start": "bidFee = bpsToWad(30);",
+          "end": "askFee = bpsToWad(30);"
+        }
+      ],
       "parameters": {
         "MATCHED_FEE_BPS": 30
       },
@@ -60,6 +116,23 @@
     "outer_regime_pricing": {
       "current_implementation": "Competitive side uses gamma-squared matching against normalizer weakness in the out-of-band regime.",
       "code_location": "afterSwap lines 89-90, 99-101, 108-110",
+      "allowed_overlap_with": [
+        "tight_band_pricing"
+      ],
+      "anchors": [
+        {
+          "start": "uint256 gammaBase = WAD - bpsToWad(30);",
+          "end": "uint256 buffer = bpsToWad(4);"
+        },
+        {
+          "start": "uint256 gammaMatch = wdiv(wmul(spot, gammaBaseSq), fair);",
+          "end": "askFee = gammaMatch >= WAD ? 0 : (WAD - gammaMatch);"
+        },
+        {
+          "start": "uint256 gammaMatch = wdiv(wmul(fair, gammaBaseSq), spot);",
+          "end": "bidFee = gammaMatch >= WAD ? 0 : (WAD - gammaMatch);"
+        }
+      ],
       "parameters": {
         "BASE_MATCH_FEE_BPS": 30,
         "COMPETITOR_MODEL": "gamma_squared"

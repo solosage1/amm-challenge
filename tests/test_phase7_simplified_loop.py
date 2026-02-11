@@ -1,4 +1,6 @@
+import argparse
 import json
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -24,6 +26,14 @@ def run_script(
         capture_output=True,
         cwd=str(cwd or ROOT),
     )
+
+
+def load_simplified_module():
+    spec = importlib.util.spec_from_file_location("simplified_loop_module", SIMPLIFIED)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def setup_state(tmp_path: Path) -> Path:
@@ -175,3 +185,415 @@ def test_shadow_selector_is_read_only_against_snapshot(tmp_path: Path) -> None:
     assert payload["iter"] == 1
     assert (snapshot / ".opportunity_priors.json").read_text() == before_priors
     assert (snapshot / ".opportunity_history.json").read_text() == before_history
+
+
+def test_anchor_boundaries_allow_validation_with_line_drift(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    state.mkdir(parents=True, exist_ok=True)
+    champion = """pragma solidity ^0.8.24;
+
+contract Strategy {
+    uint256[8] public slots;
+
+    function afterInitialize(uint256 initialX, uint256 initialY) external returns (uint256 bidFee, uint256 askFee) {
+        initialX; initialY;
+        slots[0] = type(uint256).max;
+        slots[3] = 1;
+        slots[1] = bidFee;
+        slots[2] = askFee;
+    }
+
+    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
+        uint256 spot = 1;
+        uint256 fair = 1;
+        uint256 mis = wdiv(absDiff(spot, fair), fair);
+        uint256 tightBand = bpsToWad(25);
+        if (mis <= tightBand) {
+            bidFee = bpsToWad(30);
+            askFee = bpsToWad(30);
+        }
+        bidFee = clampFee(bidFee);
+        askFee = clampFee(askFee);
+        slots[1] = bidFee;
+        slots[2] = askFee;
+    }
+
+    function getName() external pure returns (string memory) { return "Base"; }
+    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
+    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
+    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
+}
+"""
+    (state / ".best_strategy.sol").write_text(champion)
+    (state / ".best_edge.txt").write_text("508.80\n")
+
+    definitions = tmp_path / "definitions.json"
+    definitions.write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "champion_file": ".best_strategy.sol",
+                "champion_edge": 508.80,
+                "mechanisms": {
+                    "flow_memory": {
+                        "current_implementation": "anchor-driven test mechanism",
+                        "code_location": "afterSwap lines 1-1",
+                        "anchors": [
+                            {
+                                "start": "uint256 mis = wdiv(absDiff(spot, fair), fair);",
+                                "end": "uint256 tightBand = bpsToWad(25);",
+                            }
+                        ],
+                        "parameters": {},
+                        "modification_directions": [],
+                    }
+                },
+            }
+        )
+    )
+
+    candidate = (
+        champion.replace(
+            "uint256[8] public slots;",
+            "uint256[8] public slots;\n    // flow memory slot reserved",
+        )
+        .replace(
+            "uint256 tightBand = bpsToWad(25);",
+            "uint256 flowMemory = 0;\n        uint256 tightBand = bpsToWad(26);",
+        )
+    )
+    candidate_path = tmp_path / "candidate_anchor.sol"
+    candidate_path.write_text(candidate)
+
+    proc = run_script(
+        SIMPLIFIED,
+        [
+            "run-once",
+            "--state-dir",
+            str(state),
+            "--definitions",
+            str(definitions),
+            "--candidate-file",
+            str(candidate_path),
+            "--dry-run",
+        ],
+        check=False,
+    )
+    assert proc.returncode == 0
+    logs = [json.loads(line) for line in (state / "iteration_log.jsonl").read_text().strip().splitlines()]
+    assert logs[-1]["status"] == "complete"
+    assert logs[-1]["mechanism"] == "flow_memory"
+
+
+def test_allowed_overlap_with_permits_configured_non_target_edits() -> None:
+    module = load_simplified_module()
+    champion = """pragma solidity ^0.8.24;
+
+contract Strategy {
+    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
+        uint256 spot = 1;
+        uint256 fair = 1;
+        uint256 mis = wdiv(absDiff(spot, fair), fair);
+        uint256 tightBand = bpsToWad(25);
+        if (mis <= tightBand) {
+            bidFee = bpsToWad(30);
+            askFee = bpsToWad(30);
+        }
+        bidFee = clampFee(bidFee);
+        askFee = clampFee(askFee);
+    }
+
+    function getName() external pure returns (string memory) { return "Base"; }
+    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
+    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
+    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
+}
+"""
+    candidate = (
+        champion.replace("uint256 fair = 1;", "uint256 fair = 2;")
+        .replace("uint256 tightBand = bpsToWad(25);", "uint256 tightBand = bpsToWad(26);")
+    )
+    definitions = {
+        "mechanisms": {
+            "fair_price_estimation": {
+                "anchors": [
+                    {"start": "uint256 spot = 1;", "end": "uint256 fair = 1;"}
+                ]
+            },
+            "flow_memory": {
+                "allowed_overlap_with": ["fair_price_estimation"],
+                "anchors": [
+                    {"start": "uint256 mis = wdiv(absDiff(spot, fair), fair);", "end": "uint256 tightBand = bpsToWad(25);"}
+                ],
+            },
+        }
+    }
+
+    ok, reason = module.validate_candidate(champion, candidate, "flow_memory", definitions)
+    assert ok is True
+    assert reason == "valid"
+
+
+def test_disallowed_overlap_still_fails() -> None:
+    module = load_simplified_module()
+    champion = """pragma solidity ^0.8.24;
+
+contract Strategy {
+    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
+        uint256 spot = 1;
+        uint256 fair = 1;
+        uint256 mis = wdiv(absDiff(spot, fair), fair);
+        uint256 tightBand = bpsToWad(25);
+        if (mis <= tightBand) {
+            bidFee = bpsToWad(30);
+            askFee = bpsToWad(30);
+        }
+        bidFee = clampFee(bidFee);
+        askFee = clampFee(askFee);
+    }
+
+    function getName() external pure returns (string memory) { return "Base"; }
+    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
+    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
+    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
+}
+"""
+    candidate = (
+        champion.replace("uint256 fair = 1;", "uint256 fair = 2;")
+        .replace("uint256 tightBand = bpsToWad(25);", "uint256 tightBand = bpsToWad(26);")
+    )
+    definitions = {
+        "mechanisms": {
+            "fair_price_estimation": {
+                "anchors": [
+                    {"start": "uint256 spot = 1;", "end": "uint256 fair = 1;"}
+                ]
+            },
+            "flow_memory": {
+                "allowed_overlap_with": [],
+                "anchors": [
+                    {"start": "uint256 mis = wdiv(absDiff(spot, fair), fair);", "end": "uint256 tightBand = bpsToWad(25);"}
+                ],
+            },
+        }
+    }
+
+    ok, reason = module.validate_candidate(champion, candidate, "flow_memory", definitions)
+    assert ok is False
+    assert reason == "non-target mechanism 'fair_price_estimation' was modified"
+
+
+def test_validate_policy_definitions_rejects_missing_existing_mechanisms() -> None:
+    module = load_simplified_module()
+    champion = """pragma solidity ^0.8.24;
+
+contract Strategy {
+    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
+        uint256 spot = 1;
+        uint256 fair = 1;
+        uint256 mis = wdiv(absDiff(spot, fair), fair);
+        uint256 tightBand = bpsToWad(25);
+        bidFee = clampFee(bidFee);
+        askFee = clampFee(askFee);
+    }
+    function getName() external pure returns (string memory) { return "Base"; }
+    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
+    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
+    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
+}
+"""
+    current_defs = {
+        "schema_version": "1.0",
+        "champion_file": ".best_strategy.sol",
+        "champion_edge": 508.80,
+        "mechanisms": {
+            "fair_price_estimation": {
+                "anchors": [{"start": "uint256 spot = 1;", "end": "uint256 fair = 1;"}],
+                "allowed_overlap_with": [],
+            },
+            "flow_memory": {
+                "anchors": [{"start": "uint256 mis = wdiv(absDiff(spot, fair), fair);", "end": "uint256 tightBand = bpsToWad(25);"}],
+                "allowed_overlap_with": [],
+            },
+        },
+    }
+    candidate_defs = {
+        "schema_version": "1.0",
+        "champion_file": ".best_strategy.sol",
+        "champion_edge": 508.80,
+        "mechanisms": {
+            "flow_memory": {
+                "anchors": [{"start": "uint256 mis = wdiv(absDiff(spot, fair), fair);", "end": "uint256 tightBand = bpsToWad(25);"}],
+                "allowed_overlap_with": [],
+            }
+        },
+    }
+
+    valid, reason, report = module.validate_policy_definitions(candidate_defs, current_defs, champion)
+    assert valid is False
+    assert reason.startswith("missing_existing_mechanisms:")
+    assert "fair_price_estimation" in report["missing_mechanisms"]
+
+
+def test_shadow_score_policy_candidate_detects_rescue(tmp_path: Path) -> None:
+    module = load_simplified_module()
+    champion = """pragma solidity ^0.8.24;
+
+contract Strategy {
+    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
+        uint256 spot = 1;
+        uint256 fair = 1;
+        uint256 mis = wdiv(absDiff(spot, fair), fair);
+        uint256 tightBand = bpsToWad(25);
+        if (mis <= tightBand) {
+            bidFee = bpsToWad(30);
+            askFee = bpsToWad(30);
+        }
+        bidFee = clampFee(bidFee);
+        askFee = clampFee(askFee);
+    }
+
+    function getName() external pure returns (string memory) { return "Base"; }
+    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
+    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
+    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
+}
+"""
+    candidate = (
+        champion.replace("uint256 fair = 1;", "uint256 fair = 2;")
+        .replace("uint256 tightBand = bpsToWad(25);", "uint256 tightBand = bpsToWad(26);")
+    )
+
+    current_defs = {
+        "mechanisms": {
+            "fair_price_estimation": {
+                "anchors": [{"start": "uint256 spot = 1;", "end": "uint256 fair = 1;"}],
+                "allowed_overlap_with": [],
+            },
+            "flow_memory": {
+                "anchors": [{"start": "uint256 mis = wdiv(absDiff(spot, fair), fair);", "end": "uint256 tightBand = bpsToWad(25);"}],
+                "allowed_overlap_with": [],
+            },
+        }
+    }
+    candidate_defs = {
+        "mechanisms": {
+            "fair_price_estimation": {
+                "anchors": [{"start": "uint256 spot = 1;", "end": "uint256 fair = 1;"}],
+                "allowed_overlap_with": [],
+            },
+            "flow_memory": {
+                "anchors": [{"start": "uint256 mis = wdiv(absDiff(spot, fair), fair);", "end": "uint256 tightBand = bpsToWad(25);"}],
+                "allowed_overlap_with": ["fair_price_estimation"],
+            },
+        }
+    }
+    candidate_path = tmp_path / "tmp_shadow_candidate.sol"
+    candidate_path.write_text(candidate)
+    try:
+        shadow = module.shadow_score_policy_candidate(
+            champion_code=champion,
+            current_definitions=current_defs,
+            candidate_definitions=candidate_defs,
+            log_entries=[{"mechanism": "flow_memory", "candidate_path": str(candidate_path)}],
+            lookback=5,
+        )
+    finally:
+        candidate_path.unlink(missing_ok=True)
+
+    assert int(shadow["replayed_candidates"]) == 1
+    assert int(shadow["rescued_validations"]) == 1
+    assert int(shadow["regressed_validations"]) == 0
+
+
+def test_maybe_run_policy_evolution_dry_run_records_state(tmp_path: Path) -> None:
+    module = load_simplified_module()
+    state = setup_state(tmp_path)
+    run_script(
+        SIMPLIFIED,
+        [
+            "run-once",
+            "--state-dir",
+            str(state),
+            "--definitions",
+            str(DEFINITIONS),
+            "--dry-run",
+            "--seed",
+            "17",
+        ],
+    )
+    args = argparse.Namespace(
+        state_dir=str(state),
+        definitions=str(DEFINITIONS),
+        dry_run=True,
+        llm_command="codex",
+        llm_model="",
+        llm_timeout_minutes=1.0,
+        llm_max_output_tokens=2000,
+        llm_disable_shell_tool=False,
+        policy_evolution_frequency=1,
+    )
+    entry = module.maybe_run_policy_evolution(args, completed_iteration=1)
+    assert isinstance(entry, dict)
+    assert entry["status"] == "policy_skipped_dry_run"
+    assert (state / "policy_evolution_log.jsonl").exists()
+    assert (state / "policy_evolution_state.json").exists()
+
+
+def test_validate_candidate_avoids_false_failure_on_anchor_drift() -> None:
+    module = load_simplified_module()
+    champion = """pragma solidity ^0.8.24;
+
+contract Strategy {
+    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
+        uint256 spot = 1;
+        uint256 fair = 1;
+        uint256 mis = wdiv(absDiff(spot, fair), fair);
+        uint256 tightBand = bpsToWad(25);
+        if (mis <= tightBand) {
+            bidFee = bpsToWad(30);
+            askFee = bpsToWad(30);
+        }
+        bidFee = clampFee(bidFee);
+        askFee = clampFee(askFee);
+    }
+    function getName() external pure returns (string memory) { return "Base"; }
+    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
+    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
+    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
+}
+"""
+    candidate = champion.replace(
+        "uint256 mis = wdiv(absDiff(spot, fair), fair);\n        uint256 tightBand = bpsToWad(25);\n        if (mis <= tightBand) {",
+        "if (wdiv(absDiff(spot, fair), fair) <= _tightBandFromFlowMemory()) {",
+    )
+    candidate = candidate.replace(
+        "function clampFee(uint256 a) internal pure returns (uint256) { return a; }",
+        "function _tightBandFromFlowMemory() internal pure returns (uint256) { return bpsToWad(26); }\n    function clampFee(uint256 a) internal pure returns (uint256) { return a; }",
+    )
+    definitions = {
+        "mechanisms": {
+            "flow_memory": {
+                "allowed_overlap_with": [],
+                "anchors": [
+                    {"start": "uint256 mis = wdiv(absDiff(spot, fair), fair);", "end": "uint256 tightBand = bpsToWad(25);"}
+                ],
+            },
+            "tight_band_pricing": {
+                "allowed_overlap_with": [],
+                "anchors": [
+                    {"start": "if (mis <= tightBand) {", "end": "askFee = bpsToWad(30);"}
+                ],
+            },
+        }
+    }
+
+    ok, reason = module.validate_candidate(champion, candidate, "flow_memory", definitions)
+    assert ok is True
+    assert reason == "valid"

@@ -55,6 +55,11 @@ DEFAULT_LLM_COMMAND = os.environ.get("CODEX_CLI", "codex")
 DEFAULT_LLM_MODEL = os.environ.get("CODEX_MODEL", "")
 DEFAULT_LLM_TIMEOUT_MINUTES = env_float("CODEX_TIMEOUT_MINUTES", 40.0)
 DEFAULT_LLM_MAX_OUTPUT_TOKENS = env_int("CODEX_MAX_OUTPUT_TOKENS", 8000)
+DEFAULT_POLICY_EVOLUTION_FREQUENCY = 5
+POLICY_EVOLUTION_LOOKBACK = 25
+POLICY_EVOLUTION_MAX_NEW_MECHANISMS = 3
+POLICY_EVOLUTION_MAX_SPAN_RATIO = 0.85
+POLICY_EVOLUTION_MAX_SPAN_LINES = 260
 
 
 PROMPT_TEMPLATE = """
@@ -116,6 +121,37 @@ Return ONLY the complete Solidity code. No explanations before or after.
 """.strip()
 
 
+POLICY_EVOLUTION_PROMPT_TEMPLATE = """
+You are updating mechanism boundary policy for a single-mechanism AMM evolution loop.
+
+## CURRENT CHAMPION CODE
+```solidity
+{champion_code}
+```
+
+## CURRENT DEFINITIONS JSON
+```json
+{definitions_json}
+```
+
+## RECENT LOOP SIGNALS
+{signals_json}
+
+## RECENT INVALID EXAMPLES
+{invalid_examples}
+
+## YOUR TASK
+Return an improved full definitions JSON that keeps the system safe but less brittle to realistic agent edits.
+
+## REQUIREMENTS
+1. Keep all existing mechanism keys (you may add up to {max_new_mechanisms} new mechanisms).
+2. Each mechanism must keep anchor-based `anchors` with resolvable start/end strings.
+3. `allowed_overlap_with` may only contain valid mechanism names.
+4. Preserve one-mechanism-at-a-time intent while allowing natural helper extraction and conceptual overlaps.
+5. Return strict JSON only (no markdown, no prose).
+""".strip()
+
+
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -161,6 +197,116 @@ def parse_line_ranges(code_location: str) -> List[Tuple[int, int]]:
         if s > e:
             s, e = e, s
         spans.append((s, e))
+    return spans
+
+
+def merge_spans(spans: Sequence[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    if not spans:
+        return []
+    ordered = sorted((min(a, b), max(a, b)) for a, b in spans)
+    merged: List[Tuple[int, int]] = [ordered[0]]
+    for start, end in ordered[1:]:
+        prev_start, prev_end = merged[-1]
+        if start <= prev_end + 1:
+            merged[-1] = (prev_start, max(prev_end, end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def anchor_match(line: str, pattern: str) -> bool:
+    if pattern.startswith("re:"):
+        try:
+            return re.search(pattern[3:], line) is not None
+        except re.error:
+            return False
+    return pattern in line
+
+
+def find_anchor_line(
+    lines: Sequence[str],
+    pattern: str,
+    start_index: int = 0,
+    occurrence: int = 1,
+) -> Optional[int]:
+    if not pattern:
+        return None
+    target_occurrence = max(1, int(occurrence))
+    seen = 0
+    for idx in range(max(0, start_index), len(lines)):
+        if anchor_match(lines[idx], pattern):
+            seen += 1
+            if seen >= target_occurrence:
+                return idx
+    return None
+
+
+def parse_anchor_spans(source: str, anchors: Any) -> List[Tuple[int, int]]:
+    if not isinstance(anchors, list):
+        return []
+    lines = source.splitlines()
+    resolved: List[Tuple[int, int]] = []
+    def _to_int(value: Any, default: int) -> int:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+    for anchor in anchors:
+        if not isinstance(anchor, dict):
+            continue
+        start_pattern = str(anchor.get("start", "") or "")
+        end_pattern = str(anchor.get("end", "") or start_pattern)
+        if not start_pattern:
+            continue
+        start_occurrence = _to_int(anchor.get("occurrence", 1), 1)
+        end_occurrence = _to_int(anchor.get("end_occurrence", 1), 1)
+        before = _to_int(anchor.get("before", 0), 0)
+        after = _to_int(anchor.get("after", 0), 0)
+
+        start_idx = find_anchor_line(lines, start_pattern, 0, start_occurrence)
+        if start_idx is None:
+            continue
+        end_idx = find_anchor_line(lines, end_pattern, start_idx, end_occurrence)
+        if end_idx is None:
+            continue
+
+        lo = max(1, min(start_idx, end_idx) + 1 - before)
+        hi = min(len(lines), max(start_idx, end_idx) + 1 + after)
+        if lo <= hi:
+            resolved.append((lo, hi))
+    return merge_spans(resolved)
+
+
+def resolve_mechanism_spans_with_status(
+    source: str,
+    mechanism_info: Dict[str, Any],
+    allow_line_fallback: bool = True,
+) -> Tuple[List[Tuple[int, int]], str]:
+    raw_anchors = mechanism_info.get("anchors")
+    has_anchors = isinstance(raw_anchors, list) and len(raw_anchors) > 0
+    anchor_spans = parse_anchor_spans(source, raw_anchors)
+    if anchor_spans:
+        return anchor_spans, "anchors"
+    if has_anchors and not allow_line_fallback:
+        return [], "anchor_unresolved"
+    line_spans = merge_spans(parse_line_ranges(str(mechanism_info.get("code_location", ""))))
+    if line_spans:
+        return line_spans, "line_ranges"
+    if has_anchors:
+        return [], "anchor_unresolved"
+    return [], "unresolved"
+
+
+def resolve_mechanism_spans(
+    source: str,
+    mechanism_info: Dict[str, Any],
+    allow_line_fallback: bool = True,
+) -> List[Tuple[int, int]]:
+    spans, _ = resolve_mechanism_spans_with_status(
+        source=source,
+        mechanism_info=mechanism_info,
+        allow_line_fallback=allow_line_fallback,
+    )
     return spans
 
 
@@ -261,13 +407,82 @@ def build_wildcard_prompt(champion_code: str, variant_name: str) -> str:
     )
 
 
+def definitions_fingerprint(definitions: Dict[str, Any]) -> str:
+    payload = json.dumps(definitions, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def build_policy_evolution_prompt(
+    champion_code: str,
+    definitions: Dict[str, Any],
+    signals: Dict[str, Any],
+    invalid_examples: Sequence[Dict[str, Any]],
+) -> str:
+    examples = json.dumps(list(invalid_examples), indent=2)
+    if not invalid_examples:
+        examples = "[]"
+    return POLICY_EVOLUTION_PROMPT_TEMPLATE.format(
+        champion_code=champion_code,
+        definitions_json=json.dumps(definitions, indent=2),
+        signals_json=json.dumps(signals, indent=2),
+        invalid_examples=examples,
+        max_new_mechanisms=POLICY_EVOLUTION_MAX_NEW_MECHANISMS,
+    )
+
+
+def collect_iteration_failure_signals(
+    log_entries: Sequence[Dict[str, Any]],
+    lookback: int = POLICY_EVOLUTION_LOOKBACK,
+) -> Dict[str, Any]:
+    window = list(log_entries[-max(1, int(lookback)) :])
+    status_counts: Dict[str, int] = {}
+    invalid_reason_counts: Dict[str, int] = {}
+    invalid_by_mechanism: Dict[str, int] = {}
+    for entry in window:
+        status = str(entry.get("status", "unknown"))
+        status_counts[status] = status_counts.get(status, 0) + 1
+        if status in {"invalid", "compile_failed", "llm_failed"}:
+            mechanism = str(entry.get("mechanism", "unknown"))
+            invalid_by_mechanism[mechanism] = invalid_by_mechanism.get(mechanism, 0) + 1
+            reason = str(entry.get("reason", status))
+            invalid_reason_counts[reason] = invalid_reason_counts.get(reason, 0) + 1
+    return {
+        "lookback_entries": len(window),
+        "status_counts": status_counts,
+        "invalid_by_mechanism": invalid_by_mechanism,
+        "invalid_reason_counts": invalid_reason_counts,
+    }
+
+
+def pick_recent_invalid_examples(
+    log_entries: Sequence[Dict[str, Any]],
+    limit: int = 6,
+) -> List[Dict[str, Any]]:
+    picks: List[Dict[str, Any]] = []
+    for entry in reversed(log_entries):
+        if str(entry.get("status")) not in {"invalid", "compile_failed", "llm_failed"}:
+            continue
+        sample = {
+            "iter": entry.get("iter"),
+            "mechanism": entry.get("mechanism"),
+            "status": entry.get("status"),
+            "reason": entry.get("reason"),
+            "candidate_path": entry.get("candidate_path"),
+        }
+        picks.append(sample)
+        if len(picks) >= limit:
+            break
+    picks.reverse()
+    return picks
+
+
 def generate_mock_candidate(
     champion_code: str,
     mechanism_name: str,
     mechanism_info: Dict[str, Any],
     iteration: int,
 ) -> str:
-    spans = parse_line_ranges(str(mechanism_info.get("code_location", "")))
+    spans = resolve_mechanism_spans(champion_code, mechanism_info)
     if not spans:
         return champion_code + f"\n// mock mutation iter={iteration} mechanism={mechanism_name}\n"
 
@@ -336,6 +551,63 @@ def extract_solidity_from_response(response_text: str) -> Optional[str]:
 
 
 def generate_candidate_with_llm(
+    prompt_path: Path,
+    artifact_prefix: Path,
+    llm_command: str,
+    llm_model: str,
+    llm_timeout_minutes: float,
+    llm_max_output_tokens: int,
+    llm_disable_shell_tool: bool,
+    attempt: int = 0,
+) -> Tuple[Optional[str], Optional[str], Dict[str, str]]:
+    response_text, error, artifacts = run_llm_exec(
+        prompt_path=prompt_path,
+        artifact_prefix=artifact_prefix,
+        llm_command=llm_command,
+        llm_model=llm_model,
+        llm_timeout_minutes=llm_timeout_minutes,
+        llm_max_output_tokens=llm_max_output_tokens,
+        llm_disable_shell_tool=llm_disable_shell_tool,
+        attempt=attempt,
+    )
+    if response_text is None:
+        return None, error or "llm_failed", artifacts
+    candidate = extract_solidity_from_response(response_text)
+    if not candidate:
+        return None, "llm_extract_failed", artifacts
+    return candidate, None, artifacts
+
+
+def extract_json_payload_from_response(response_text: str) -> Optional[Dict[str, Any]]:
+    text = response_text.strip()
+    if not text:
+        return None
+
+    fenced_blocks = re.findall(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
+    candidates = fenced_blocks + [text]
+    for block in candidates:
+        snippet = block.strip()
+        if not snippet:
+            continue
+        try:
+            payload = json.loads(snippet)
+            if isinstance(payload, dict):
+                return payload
+        except json.JSONDecodeError:
+            start = snippet.find("{")
+            end = snippet.rfind("}")
+            if start >= 0 and end > start:
+                fragment = snippet[start : end + 1]
+                try:
+                    payload = json.loads(fragment)
+                    if isinstance(payload, dict):
+                        return payload
+                except json.JSONDecodeError:
+                    continue
+    return None
+
+
+def run_llm_exec(
     prompt_path: Path,
     artifact_prefix: Path,
     llm_command: str,
@@ -414,10 +686,34 @@ def generate_candidate_with_llm(
     if not codex_last_msg_path.exists():
         return None, "llm_missing_last_message", artifacts
     response_text = codex_last_msg_path.read_text()
-    candidate = extract_solidity_from_response(response_text)
-    if not candidate:
-        return None, "llm_extract_failed", artifacts
-    return candidate, None, artifacts
+    return response_text, None, artifacts
+
+
+def generate_policy_candidate_with_llm(
+    prompt_path: Path,
+    artifact_prefix: Path,
+    llm_command: str,
+    llm_model: str,
+    llm_timeout_minutes: float,
+    llm_max_output_tokens: int,
+    llm_disable_shell_tool: bool,
+) -> Tuple[Optional[Dict[str, Any]], Optional[str], Dict[str, str]]:
+    response_text, error, artifacts = run_llm_exec(
+        prompt_path=prompt_path,
+        artifact_prefix=artifact_prefix,
+        llm_command=llm_command,
+        llm_model=llm_model,
+        llm_timeout_minutes=llm_timeout_minutes,
+        llm_max_output_tokens=llm_max_output_tokens,
+        llm_disable_shell_tool=llm_disable_shell_tool,
+        attempt=0,
+    )
+    if response_text is None:
+        return None, error or "llm_failed", artifacts
+    payload = extract_json_payload_from_response(response_text)
+    if payload is None:
+        return None, "policy_extract_failed", artifacts
+    return payload, None, artifacts
 
 
 def extract_regions_by_mechanism(
@@ -426,9 +722,26 @@ def extract_regions_by_mechanism(
 ) -> Dict[str, str]:
     output: Dict[str, str] = {}
     for mech, info in definitions.get("mechanisms", {}).items():
-        spans = parse_line_ranges(str(info.get("code_location", "")))
+        spans = resolve_mechanism_spans(source, dict(info))
         output[mech] = code_region(source, spans)
     return output
+
+
+def allowed_overlap_for_target(definitions: Dict[str, Any], target_mechanism: str) -> set[str]:
+    mechanisms = definitions.get("mechanisms", {})
+    if not isinstance(mechanisms, dict):
+        return set()
+    target_info = mechanisms.get(target_mechanism, {})
+    if not isinstance(target_info, dict):
+        return set()
+    raw = target_info.get("allowed_overlap_with", [])
+    if not isinstance(raw, list):
+        return set()
+    allowed: set[str] = set()
+    for item in raw:
+        if isinstance(item, str) and item:
+            allowed.add(item)
+    return allowed
 
 
 def validate_candidate(
@@ -437,26 +750,563 @@ def validate_candidate(
     target_mechanism: str,
     definitions: Dict[str, Any],
 ) -> Tuple[bool, str]:
-    regions_original = extract_regions_by_mechanism(original_code, definitions)
-    regions_candidate = extract_regions_by_mechanism(candidate_code, definitions)
+    mechanisms = definitions.get("mechanisms", {})
+    if not isinstance(mechanisms, dict):
+        return False, "definitions has no mechanisms"
+
+    regions_original: Dict[str, str] = {}
+    regions_candidate: Dict[str, str] = {}
+    candidate_span_status: Dict[str, str] = {}
+
+    for mech, info in mechanisms.items():
+        if not isinstance(info, dict):
+            continue
+        original_spans, _ = resolve_mechanism_spans_with_status(
+            source=original_code,
+            mechanism_info=info,
+            allow_line_fallback=True,
+        )
+        candidate_spans, candidate_status = resolve_mechanism_spans_with_status(
+            source=candidate_code,
+            mechanism_info=info,
+            allow_line_fallback=False,
+        )
+        regions_original[mech] = code_region(original_code, original_spans)
+        regions_candidate[mech] = code_region(candidate_code, candidate_spans)
+        candidate_span_status[mech] = candidate_status
+
+    allowed_overlap = allowed_overlap_for_target(definitions, target_mechanism)
 
     if target_mechanism not in regions_original:
         return False, f"target mechanism not found: {target_mechanism}"
 
-    if normalize_region(regions_original[target_mechanism]) == normalize_region(
-        regions_candidate.get(target_mechanism, "")
-    ):
-        return False, f"target mechanism '{target_mechanism}' was not modified"
+    target_before = normalize_region(regions_original[target_mechanism])
+    target_after = normalize_region(regions_candidate.get(target_mechanism, ""))
+    if target_before and target_after:
+        if target_before == target_after:
+            return False, f"target mechanism '{target_mechanism}' was not modified"
+    else:
+        # If candidate-side anchors drifted, use whole-contract identity as minimal guard.
+        if normalize_region(original_code) == normalize_region(candidate_code):
+            return False, f"target mechanism '{target_mechanism}' was not modified"
 
     for mech in regions_original:
         if mech == target_mechanism:
             continue
+        if candidate_span_status.get(mech) == "anchor_unresolved":
+            continue
         before = normalize_region(regions_original.get(mech, ""))
         after = normalize_region(regions_candidate.get(mech, ""))
+        if not before or not after:
+            continue
         if before != after:
+            if mech in allowed_overlap:
+                continue
             return False, f"non-target mechanism '{mech}' was modified"
 
     return True, "valid"
+
+
+def default_mechanism_stats() -> Dict[str, Any]:
+    return {
+        "tries": 0,
+        "successes": 0,
+        "total_uplift": 0.0,
+        "invalid_count": 0,
+        "compile_fail_count": 0,
+        "last_tried": None,
+        "best_delta": None,
+    }
+
+
+def sync_stats_mechanisms(stats: Dict[str, Any], definitions: Dict[str, Any]) -> bool:
+    changed = False
+    stats_mechanisms = stats.setdefault("mechanisms", {})
+    if not isinstance(stats_mechanisms, dict):
+        stats["mechanisms"] = {}
+        stats_mechanisms = stats["mechanisms"]
+        changed = True
+
+    definition_mechanisms = definitions.get("mechanisms", {})
+    if not isinstance(definition_mechanisms, dict):
+        return changed
+
+    for mechanism_name in definition_mechanisms.keys():
+        if mechanism_name not in stats_mechanisms or not isinstance(stats_mechanisms[mechanism_name], dict):
+            stats_mechanisms[mechanism_name] = default_mechanism_stats()
+            changed = True
+
+    for stale_name in list(stats_mechanisms.keys()):
+        if stale_name not in definition_mechanisms:
+            stats_mechanisms.pop(stale_name, None)
+            changed = True
+
+    return changed
+
+
+def normalize_policy_mechanism_definition(
+    name: str,
+    candidate_info: Any,
+    current_info: Any,
+) -> Dict[str, Any]:
+    merged: Dict[str, Any] = {}
+    if isinstance(current_info, dict):
+        merged.update(current_info)
+    if isinstance(candidate_info, dict):
+        merged.update(candidate_info)
+
+    merged["current_implementation"] = str(merged.get("current_implementation", "") or "")
+    merged["code_location"] = str(merged.get("code_location", "") or "")
+
+    parameters = merged.get("parameters", {})
+    merged["parameters"] = parameters if isinstance(parameters, dict) else {}
+
+    directions = merged.get("modification_directions", [])
+    if not isinstance(directions, list):
+        directions = []
+    merged["modification_directions"] = [str(item) for item in directions if isinstance(item, str) and item.strip()]
+
+    raw_allowed = merged.get("allowed_overlap_with", [])
+    if not isinstance(raw_allowed, list):
+        raw_allowed = []
+    allowed: List[str] = []
+    seen_allowed: set[str] = set()
+    for item in raw_allowed:
+        if not isinstance(item, str):
+            continue
+        value = item.strip()
+        if not value or value == name or value in seen_allowed:
+            continue
+        seen_allowed.add(value)
+        allowed.append(value)
+    merged["allowed_overlap_with"] = allowed
+
+    raw_anchors = merged.get("anchors", [])
+    if not isinstance(raw_anchors, list):
+        raw_anchors = []
+    anchors: List[Dict[str, Any]] = []
+    for anchor in raw_anchors:
+        if not isinstance(anchor, dict):
+            continue
+        start = str(anchor.get("start", "") or "")
+        end = str(anchor.get("end", "") or start)
+        if not start:
+            continue
+        normalized_anchor: Dict[str, Any] = {"start": start, "end": end}
+        for numeric_key in ("occurrence", "end_occurrence", "before", "after"):
+            if numeric_key not in anchor:
+                continue
+            try:
+                normalized_anchor[numeric_key] = int(anchor[numeric_key])
+            except (TypeError, ValueError):
+                continue
+        anchors.append(normalized_anchor)
+    merged["anchors"] = anchors
+    return merged
+
+
+def normalize_policy_definitions_payload(
+    payload: Dict[str, Any],
+    current_definitions: Dict[str, Any],
+    champion_edge: float,
+) -> Optional[Dict[str, Any]]:
+    raw_mechanisms = payload.get("mechanisms")
+    if not isinstance(raw_mechanisms, dict):
+        return None
+
+    current_mechanisms = current_definitions.get("mechanisms", {})
+    if not isinstance(current_mechanisms, dict):
+        current_mechanisms = {}
+
+    normalized_mechanisms: Dict[str, Dict[str, Any]] = {}
+    for mechanism_name, candidate_info in raw_mechanisms.items():
+        if not isinstance(mechanism_name, str):
+            continue
+        name = mechanism_name.strip()
+        if not name:
+            continue
+        normalized_mechanisms[name] = normalize_policy_mechanism_definition(
+            name=name,
+            candidate_info=candidate_info,
+            current_info=current_mechanisms.get(name, {}),
+        )
+
+    if not normalized_mechanisms:
+        return None
+
+    schema_version = payload.get("schema_version", current_definitions.get("schema_version", "1.0"))
+    champion_file = payload.get("champion_file", current_definitions.get("champion_file", ".best_strategy.sol"))
+    raw_edge = payload.get("champion_edge", champion_edge)
+    try:
+        normalized_edge = float(raw_edge)
+    except (TypeError, ValueError):
+        normalized_edge = float(champion_edge)
+
+    return {
+        "schema_version": str(schema_version),
+        "champion_file": str(champion_file),
+        "champion_edge": normalized_edge,
+        "mechanisms": normalized_mechanisms,
+    }
+
+
+def span_line_count(spans: Sequence[Tuple[int, int]]) -> int:
+    merged = merge_spans(spans)
+    return sum(max(0, end - start + 1) for start, end in merged)
+
+
+def validate_policy_definitions(
+    candidate_definitions: Dict[str, Any],
+    current_definitions: Dict[str, Any],
+    champion_code: str,
+) -> Tuple[bool, str, Dict[str, Any]]:
+    report: Dict[str, Any] = {
+        "errors": [],
+        "warnings": [],
+        "added_mechanisms": [],
+        "missing_mechanisms": [],
+        "span_lines_by_mechanism": {},
+    }
+
+    candidate_mechanisms = candidate_definitions.get("mechanisms", {})
+    current_mechanisms = current_definitions.get("mechanisms", {})
+    if not isinstance(candidate_mechanisms, dict):
+        return False, "candidate_definitions_missing_mechanisms", report
+    if not isinstance(current_mechanisms, dict):
+        current_mechanisms = {}
+
+    missing = sorted(set(current_mechanisms.keys()) - set(candidate_mechanisms.keys()))
+    added = sorted(set(candidate_mechanisms.keys()) - set(current_mechanisms.keys()))
+    report["missing_mechanisms"] = missing
+    report["added_mechanisms"] = added
+
+    if missing:
+        report["errors"].append(f"missing_existing_mechanisms:{','.join(missing)}")
+    if len(added) > POLICY_EVOLUTION_MAX_NEW_MECHANISMS:
+        report["errors"].append(f"too_many_new_mechanisms:{len(added)}")
+
+    champion_line_count = max(1, len(champion_code.splitlines()))
+    max_span_allowed = max(
+        10,
+        min(
+            POLICY_EVOLUTION_MAX_SPAN_LINES,
+            int(champion_line_count * POLICY_EVOLUTION_MAX_SPAN_RATIO),
+        ),
+    )
+    report["max_span_allowed"] = max_span_allowed
+
+    mechanism_names = set(candidate_mechanisms.keys())
+    for mechanism_name, mechanism_info in candidate_mechanisms.items():
+        if not isinstance(mechanism_info, dict):
+            report["errors"].append(f"mechanism_not_object:{mechanism_name}")
+            continue
+
+        spans = resolve_mechanism_spans(champion_code, mechanism_info)
+        if not spans:
+            report["errors"].append(f"unresolved_spans:{mechanism_name}")
+            continue
+        total_lines = span_line_count(spans)
+        report["span_lines_by_mechanism"][mechanism_name] = total_lines
+        if total_lines > max_span_allowed:
+            report["errors"].append(f"span_too_large:{mechanism_name}:{total_lines}")
+
+        allowed = mechanism_info.get("allowed_overlap_with", [])
+        if not isinstance(allowed, list):
+            report["errors"].append(f"invalid_allowed_overlap_with:{mechanism_name}")
+            continue
+        for overlap_target in allowed:
+            if not isinstance(overlap_target, str):
+                report["errors"].append(f"invalid_overlap_target:{mechanism_name}")
+                continue
+            if overlap_target not in mechanism_names:
+                report["errors"].append(f"unknown_overlap_target:{mechanism_name}->{overlap_target}")
+            if overlap_target == mechanism_name:
+                report["errors"].append(f"self_overlap_not_allowed:{mechanism_name}")
+
+    if report["errors"]:
+        return False, report["errors"][0], report
+    return True, "valid", report
+
+
+def shadow_score_policy_candidate(
+    champion_code: str,
+    current_definitions: Dict[str, Any],
+    candidate_definitions: Dict[str, Any],
+    log_entries: Sequence[Dict[str, Any]],
+    lookback: int = POLICY_EVOLUTION_LOOKBACK,
+) -> Dict[str, Any]:
+    replayed = 0
+    rescued_validations = 0
+    regressed_validations = 0
+    unchanged = 0
+    missing_candidate_file = 0
+    for entry in list(log_entries[-max(1, int(lookback)) :]):
+        mechanism_name = str(entry.get("mechanism", ""))
+        if not mechanism_name or mechanism_name == "wildcard":
+            continue
+        candidate_path_raw = entry.get("candidate_path")
+        if not candidate_path_raw:
+            continue
+        candidate_path = Path(str(candidate_path_raw))
+        if not candidate_path.exists():
+            missing_candidate_file += 1
+            continue
+        try:
+            candidate_code = candidate_path.read_text()
+        except OSError:
+            missing_candidate_file += 1
+            continue
+
+        old_valid, _ = validate_candidate(
+            champion_code,
+            candidate_code,
+            mechanism_name,
+            current_definitions,
+        )
+        new_valid, _ = validate_candidate(
+            champion_code,
+            candidate_code,
+            mechanism_name,
+            candidate_definitions,
+        )
+        replayed += 1
+        if (not old_valid) and new_valid:
+            rescued_validations += 1
+        elif old_valid and (not new_valid):
+            regressed_validations += 1
+        else:
+            unchanged += 1
+
+    return {
+        "replayed_candidates": replayed,
+        "rescued_validations": rescued_validations,
+        "regressed_validations": regressed_validations,
+        "unchanged": unchanged,
+        "missing_candidate_file": missing_candidate_file,
+        "shadow_score": rescued_validations - regressed_validations,
+    }
+
+
+def write_definitions_with_optional_mirror(path: Path, payload: Dict[str, Any]) -> None:
+    atomic_write_json(path, payload)
+    if path.suffix.lower() == ".json":
+        mirror = path.with_suffix(".yaml")
+        if mirror.exists():
+            atomic_write_json(mirror, payload)
+    elif path.suffix.lower() in {".yaml", ".yml"}:
+        mirror = path.with_suffix(".json")
+        if mirror.exists():
+            atomic_write_json(mirror, payload)
+
+
+def maybe_run_policy_evolution(args: argparse.Namespace, completed_iteration: int) -> Optional[Dict[str, Any]]:
+    frequency = int(getattr(args, "policy_evolution_frequency", DEFAULT_POLICY_EVOLUTION_FREQUENCY))
+    if frequency <= 0:
+        return None
+    if completed_iteration <= 0 or completed_iteration % frequency != 0:
+        return None
+
+    state_dir = Path(args.state_dir)
+    definitions_path = Path(args.definitions)
+    policy_log_path = state_dir / "policy_evolution_log.jsonl"
+    policy_state_path = state_dir / "policy_evolution_state.json"
+    policy_prompt_dir = state_dir / "prompts_policy"
+    policy_candidate_dir = state_dir / "candidates_policy"
+    policy_history_dir = state_dir / "policy_history"
+    policy_prompt_dir.mkdir(parents=True, exist_ok=True)
+    policy_candidate_dir.mkdir(parents=True, exist_ok=True)
+    policy_history_dir.mkdir(parents=True, exist_ok=True)
+
+    policy_state = load_json(policy_state_path, {})
+    if int(policy_state.get("last_trigger_iteration", 0) or 0) == completed_iteration:
+        return {
+            "status": "skipped_already_triggered",
+            "iter": completed_iteration,
+            "ts": utc_now_iso(),
+        }
+
+    try:
+        current_definitions = load_definitions(definitions_path)
+    except Exception as exc:
+        entry = {
+            "status": "policy_failed_load_definitions",
+            "iter": completed_iteration,
+            "ts": utc_now_iso(),
+            "reason": f"load_definitions_error:{exc}",
+        }
+        append_jsonl(policy_log_path, entry)
+        atomic_write_json(
+            policy_state_path,
+            {
+                "last_trigger_iteration": completed_iteration,
+                "last_status": entry["status"],
+                "updated_at": utc_now_iso(),
+            },
+        )
+        return entry
+
+    champion_code, champion_edge, _ = load_champion(state_dir)
+    iteration_log = read_iteration_log(state_dir / "iteration_log.jsonl")
+    signals = collect_iteration_failure_signals(iteration_log, lookback=POLICY_EVOLUTION_LOOKBACK)
+    invalid_examples = pick_recent_invalid_examples(iteration_log, limit=6)
+    prompt_text = build_policy_evolution_prompt(
+        champion_code=champion_code,
+        definitions=current_definitions,
+        signals=signals,
+        invalid_examples=invalid_examples,
+    )
+    prompt_path = policy_prompt_dir / f"iter_{completed_iteration}_policy.md"
+    atomic_write_text(prompt_path, prompt_text + "\n")
+
+    base_entry: Dict[str, Any] = {
+        "status": "policy_started",
+        "iter": completed_iteration,
+        "ts": utc_now_iso(),
+        "definitions_path": str(definitions_path),
+        "prompt_path": str(prompt_path),
+        "signals": signals,
+    }
+
+    if bool(getattr(args, "dry_run", False)):
+        entry = dict(base_entry)
+        entry["status"] = "policy_skipped_dry_run"
+        append_jsonl(policy_log_path, entry)
+        atomic_write_json(
+            policy_state_path,
+            {
+                "last_trigger_iteration": completed_iteration,
+                "last_status": entry["status"],
+                "updated_at": utc_now_iso(),
+            },
+        )
+        return entry
+
+    artifact_prefix = policy_candidate_dir / f"iter_{completed_iteration}_policy"
+    payload, llm_error, llm_artifacts = generate_policy_candidate_with_llm(
+        prompt_path=prompt_path,
+        artifact_prefix=artifact_prefix,
+        llm_command=str(args.llm_command),
+        llm_model=str(args.llm_model),
+        llm_timeout_minutes=float(args.llm_timeout_minutes),
+        llm_max_output_tokens=int(args.llm_max_output_tokens),
+        llm_disable_shell_tool=bool(args.llm_disable_shell_tool),
+    )
+    entry = dict(base_entry)
+    if llm_artifacts:
+        entry.update(llm_artifacts)
+    if payload is None:
+        entry["status"] = "policy_llm_failed"
+        entry["reason"] = llm_error or "policy_llm_failed"
+        append_jsonl(policy_log_path, entry)
+        atomic_write_json(
+            policy_state_path,
+            {
+                "last_trigger_iteration": completed_iteration,
+                "last_status": entry["status"],
+                "updated_at": utc_now_iso(),
+            },
+        )
+        return entry
+
+    normalized = normalize_policy_definitions_payload(
+        payload=payload,
+        current_definitions=current_definitions,
+        champion_edge=champion_edge,
+    )
+    if normalized is None:
+        entry["status"] = "policy_rejected_invalid_schema"
+        entry["reason"] = "candidate_payload_missing_mechanisms"
+        append_jsonl(policy_log_path, entry)
+        atomic_write_json(
+            policy_state_path,
+            {
+                "last_trigger_iteration": completed_iteration,
+                "last_status": entry["status"],
+                "updated_at": utc_now_iso(),
+            },
+        )
+        return entry
+
+    valid, reason, validation_report = validate_policy_definitions(
+        candidate_definitions=normalized,
+        current_definitions=current_definitions,
+        champion_code=champion_code,
+    )
+    shadow_report = shadow_score_policy_candidate(
+        champion_code=champion_code,
+        current_definitions=current_definitions,
+        candidate_definitions=normalized,
+        log_entries=iteration_log,
+        lookback=POLICY_EVOLUTION_LOOKBACK,
+    )
+    entry["validation"] = validation_report
+    entry["shadow"] = shadow_report
+
+    current_hash = definitions_fingerprint(current_definitions)
+    candidate_hash = definitions_fingerprint(normalized)
+    entry["definitions_hash_before"] = current_hash
+    entry["definitions_hash_after"] = candidate_hash
+
+    if candidate_hash == current_hash:
+        entry["status"] = "policy_no_change"
+        append_jsonl(policy_log_path, entry)
+        atomic_write_json(
+            policy_state_path,
+            {
+                "last_trigger_iteration": completed_iteration,
+                "last_status": entry["status"],
+                "updated_at": utc_now_iso(),
+            },
+        )
+        return entry
+
+    if not valid:
+        entry["status"] = "policy_rejected_validation"
+        entry["reason"] = reason
+        append_jsonl(policy_log_path, entry)
+        atomic_write_json(
+            policy_state_path,
+            {
+                "last_trigger_iteration": completed_iteration,
+                "last_status": entry["status"],
+                "updated_at": utc_now_iso(),
+            },
+        )
+        return entry
+
+    if int(shadow_report.get("regressed_validations", 0) or 0) > 0:
+        entry["status"] = "policy_rejected_shadow_regression"
+        entry["reason"] = "shadow_regression_detected"
+        append_jsonl(policy_log_path, entry)
+        atomic_write_json(
+            policy_state_path,
+            {
+                "last_trigger_iteration": completed_iteration,
+                "last_status": entry["status"],
+                "updated_at": utc_now_iso(),
+            },
+        )
+        return entry
+
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    backup_path = policy_history_dir / f"{definitions_path.stem}.iter_{completed_iteration}.{stamp}{definitions_path.suffix or '.json'}"
+    if definitions_path.exists():
+        shutil.copy2(definitions_path, backup_path)
+    write_definitions_with_optional_mirror(definitions_path, normalized)
+
+    entry["status"] = "policy_applied"
+    entry["backup_path"] = str(backup_path)
+    append_jsonl(policy_log_path, entry)
+    atomic_write_json(
+        policy_state_path,
+        {
+            "last_trigger_iteration": completed_iteration,
+            "last_status": entry["status"],
+            "last_applied_hash": candidate_hash,
+            "updated_at": utc_now_iso(),
+        },
+    )
+    return entry
 
 
 def evaluate_with_pipeline(
@@ -524,15 +1374,7 @@ def initialize_stats(
     champion_edge = float((state_dir / ".best_edge.txt").read_text().strip())
     mechanisms = {}
     for mechanism_name in definitions.get("mechanisms", {}).keys():
-        mechanisms[mechanism_name] = {
-            "tries": 0,
-            "successes": 0,
-            "total_uplift": 0.0,
-            "invalid_count": 0,
-            "compile_fail_count": 0,
-            "last_tried": None,
-            "best_delta": None,
-        }
+        mechanisms[mechanism_name] = default_mechanism_stats()
     return {
         "schema_version": SCHEMA_VERSION,
         "champion": {
@@ -706,6 +1548,8 @@ def run_iteration(args: argparse.Namespace) -> int:
         max_retries_on_invalid=int(args.max_retries_on_invalid),
         wildcard_frequency=int(args.wildcard_frequency),
     )
+    if sync_stats_mechanisms(stats, definitions):
+        atomic_write_json(stats_path, stats)
 
     iteration = int(stats.get("global", {}).get("total_iterations", 0) or 0) + 1
     rng = random.Random(int(args.seed) + iteration)
@@ -716,8 +1560,12 @@ def run_iteration(args: argparse.Namespace) -> int:
         raise ValueError("definitions has no mechanisms")
 
     wildcard = should_run_wildcard(iteration, stats, int(args.wildcard_frequency))
+    candidate_pool = {name: rec for name, rec in stats["mechanisms"].items() if name in mechanisms}
+    if not candidate_pool:
+        candidate_pool = {name: default_mechanism_stats() for name in mechanisms.keys()}
+        stats["mechanisms"] = candidate_pool
     mechanism_name = "wildcard" if wildcard else select_mechanism(
-        stats["mechanisms"], float(args.exploration_c), rng
+        candidate_pool, float(args.exploration_c), rng
     )
 
     candidate_code = ""
@@ -1010,8 +1858,10 @@ def show_status(args: argparse.Namespace) -> int:
     state_dir = Path(args.state_dir)
     stats_path = state_dir / "mechanism_stats.json"
     log_path = state_dir / "iteration_log.jsonl"
+    policy_state_path = state_dir / "policy_evolution_state.json"
     stats = load_json(stats_path, {})
     logs = read_iteration_log(log_path)
+    policy_state = load_json(policy_state_path, {})
 
     if not stats:
         print(json.dumps({"status": "uninitialized", "state_dir": str(state_dir)}, indent=2))
@@ -1025,6 +1875,7 @@ def show_status(args: argparse.Namespace) -> int:
         "mechanism_stats": stats.get("mechanisms", {}),
         "log_entries": len(logs),
         "last_entry": logs[-1] if logs else None,
+        "policy_evolution": policy_state if isinstance(policy_state, dict) else {},
     }
     print(json.dumps(payload, indent=2))
     return 0
@@ -1033,8 +1884,14 @@ def show_status(args: argparse.Namespace) -> int:
 def run_loop(args: argparse.Namespace) -> int:
     count = int(args.iterations)
     sleep_seconds = float(args.sleep_seconds)
+    state_dir = Path(args.state_dir)
     for i in range(count):
         run_code = run_iteration(args)
+        stats = load_json(state_dir / "mechanism_stats.json", {})
+        completed_iteration = int(stats.get("global", {}).get("total_iterations", 0) or 0)
+        policy_entry = maybe_run_policy_evolution(args, completed_iteration)
+        if policy_entry is not None:
+            print(json.dumps({"policy_evolution": policy_entry}, indent=2))
         if run_code != 0 and not bool(args.continue_on_error):
             return run_code
         if bool(args.shadow_script):
@@ -1118,6 +1975,7 @@ def build_parser() -> argparse.ArgumentParser:
         run_parser.add_argument("--llm-timeout-minutes", type=float, default=DEFAULT_LLM_TIMEOUT_MINUTES)
         run_parser.add_argument("--llm-max-output-tokens", type=int, default=DEFAULT_LLM_MAX_OUTPUT_TOKENS)
         run_parser.add_argument("--llm-disable-shell-tool", action="store_true")
+        run_parser.add_argument("--policy-evolution-frequency", type=int, default=DEFAULT_POLICY_EVOLUTION_FREQUENCY)
 
     run_once = sub.add_parser("run-once", help="Run one simplified loop iteration")
     add_common(run_once)
