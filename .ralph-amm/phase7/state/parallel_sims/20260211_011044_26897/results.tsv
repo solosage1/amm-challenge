@@ -1,0 +1,6 @@
+strategy	status	edge	duration_s	log_file
+canary_mode3_v1.sol	0	519.91	26	.ralph-amm/phase7/state/parallel_sims/20260211_011044_26897/1_canary_mode3_v1.log
+canary_mode3_v2.sol	0	519.42	26	.ralph-amm/phase7/state/parallel_sims/20260211_011044_26897/2_canary_mode3_v2.log
+canary_mode3_v3.sol	0	519.51	25	.ralph-amm/phase7/state/parallel_sims/20260211_011044_26897/3_canary_mode3_v3.log
+canary_mode3_v4.sol	0	519.80	25	.ralph-amm/phase7/state/parallel_sims/20260211_011044_26897/4_canary_mode3_v4.log
+canary_mode3_v5.sol	0	519.71	19	.ralph-amm/phase7/state/parallel_sims/20260211_011044_26897/5_canary_mode3_v5.log

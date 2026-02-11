@@ -2,11 +2,19 @@
   "regime_state_transition_search": {
     "successes": 0,
     "failures": 1,
-    "neutral": 1,
+    "neutral": 2,
     "severe_failures": 1,
     "cooldown_until_iteration": 25,
     "cooldown_reason": "harvested family failure: heavy/light 3-state regime machine underperformed champion by >0.8",
     "status": "FAILED",
     "failed_at_iteration": 21
+  },
+  "adaptive_undercut_search": {
+    "successes": 0,
+    "failures": 0,
+    "neutral": 2,
+    "severe_failures": 0,
+    "cooldown_until_iteration": 0,
+    "cooldown_reason": null
   }
 }

@@ -1,0 +1,11 @@
+strategy	status	edge	duration_s	log_file
+./gate2r_v1.sol	2	NA	0	.ralph-amm/phase7/state/parallel_sims/20260211_010759_22716/1_gate2r_v1.log
+./gate2r_v2.sol	2	NA	0	.ralph-amm/phase7/state/parallel_sims/20260211_010759_22716/2_gate2r_v2.log
+./gate2r_v3.sol	2	NA	0	.ralph-amm/phase7/state/parallel_sims/20260211_010759_22716/3_gate2r_v3.log
+./gate2r_v4.sol	2	NA	0	.ralph-amm/phase7/state/parallel_sims/20260211_010759_22716/4_gate2r_v4.log
+./gate2r_v5.sol	2	NA	0	.ralph-amm/phase7/state/parallel_sims/20260211_010759_22716/5_gate2r_v5.log
+./gate2r_v6.sol	2	NA	0	.ralph-amm/phase7/state/parallel_sims/20260211_010759_22716/6_gate2r_v6.log
+./gate2r_v7.sol	2	NA	0	.ralph-amm/phase7/state/parallel_sims/20260211_010759_22716/7_gate2r_v7.log
+./gate2r_v8.sol	2	NA	0	.ralph-amm/phase7/state/parallel_sims/20260211_010759_22716/8_gate2r_v8.log
+./gate2r_v9.sol	2	NA	0	.ralph-amm/phase7/state/parallel_sims/20260211_010759_22716/9_gate2r_v9.log
+./gate2r_v10.sol	2	NA	0	.ralph-amm/phase7/state/parallel_sims/20260211_010759_22716/10_gate2r_v10.log

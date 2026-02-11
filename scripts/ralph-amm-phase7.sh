@@ -632,6 +632,14 @@ invoke_codex_generator() {
     local champion_baseline
     champion_baseline="$(cat "$STATE_CHAMPION" 2>/dev/null || echo "0")"
     LAST_GATE_ABORT_REASON=""
+    local par_sim_champion="0"
+    local par_sim_early_n="0"
+    if [[ "${EXEC_GATES_ENABLED}" == "1" ]]; then
+        par_sim_champion="$champion_baseline"
+        if [[ "${GATE_EARLY_ABORT_ENABLED}" == "1" ]]; then
+            par_sim_early_n="$GATE_EARLY_MIN_RESULTS"
+        fi
+    fi
 
     # Shell tool is enabled by default. Set CODEX_DISABLE_SHELL_TOOL=1 (or pass --disable-shell-tool)
     # to prevent Codex from running local commands.
@@ -641,6 +649,10 @@ invoke_codex_generator() {
     fi
 
     if [[ -n "$CODEX_MODEL" ]]; then
+        PAR_SIM_CHAMPION="$par_sim_champion" \
+        PAR_SIM_EARLY_N="$par_sim_early_n" \
+        PAR_SIM_EARLY_DELTA="$GATE_EARLY_DELTA" \
+        PAR_SIM_BATCH_DELTA="$GATE_BATCH_FAIL_DELTA" \
         timeout "${timeout_minutes}m" codex exec \
             --json \
             --config "max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS" \
@@ -649,6 +661,10 @@ invoke_codex_generator() {
             --model "$CODEX_MODEL" \
             - < "$prompt_path" > "$codex_jsonl_path" 2> "$codex_stderr_path" &
     else
+        PAR_SIM_CHAMPION="$par_sim_champion" \
+        PAR_SIM_EARLY_N="$par_sim_early_n" \
+        PAR_SIM_EARLY_DELTA="$GATE_EARLY_DELTA" \
+        PAR_SIM_BATCH_DELTA="$GATE_BATCH_FAIL_DELTA" \
         timeout "${timeout_minutes}m" codex exec \
             --json \
             --config "max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS" \

@@ -5,8 +5,8 @@
   "state_best_edge_benchmark": 508.25,
   "true_best_edge_1000": 508.25,
   "true_best_strategy_1000": "Tmp_U11_Band25",
-  "true_best_edge_any": 518.99,
-  "true_best_strategy_any": "ArbOracleDualRegime_Tight30_Buf4",
+  "true_best_edge_any": 514.29,
+  "true_best_strategy_any": "GammaSquaredDualRegime",
   "all_tested_strategies": [
     {
       "name": "Tmp_U11_Band25",
@@ -86,6 +86,13 @@
       "file": "tmp_u10_band27.sol"
     },
     {
+      "name": "gate2r_v10",
+      "edge": 508.17,
+      "sims": 1000,
+      "iteration": 10,
+      "file": "./gate2r_v10.sol"
+    },
+    {
       "name": "Tmp_U11_B25_Buf2",
       "edge": 508.16,
       "sims": 1000,
@@ -140,13 +147,6 @@
       "sims": 1000,
       "iteration": 3,
       "file": "tmp_compundercut8.sol"
-    },
-    {
-      "name": "Tmp_CompUnder12",
-      "edge": 507.99,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_compundercut12.sol"
     }
   ],
   "all_tested_strategies_1000": [
@@ -228,6 +228,13 @@
       "file": "tmp_u10_band27.sol"
     },
     {
+      "name": "gate2r_v10",
+      "edge": 508.17,
+      "sims": 1000,
+      "iteration": 10,
+      "file": "./gate2r_v10.sol"
+    },
+    {
       "name": "Tmp_U11_B25_Buf2",
       "edge": 508.16,
       "sims": 1000,
@@ -282,13 +289,6 @@
       "sims": 1000,
       "iteration": 3,
       "file": "tmp_compundercut8.sol"
-    },
-    {
-      "name": "Tmp_CompUnder12",
-      "edge": 507.99,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_compundercut12.sol"
     }
   ],
   "lessons_learned": [
@@ -343,36 +343,8 @@
       "to": "Const_10bps",
       "to_edge": 161.1,
       "iteration": 19
-    },
-    {
-      "from": "ArbOracleDualRegimeExact",
-      "from_edge": 510.98,
-      "to": "ArbInferredSkew",
-      "to_edge": 319.31,
-      "iteration": 8
-    },
-    {
-      "from": "ArbOracleDualRegimeExact",
-      "from_edge": 510.98,
-      "to": "ArbOracleBandMatch",
-      "to_edge": 180.26,
-      "iteration": 8
-    },
-    {
-      "from": "ArbOracleDualRegime_Tight30_Buf4",
-      "from_edge": 518.99,
-      "to": "Const_30bps",
-      "to_edge": 346.57,
-      "iteration": 9
-    },
-    {
-      "from": "ArbOracleDualRegime_Tight30_Buf4",
-      "from_edge": 518.99,
-      "to": "Const_10bps",
-      "to_edge": 163.68,
-      "iteration": 9
     }
   ],
-  "harvested_at": "2026-02-11T05:24:36.629992Z",
-  "total_results_harvested": 167
+  "harvested_at": "2026-02-11T06:14:52.281416Z",
+  "total_results_harvested": 131
 }

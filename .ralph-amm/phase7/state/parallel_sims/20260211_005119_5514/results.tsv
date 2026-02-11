@@ -1,0 +1,11 @@
+strategy	status	edge	duration_s	log_file
+adaptive_u2_v1.sol	0	507.51	110	.ralph-amm/phase7/state/parallel_sims/20260211_005119_5514/1_adaptive_u2_v1.log
+adaptive_u2_v2.sol	0	507.58	110	.ralph-amm/phase7/state/parallel_sims/20260211_005119_5514/2_adaptive_u2_v2.log
+adaptive_u2_v3.sol	0	507.65	110	.ralph-amm/phase7/state/parallel_sims/20260211_005119_5514/3_adaptive_u2_v3.log
+adaptive_u2_v4.sol	0	507.67	110	.ralph-amm/phase7/state/parallel_sims/20260211_005119_5514/4_adaptive_u2_v4.log
+adaptive_u2_v5.sol	0	507.67	105	.ralph-amm/phase7/state/parallel_sims/20260211_005119_5514/5_adaptive_u2_v5.log
+adaptive_u2_v6.sol	0	507.64	106	.ralph-amm/phase7/state/parallel_sims/20260211_005119_5514/6_adaptive_u2_v6.log
+adaptive_u2_v7.sol	0	507.69	106	.ralph-amm/phase7/state/parallel_sims/20260211_005119_5514/7_adaptive_u2_v7.log
+adaptive_u2_v8.sol	0	507.42	106	.ralph-amm/phase7/state/parallel_sims/20260211_005119_5514/8_adaptive_u2_v8.log
+adaptive_u2_v9.sol	0	507.57	52	.ralph-amm/phase7/state/parallel_sims/20260211_005119_5514/9_adaptive_u2_v9.log
+adaptive_u2_v10.sol	0	507.16	51	.ralph-amm/phase7/state/parallel_sims/20260211_005119_5514/10_adaptive_u2_v10.log

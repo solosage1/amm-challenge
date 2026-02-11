@@ -1,0 +1,5 @@
+strategy	status	edge	duration_s	log_file
+tmp_u11_band25.sol	0	508.25	143	.ralph-amm/phase7/state/parallel_sims/20260211_004736_2135/1_tmp_u11_band25.log
+arb_oracle_dualregime_tight30_buf4.sol	0	505.61	143	.ralph-amm/phase7/state/parallel_sims/20260211_004736_2135/2_arb_oracle_dualregime_tight30_buf4.log
+gamma2_dualregime.sol	0	506.17	143	.ralph-amm/phase7/state/parallel_sims/20260211_004736_2135/3_gamma2_dualregime.log
+canary_mode3_light_l1.sol	0	507.31	144	.ralph-amm/phase7/state/parallel_sims/20260211_004736_2135/4_canary_mode3_light_l1.log

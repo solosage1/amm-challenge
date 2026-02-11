@@ -28,6 +28,18 @@ PAR_SIM_RESULT_RE = re.compile(
     r"^PAR_SIM_RESULT\t([^\t]+)\t([^\t]+)\t([0-9]+)\t([0-9]+)$",
     re.MULTILINE,
 )
+PAR_SIM_FAMILY_START_RE = re.compile(
+    r"^PAR_SIM_FAMILY_START\t([^\t\n]+)\t([0-9]+)\t([^\t\n]+)\t([0-9]+)\t([^\t\n]+)\t([^\t\n]+)$",
+    re.MULTILINE,
+)
+PAR_SIM_FAMILY_ABORT_RE = re.compile(
+    r"^PAR_SIM_FAMILY_ABORT\t([^\t\n]+)\t([^\t\n]*)\t([0-9]+)\t([0-9]+)$",
+    re.MULTILINE,
+)
+PAR_SIM_FAMILY_END_RE = re.compile(
+    r"^PAR_SIM_FAMILY_END\t([^\t\n]+)\t([^\t\n]+)\t([0-9]+)\t([^\t\n]+)\t([^\n]*)$",
+    re.MULTILINE,
+)
 
 
 def utc_now_iso() -> str:
@@ -117,13 +129,43 @@ def ensure_iteration_record(
                 "fail_reason": None,
             },
             "status": "monitor_running",
+            "families": {},
             "updated_at": utc_now_iso(),
         }
     return iterations[key]
 
 
+def ensure_family_record(it_record: Dict[str, Any], run_id: str) -> Dict[str, Any]:
+    families = it_record.setdefault("families", {})
+    rec = families.get(run_id)
+    if not isinstance(rec, dict):
+        rec = {
+            "run_id": run_id,
+            "started_at": None,
+            "completed_at": None,
+            "n_strategies": None,
+            "completed_count": 0,
+            "killed_count": 0,
+            "best_edge": None,
+            "champion": None,
+            "early_n": None,
+            "early_delta": None,
+            "batch_delta": None,
+            "early_aborted": False,
+            "batch_failed": False,
+            "fail_reason": None,
+            "status": "running",
+            "updated_at": utc_now_iso(),
+        }
+        families[run_id] = rec
+    return rec
+
+
 def extract_edge_items(item: Dict[str, Any], min_sims: int) -> List[Dict[str, Any]]:
-    if item.get("type") != "command_execution" or item.get("status") != "completed":
+    if item.get("type") != "command_execution":
+        return []
+    status_text = str(item.get("status") or "").lower()
+    if status_text not in {"completed", "failed"}:
         return []
     command = str(item.get("command") or "")
     output = str(item.get("aggregated_output") or "")
@@ -177,6 +219,110 @@ def extract_edge_items(item: Dict[str, Any], min_sims: int) -> List[Dict[str, An
         return results
 
     return []
+
+
+def extract_family_events(item: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if item.get("type") != "command_execution":
+        return []
+    status_text = str(item.get("status") or "").lower()
+    if status_text not in {"completed", "failed"}:
+        return []
+    command = str(item.get("command") or "")
+    if "run-parallel-sims.sh" not in command:
+        return []
+    output = str(item.get("aggregated_output") or "")
+    events: List[Dict[str, Any]] = []
+
+    for run_id, n_strategies, champion, early_n, early_delta, batch_delta in PAR_SIM_FAMILY_START_RE.findall(output):
+        event: Dict[str, Any] = {
+            "type": "start",
+            "run_id": run_id,
+            "n_strategies": int(n_strategies),
+            "early_n": int(early_n),
+        }
+        try:
+            event["champion"] = float(champion)
+        except Exception:
+            event["champion"] = None
+        try:
+            event["early_delta"] = float(early_delta)
+        except Exception:
+            event["early_delta"] = None
+        try:
+            event["batch_delta"] = float(batch_delta)
+        except Exception:
+            event["batch_delta"] = None
+        events.append(event)
+
+    for run_id, reason, completed_count, killed_count in PAR_SIM_FAMILY_ABORT_RE.findall(output):
+        events.append(
+            {
+                "type": "abort",
+                "run_id": run_id,
+                "reason": reason.strip() or None,
+                "completed_count": int(completed_count),
+                "killed_count": int(killed_count),
+            }
+        )
+
+    for run_id, best_edge_raw, completed_count, failed_raw, reason in PAR_SIM_FAMILY_END_RE.findall(output):
+        event = {
+            "type": "end",
+            "run_id": run_id,
+            "completed_count": int(completed_count),
+            "failed": str(failed_raw).strip().lower() == "true",
+            "reason": reason.strip() or None,
+        }
+        try:
+            event["best_edge"] = float(best_edge_raw)
+        except Exception:
+            event["best_edge"] = None
+        events.append(event)
+
+    return events
+
+
+def apply_family_events(it_record: Dict[str, Any], events: List[Dict[str, Any]]) -> None:
+    for event in events:
+        run_id = str(event.get("run_id") or "").strip()
+        if not run_id:
+            continue
+        rec = ensure_family_record(it_record, run_id)
+        now = utc_now_iso()
+        kind = event.get("type")
+        if kind == "start":
+            if rec.get("started_at") is None:
+                rec["started_at"] = now
+            rec["n_strategies"] = event.get("n_strategies")
+            rec["champion"] = event.get("champion")
+            rec["early_n"] = event.get("early_n")
+            rec["early_delta"] = event.get("early_delta")
+            rec["batch_delta"] = event.get("batch_delta")
+            rec["status"] = "running"
+        elif kind == "abort":
+            if rec.get("started_at") is None:
+                rec["started_at"] = now
+            rec["early_aborted"] = True
+            rec["status"] = "aborted"
+            rec["completed_count"] = int(event.get("completed_count") or 0)
+            rec["killed_count"] = int(event.get("killed_count") or 0)
+            rec["fail_reason"] = event.get("reason")
+            rec["batch_failed"] = True
+            rec["completed_at"] = now
+        elif kind == "end":
+            if rec.get("started_at") is None:
+                rec["started_at"] = now
+            rec["completed_count"] = int(event.get("completed_count") or 0)
+            rec["best_edge"] = event.get("best_edge")
+            rec["batch_failed"] = bool(event.get("failed"))
+            if event.get("reason"):
+                rec["fail_reason"] = event.get("reason")
+            rec["completed_at"] = now
+            if rec.get("early_aborted"):
+                rec["status"] = "aborted"
+            else:
+                rec["status"] = "completed"
+        rec["updated_at"] = now
 
 
 def update_batch_fields(it_record: Dict[str, Any], champion_baseline: float, batch_fail_delta: float) -> None:
@@ -289,6 +435,7 @@ def main() -> int:
     while True:
         events, offset = parse_new_events(jsonl_path=jsonl_path, offset=offset)
         changed = False
+        family_events: List[Dict[str, Any]] = []
         for event in events:
             if event.get("type") != "item.completed":
                 continue
@@ -297,10 +444,12 @@ def main() -> int:
             if not item_id or item_id in seen_ids:
                 continue
             edge_items = extract_edge_items(item, args.min_sims)
-            if not edge_items:
+            item_family_events = extract_family_events(item)
+            if not edge_items and not item_family_events:
                 continue
             seen_ids.add(item_id)
             observed.extend(edge_items)
+            family_events.extend(item_family_events)
             changed = True
 
         if changed:
@@ -319,6 +468,8 @@ def main() -> int:
             it_record["observed_edges"] = observed
             it_record["observed_item_ids"] = sorted(seen_ids)
             update_batch_fields(it_record, args.champion_baseline, args.batch_fail_delta)
+            if family_events:
+                apply_family_events(it_record, family_events)
 
             if args.early_enabled and not bool(it_record.get("early_abort", {}).get("triggered")):
                 triggered, reason = early_abort_triggered(

@@ -1,0 +1,6 @@
+strategy	status	edge	duration_s	log_file
+const30.sol	0	360.91	2	.ralph-amm/phase7/state/parallel_sims/20260211_010651_20814/1_const30.log
+const50.sol	0	392.08	1	.ralph-amm/phase7/state/parallel_sims/20260211_010651_20814/2_const50.log
+const70.sol	0	405.27	1	.ralph-amm/phase7/state/parallel_sims/20260211_010651_20814/3_const70.log
+const80.sol	0	406.83	1	.ralph-amm/phase7/state/parallel_sims/20260211_010651_20814/4_const80.log
+const100.sol	0	402.73	1	.ralph-amm/phase7/state/parallel_sims/20260211_010651_20814/5_const100.log

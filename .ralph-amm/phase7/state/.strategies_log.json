@@ -4610,5 +4610,172 @@
     "artifact_paths": {
       "strategy_file": "tmp_u11_band25.sol"
     }
+  },
+  {
+    "iteration": 7,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T05:43:09.544906Z",
+    "final_edge": null,
+    "final_score": null,
+    "effective_score": null,
+    "score_source": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_7_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_7_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_7_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_7_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_7.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_7.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_7_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T06:01:23.164820Z",
+    "final_edge": null,
+    "final_score": null,
+    "effective_score": null,
+    "score_source": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_9_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_9_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_9_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_9_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_9.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_9.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_9_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 10,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T06:14:52.102911Z",
+    "final_edge": null,
+    "final_score": null,
+    "effective_score": null,
+    "score_source": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_10_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_10_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_10_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_10_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_10.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_10.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_10_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 10,
+    "status": "harvested",
+    "timestamp": "2026-02-11T06:14:52.239708Z",
+    "final_edge": 507.35,
+    "strategy_name": "gate2r_v9",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "./gate2r_v9.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "./gate2r_v9.sol"
+    }
+  },
+  {
+    "iteration": 10,
+    "status": "harvested",
+    "timestamp": "2026-02-11T06:14:52.239890Z",
+    "final_edge": 507.82,
+    "strategy_name": "gate2r_v5",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "./gate2r_v5.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "./gate2r_v5.sol"
+    }
+  },
+  {
+    "iteration": 10,
+    "status": "harvested",
+    "timestamp": "2026-02-11T06:14:52.239902Z",
+    "final_edge": 508.17,
+    "strategy_name": "gate2r_v10",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "./gate2r_v10.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "./gate2r_v10.sol"
+    }
+  },
+  {
+    "iteration": 10,
+    "status": "harvested",
+    "timestamp": "2026-02-11T06:14:52.239931Z",
+    "final_edge": 507.63,
+    "strategy_name": "gate2r_v7",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "./gate2r_v7.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "./gate2r_v7.sol"
+    }
   }
 ]
