@@ -334,10 +334,278 @@ def build_knowledge_context(
     }
 
 
+def infer_mechanisms(strategy_name: str) -> list[str]:
+    """Infer coarse mechanism tags from strategy naming conventions."""
+    name = strategy_name.lower()
+    mechanisms: list[str] = []
+    if re.match(r"canary_mode3_v\d+$", name):
+        mechanisms.append("regime_state_machine_heavy")
+    if re.match(r"canary_mode3_light_l\d+$", name):
+        mechanisms.append("regime_state_machine_light")
+    if "compunder" in name or re.search(r"_u\d+", name):
+        mechanisms.append("competitive_undercut")
+    if "gamma" in name:
+        mechanisms.append("gamma_squared_anchor")
+    if "band" in name:
+        mechanisms.append("tight_band_regime")
+    if "buf" in name:
+        mechanisms.append("protective_buffer")
+    if "inventory" in name:
+        mechanisms.append("inventory_trigger")
+    if "cooldown" in name:
+        mechanisms.append("cooldown_logic")
+    return mechanisms if mechanisms else ["unspecified"]
+
+
+def infer_parameters(strategy_name: str) -> dict[str, int]:
+    """Infer parameter values from strategy naming conventions."""
+    name = strategy_name.lower()
+    params: dict[str, int] = {}
+
+    m = re.search(r"compunder(\d+)", name)
+    if m:
+        params["competitive_undercut_bps"] = int(m.group(1))
+    m = re.search(r"_u(\d+)", name)
+    if m:
+        params.setdefault("competitive_undercut_bps", int(m.group(1)))
+    m = re.search(r"band(\d+)", name)
+    if m:
+        params["tight_band_bps"] = int(m.group(1))
+    m = re.search(r"buf(\d+)", name)
+    if m:
+        params["protective_buffer_bps"] = int(m.group(1))
+    m = re.search(r"(?:_t|tight)(\d+)", name)
+    if m:
+        params["tight_fee_bps"] = int(m.group(1))
+    m = re.search(r"(?:_i|init)(\d+)", name)
+    if m:
+        params["init_fee_bps"] = int(m.group(1))
+    return params
+
+
+def build_failed_approaches(results: list[HarvestedResult], champion_edge: float) -> list[dict]:
+    """Build failed-approach records from known family patterns."""
+    failed: list[dict] = []
+
+    def summarize_family(approach: str, regex: str) -> None:
+        family = [r for r in results if re.match(regex, r.strategy_name.lower())]
+        if len(family) < 4:
+            return
+        best = max(r.edge for r in family)
+        delta = best - champion_edge
+        # Hard non-promotion / family-kill signal from loop recommendations.
+        if delta <= -0.8:
+            failed.append({
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "approach": approach,
+                "reason": (
+                    f"best {best:.2f} is {abs(delta):.2f} below champion {champion_edge:.2f}; "
+                    "failed family gate (< champion - 0.8 after initial batch)"
+                ),
+                "edge_achieved": round(best, 2),
+                "delta_vs_champion": round(delta, 2),
+                "sample_size": len(family),
+            })
+
+    summarize_family("heavy_3_state_regime_machine", r"canary_mode3_v\d+$")
+    summarize_family("light_3_state_regime_machine", r"canary_mode3_light_l\d+$")
+    return failed
+
+
+def sync_knowledge_store(
+    state_dir: Path,
+    results: list[HarvestedResult],
+    knowledge_context: dict,
+    lessons: list[str],
+    dry_run: bool = False,
+) -> None:
+    """
+    Rebuild knowledge_store.json from harvested authoritative data.
+    Keeps schema backward compatible while replacing stale placeholder content.
+    """
+    store_path = state_dir / "knowledge_store.json"
+    existing = {}
+    if store_path.exists():
+        try:
+            existing = json.loads(store_path.read_text())
+        except Exception:
+            existing = {}
+
+    now = datetime.now(timezone.utc).isoformat()
+    champion_edge = float(knowledge_context.get("true_best_edge_1000", 0.0) or 0.0)
+    champion_name = str(knowledge_context.get("true_best_strategy_1000", "Unknown") or "Unknown")
+
+    dedup: dict[tuple[int, str, int, float], HarvestedResult] = {}
+    for r in results:
+        key = (int(r.iteration), str(r.strategy_name), int(r.n_simulations), round(float(r.edge), 8))
+        dedup[key] = r
+    sorted_results = sorted(
+        dedup.values(),
+        key=lambda x: (int(x.n_simulations), float(x.edge), -int(x.iteration)),
+        reverse=True,
+    )[:400]
+
+    edge_results = []
+    mechanism_ceilings: dict[str, dict] = {}
+    param_optima: dict[str, dict] = {}
+
+    for r in sorted_results:
+        mechanisms = infer_mechanisms(r.strategy_name)
+        params = infer_parameters(r.strategy_name)
+        edge_results.append({
+            "timestamp": r.timestamp,
+            "strategy": r.strategy_name,
+            "edge": float(r.edge),
+            "mechanisms": mechanisms,
+            "parameters": params,
+            "iteration": int(r.iteration),
+            "n_simulations": int(r.n_simulations),
+            "strategy_file": r.strategy_file,
+        })
+
+        for mech in mechanisms:
+            ceiling = mechanism_ceilings.setdefault(mech, {
+                "ceiling": float(r.edge),
+                "ceiling_strategy": r.strategy_name,
+                "appearances": 0,
+            })
+            ceiling["appearances"] += 1
+            if float(r.edge) > float(ceiling["ceiling"]):
+                ceiling["ceiling"] = float(r.edge)
+                ceiling["ceiling_strategy"] = r.strategy_name
+
+        for param, value in params.items():
+            bucket = param_optima.setdefault(param, {
+                "best_value": value,
+                "best_edge": float(r.edge),
+                "all_tested": [],
+            })
+            bucket["all_tested"].append({str(value): float(r.edge)})
+            if float(r.edge) > float(bucket["best_edge"]):
+                bucket["best_edge"] = float(r.edge)
+                bucket["best_value"] = value
+
+    failed_approaches = build_failed_approaches(sorted_results, champion_edge)
+    insights = [{
+        "timestamp": now,
+        "category": "canonical_best_1000",
+        "insight": f"Champion remains {champion_name} at {champion_edge:.2f} edge (1000 sims).",
+        "evidence": ".knowledge_context.json canonical ranking",
+        "confidence": 1.0,
+    }]
+    for lesson in lessons[:8]:
+        insights.append({
+            "timestamp": now,
+            "category": "session_lesson",
+            "insight": lesson,
+            "evidence": "codex reasoning trace harvest",
+            "confidence": 0.6,
+        })
+
+    data = {
+        "version": int(existing.get("version", 1) or 1),
+        "created": existing.get("created", now),
+        "edge_results": edge_results,
+        "parameter_optima": param_optima,
+        "mechanism_ceilings": mechanism_ceilings,
+        "failed_approaches": failed_approaches,
+        "insights": insights,
+        "regime_weaknesses": existing.get("regime_weaknesses", []),
+        "canonical_best_1000": {
+            "strategy": champion_name,
+            "edge": champion_edge,
+            "harvested_at": knowledge_context.get("harvested_at"),
+        },
+        "updated": now,
+    }
+
+    if dry_run:
+        print(
+            f"[DRY RUN] Would rewrite knowledge_store.json: "
+            f"{len(edge_results)} edge_results, {len(failed_approaches)} failed_approaches"
+        )
+        return
+
+    tmp_path = store_path.with_suffix(".json.tmp")
+    tmp_path.write_text(json.dumps(data, indent=2))
+    tmp_path.rename(store_path)
+    print(
+        f"Synced knowledge_store.json ({len(edge_results)} edge_results, "
+        f"{len(failed_approaches)} failed approaches)"
+    )
+
+
+def sync_opportunity_priors(
+    state_dir: Path,
+    failed_approaches: list[dict],
+    max_iteration: int,
+    dry_run: bool = False,
+) -> None:
+    """Project harvested family failures into opportunity priors/cooldowns."""
+    priors_path = state_dir / ".opportunity_priors.json"
+    priors = {}
+    if priors_path.exists():
+        try:
+            priors = json.loads(priors_path.read_text())
+        except Exception:
+            priors = {}
+    if not isinstance(priors, dict):
+        priors = {}
+
+    # Map family failures to the exploration family we should cool down.
+    severe_mode3_failure = any(
+        str(x.get("approach")) in {"heavy_3_state_regime_machine", "light_3_state_regime_machine"}
+        for x in failed_approaches
+    )
+    if not severe_mode3_failure:
+        return
+
+    key = "regime_state_transition_search"
+    bucket = priors.setdefault(
+        key,
+        {
+            "successes": 0,
+            "failures": 0,
+            "neutral": 0,
+            "severe_failures": 0,
+            "cooldown_until_iteration": 0,
+            "cooldown_reason": None,
+        },
+    )
+    bucket["severe_failures"] = max(int(bucket.get("severe_failures", 0) or 0), 1)
+    bucket["failures"] = max(int(bucket.get("failures", 0) or 0), 1)
+    cooldown_until = int(max_iteration) + 4
+    bucket["cooldown_until_iteration"] = max(
+        int(bucket.get("cooldown_until_iteration", 0) or 0),
+        cooldown_until,
+    )
+    bucket["cooldown_reason"] = (
+        "harvested family failure: heavy/light 3-state regime machine underperformed champion by >0.8"
+    )
+    bucket["status"] = "FAILED"
+    bucket["failed_at_iteration"] = int(max_iteration)
+
+    if dry_run:
+        print(
+            f"[DRY RUN] Would update .opportunity_priors.json: "
+            f"{key}.cooldown_until_iteration={bucket['cooldown_until_iteration']}"
+        )
+        return
+
+    tmp_path = priors_path.with_suffix(".json.tmp")
+    tmp_path.write_text(json.dumps(priors, indent=2))
+    tmp_path.rename(priors_path)
+    print(
+        f"Updated .opportunity_priors.json cooldown: {key} until iteration "
+        f"{bucket['cooldown_until_iteration']}"
+    )
+
+
 def update_state_files(
     state_dir: Path,
     results: list[HarvestedResult],
     knowledge_context: dict,
+    lessons: Optional[list[str]] = None,
     dry_run: bool = False
 ) -> None:
     """Update state files with harvested data."""
@@ -427,6 +695,26 @@ def update_state_files(
             tmp_path.rename(log_path)
             print(f"Appended {len(new_entries)} entries to .strategies_log.json")
 
+    # Keep prompt-level persistent knowledge store synchronized to canonical data.
+    sync_knowledge_store(
+        state_dir,
+        results,
+        knowledge_context,
+        lessons or [],
+        dry_run=dry_run,
+    )
+    failed_approaches = build_failed_approaches(
+        results,
+        float(knowledge_context.get("true_best_edge_1000", 0.0) or 0.0),
+    )
+    max_iteration = max((int(r.iteration) for r in results), default=0)
+    sync_opportunity_priors(
+        state_dir,
+        failed_approaches,
+        max_iteration=max_iteration,
+        dry_run=dry_run,
+    )
+
 
 def main():
     parser = argparse.ArgumentParser(description='Harvest results from Codex sessions')
@@ -497,7 +785,13 @@ def main():
             print(f"  - {lesson[:80]}...")
 
     # Update state files
-    update_state_files(state_dir, results, knowledge_context, dry_run=args.dry_run)
+    update_state_files(
+        state_dir,
+        results,
+        knowledge_context,
+        lessons=lessons,
+        dry_run=args.dry_run,
+    )
 
 
 if __name__ == '__main__':

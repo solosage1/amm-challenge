@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "schema_version": "1.0",
+    "recorded_at": "2026-02-11T05:10:10.145504Z",
+    "iteration": 6,
+    "status": "extract_failed",
+    "plan_file": ".ralph-amm/phase7/state/autoplan_iter6.json",
+    "mode": "canary",
+    "execute_this_iteration": true,
+    "selected_opportunity": "regime_state_transition_search",
+    "expected_uplift": 4.75,
+    "reference_best_edge": 508.25,
+    "final_edge": null,
+    "final_score": null,
+    "delta_vs_reference": null,
+    "validated": null
+  }
+]

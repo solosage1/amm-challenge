@@ -1,294 +1,294 @@
 {
-  "true_best_edge": 507.42,
-  "true_best_strategy": "Sweep5_T28_B1_B29_Init23",
+  "true_best_edge": 508.25,
+  "true_best_strategy": "Tmp_U11_Band25",
   "has_1000_results": true,
-  "state_best_edge_benchmark": 507.42,
-  "true_best_edge_1000": 507.42,
-  "true_best_strategy_1000": "Sweep5_T28_B1_B29_Init23",
+  "state_best_edge_benchmark": 508.25,
+  "true_best_edge_1000": 508.25,
+  "true_best_strategy_1000": "Tmp_U11_Band25",
   "true_best_edge_any": 518.99,
   "true_best_strategy_any": "ArbOracleDualRegime_Tight30_Buf4",
   "all_tested_strategies": [
     {
-      "name": "Sweep5_T28_B1_B29_Init23",
-      "edge": 507.42,
+      "name": "Tmp_U11_Band25",
+      "edge": 508.25,
       "sims": 1000,
-      "iteration": 2,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25.sol"
     },
     {
-      "name": "GammaSquaredDualRegime_T28_B1_B29",
-      "edge": 507.42,
+      "name": "Tmp_U11_B25_I20",
+      "edge": 508.25,
       "sims": 1000,
-      "iteration": 2,
-      "file": "strategy_edge50742.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25_init20.sol"
     },
     {
-      "name": "Sweep4_T28_B1_Band26",
-      "edge": 507.27,
+      "name": "Tmp_U11_B25_I27",
+      "edge": 508.25,
       "sims": 1000,
-      "iteration": 2,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25_init27.sol"
     },
     {
-      "name": "Refine_T29_B2_Band30",
-      "edge": 507.22,
+      "name": "Tmp_U11_Band25",
+      "edge": 508.25,
       "sims": 1000,
-      "iteration": 1,
-      "file": "refine_t29_b2_band30.sol"
+      "iteration": 6,
+      "file": "tmp_u11_band25.sol"
     },
     {
-      "name": "Refine_T28_B1",
-      "edge": 507.15,
+      "name": "Tmp_U11_Band25",
+      "edge": 508.25,
       "sims": 1000,
-      "iteration": 1,
-      "file": "unknown.sol"
+      "iteration": 7,
+      "file": "tmp_u11_band25.sol"
     },
     {
-      "name": "Sweep_T28_B2",
-      "edge": 507.02,
+      "name": "Tmp_U10_Band25",
+      "edge": 508.23,
       "sims": 1000,
-      "iteration": 2,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u10_band25.sol"
     },
     {
-      "name": "Sweep3_T27_B1",
-      "edge": 506.89,
+      "name": "Tmp_U12_Band25",
+      "edge": 508.23,
       "sims": 1000,
-      "iteration": 2,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u12_band25.sol"
     },
     {
-      "name": "GammaSquaredDualRegime_Tight29Buf3",
-      "edge": 506.84,
+      "name": "Tmp_U10_Band26",
+      "edge": 508.22,
       "sims": 1000,
-      "iteration": 21,
-      "file": "phase7_iter21_candidate.sol"
+      "iteration": 3,
+      "file": "tmp_u10_band26.sol"
     },
     {
-      "name": "GammaSquaredDualRegime_Tight29Buf3",
-      "edge": 506.84,
+      "name": "Tmp_U11_B25_Buf0",
+      "edge": 508.22,
       "sims": 1000,
-      "iteration": 2,
-      "file": "phase7_iter21_candidate.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25_buf0.sol"
     },
     {
-      "name": "Sweep2_T27_B2",
-      "edge": 506.75,
+      "name": "Tmp_U10_Band24",
+      "edge": 508.2,
       "sims": 1000,
-      "iteration": 2,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u10_band24.sol"
     },
     {
-      "name": "Gamma2_Sweep_Alpha15",
-      "edge": 506.23,
+      "name": "Tmp_U10_Band27",
+      "edge": 508.19,
       "sims": 1000,
-      "iteration": 1,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u10_band27.sol"
     },
     {
-      "name": "GammaSquaredDualRegime",
-      "edge": 506.17,
+      "name": "Tmp_U11_B25_Buf2",
+      "edge": 508.16,
       "sims": 1000,
-      "iteration": 18,
-      "file": "gamma2_dualregime.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25_buf2.sol"
     },
     {
-      "name": "GammaSquaredDualRegime",
-      "edge": 506.17,
+      "name": "Tmp_U10_Band28",
+      "edge": 508.13,
       "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_dualregime.sol"
+      "iteration": 3,
+      "file": "tmp_u10_band28.sol"
     },
     {
-      "name": "GammaSquaredDualRegime",
-      "edge": 506.17,
+      "name": "Tmp_U11_B25_T29",
+      "edge": 508.09,
       "sims": 1000,
-      "iteration": 1,
-      "file": "gamma2_dualregime.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25_t29.sol"
     },
     {
-      "name": "GammaSquaredDualRegime",
-      "edge": 506.17,
+      "name": "Tmp_CompUnder10",
+      "edge": 508.06,
       "sims": 1000,
-      "iteration": 21,
-      "file": "gamma2_dualregime.sol"
+      "iteration": 3,
+      "file": "tmp_compundercut10.sol"
     },
     {
-      "name": "GammaSquaredDualRegime",
-      "edge": 506.17,
+      "name": "Tmp_CompUnder11",
+      "edge": 508.04,
       "sims": 1000,
-      "iteration": 2,
-      "file": "gamma2_dualregime.sol"
+      "iteration": 3,
+      "file": "tmp_compundercut11.sol"
     },
     {
-      "name": "ArbOracleDualRegime_Tight30_Buf4",
-      "edge": 505.61,
+      "name": "Tmp_CompUnder9",
+      "edge": 508.03,
       "sims": 1000,
-      "iteration": 18,
-      "file": "arb_oracle_dualregime_tight30_buf4.sol"
+      "iteration": 3,
+      "file": "tmp_compundercut9.sol"
     },
     {
-      "name": "ArbOracleDualRegime_Tight30_Buf4",
-      "edge": 505.61,
+      "name": "Tmp_U10_T29",
+      "edge": 508.02,
       "sims": 1000,
-      "iteration": 19,
-      "file": "arb_oracle_dualregime_tight30_buf4.sol"
+      "iteration": 3,
+      "file": "tmp_u10_t29.sol"
     },
     {
-      "name": "ArbOracleDualRegime_Tight30_Buf4",
-      "edge": 505.61,
+      "name": "Tmp_CompUnder8",
+      "edge": 508.01,
       "sims": 1000,
-      "iteration": 9,
-      "file": "arb_oracle_dualregime_tight30_buf4.sol"
+      "iteration": 3,
+      "file": "tmp_compundercut8.sol"
     },
     {
-      "name": "ArbOracleDualRegimeRecenter",
-      "edge": 504.93,
+      "name": "Tmp_CompUnder12",
+      "edge": 507.99,
       "sims": 1000,
-      "iteration": 19,
-      "file": "arb_oracle_dualregime_recenter.sol"
+      "iteration": 3,
+      "file": "tmp_compundercut12.sol"
     }
   ],
   "all_tested_strategies_1000": [
     {
-      "name": "Sweep5_T28_B1_B29_Init23",
-      "edge": 507.42,
+      "name": "Tmp_U11_Band25",
+      "edge": 508.25,
       "sims": 1000,
-      "iteration": 2,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25.sol"
     },
     {
-      "name": "GammaSquaredDualRegime_T28_B1_B29",
-      "edge": 507.42,
+      "name": "Tmp_U11_B25_I20",
+      "edge": 508.25,
       "sims": 1000,
-      "iteration": 2,
-      "file": "strategy_edge50742.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25_init20.sol"
     },
     {
-      "name": "Sweep4_T28_B1_Band26",
-      "edge": 507.27,
+      "name": "Tmp_U11_B25_I27",
+      "edge": 508.25,
       "sims": 1000,
-      "iteration": 2,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25_init27.sol"
     },
     {
-      "name": "Refine_T29_B2_Band30",
-      "edge": 507.22,
+      "name": "Tmp_U11_Band25",
+      "edge": 508.25,
       "sims": 1000,
-      "iteration": 1,
-      "file": "refine_t29_b2_band30.sol"
+      "iteration": 6,
+      "file": "tmp_u11_band25.sol"
     },
     {
-      "name": "Refine_T28_B1",
-      "edge": 507.15,
+      "name": "Tmp_U11_Band25",
+      "edge": 508.25,
       "sims": 1000,
-      "iteration": 1,
-      "file": "unknown.sol"
+      "iteration": 7,
+      "file": "tmp_u11_band25.sol"
     },
     {
-      "name": "Sweep_T28_B2",
-      "edge": 507.02,
+      "name": "Tmp_U10_Band25",
+      "edge": 508.23,
       "sims": 1000,
-      "iteration": 2,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u10_band25.sol"
     },
     {
-      "name": "Sweep3_T27_B1",
-      "edge": 506.89,
+      "name": "Tmp_U12_Band25",
+      "edge": 508.23,
       "sims": 1000,
-      "iteration": 2,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u12_band25.sol"
     },
     {
-      "name": "GammaSquaredDualRegime_Tight29Buf3",
-      "edge": 506.84,
+      "name": "Tmp_U10_Band26",
+      "edge": 508.22,
       "sims": 1000,
-      "iteration": 21,
-      "file": "phase7_iter21_candidate.sol"
+      "iteration": 3,
+      "file": "tmp_u10_band26.sol"
     },
     {
-      "name": "GammaSquaredDualRegime_Tight29Buf3",
-      "edge": 506.84,
+      "name": "Tmp_U11_B25_Buf0",
+      "edge": 508.22,
       "sims": 1000,
-      "iteration": 2,
-      "file": "phase7_iter21_candidate.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25_buf0.sol"
     },
     {
-      "name": "Sweep2_T27_B2",
-      "edge": 506.75,
+      "name": "Tmp_U10_Band24",
+      "edge": 508.2,
       "sims": 1000,
-      "iteration": 2,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u10_band24.sol"
     },
     {
-      "name": "Gamma2_Sweep_Alpha15",
-      "edge": 506.23,
+      "name": "Tmp_U10_Band27",
+      "edge": 508.19,
       "sims": 1000,
-      "iteration": 1,
-      "file": "unknown.sol"
+      "iteration": 3,
+      "file": "tmp_u10_band27.sol"
     },
     {
-      "name": "GammaSquaredDualRegime",
-      "edge": 506.17,
+      "name": "Tmp_U11_B25_Buf2",
+      "edge": 508.16,
       "sims": 1000,
-      "iteration": 18,
-      "file": "gamma2_dualregime.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25_buf2.sol"
     },
     {
-      "name": "GammaSquaredDualRegime",
-      "edge": 506.17,
+      "name": "Tmp_U10_Band28",
+      "edge": 508.13,
       "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_dualregime.sol"
+      "iteration": 3,
+      "file": "tmp_u10_band28.sol"
     },
     {
-      "name": "GammaSquaredDualRegime",
-      "edge": 506.17,
+      "name": "Tmp_U11_B25_T29",
+      "edge": 508.09,
       "sims": 1000,
-      "iteration": 1,
-      "file": "gamma2_dualregime.sol"
+      "iteration": 3,
+      "file": "tmp_u11_band25_t29.sol"
     },
     {
-      "name": "GammaSquaredDualRegime",
-      "edge": 506.17,
+      "name": "Tmp_CompUnder10",
+      "edge": 508.06,
       "sims": 1000,
-      "iteration": 21,
-      "file": "gamma2_dualregime.sol"
+      "iteration": 3,
+      "file": "tmp_compundercut10.sol"
     },
     {
-      "name": "GammaSquaredDualRegime",
-      "edge": 506.17,
+      "name": "Tmp_CompUnder11",
+      "edge": 508.04,
       "sims": 1000,
-      "iteration": 2,
-      "file": "gamma2_dualregime.sol"
+      "iteration": 3,
+      "file": "tmp_compundercut11.sol"
     },
     {
-      "name": "ArbOracleDualRegime_Tight30_Buf4",
-      "edge": 505.61,
+      "name": "Tmp_CompUnder9",
+      "edge": 508.03,
       "sims": 1000,
-      "iteration": 18,
-      "file": "arb_oracle_dualregime_tight30_buf4.sol"
+      "iteration": 3,
+      "file": "tmp_compundercut9.sol"
     },
     {
-      "name": "ArbOracleDualRegime_Tight30_Buf4",
-      "edge": 505.61,
+      "name": "Tmp_U10_T29",
+      "edge": 508.02,
       "sims": 1000,
-      "iteration": 19,
-      "file": "arb_oracle_dualregime_tight30_buf4.sol"
+      "iteration": 3,
+      "file": "tmp_u10_t29.sol"
     },
     {
-      "name": "ArbOracleDualRegime_Tight30_Buf4",
-      "edge": 505.61,
+      "name": "Tmp_CompUnder8",
+      "edge": 508.01,
       "sims": 1000,
-      "iteration": 9,
-      "file": "arb_oracle_dualregime_tight30_buf4.sol"
+      "iteration": 3,
+      "file": "tmp_compundercut8.sol"
     },
     {
-      "name": "ArbOracleDualRegimeRecenter",
-      "edge": 504.93,
+      "name": "Tmp_CompUnder12",
+      "edge": 507.99,
       "sims": 1000,
-      "iteration": 19,
-      "file": "arb_oracle_dualregime_recenter.sol"
+      "iteration": 3,
+      "file": "tmp_compundercut12.sol"
     }
   ],
   "lessons_learned": [
@@ -373,6 +373,6 @@
       "iteration": 9
     }
   ],
-  "harvested_at": "2026-02-11T04:25:03.159067Z",
-  "total_results_harvested": 111
+  "harvested_at": "2026-02-11T05:12:54.886774Z",
+  "total_results_harvested": 167
 }

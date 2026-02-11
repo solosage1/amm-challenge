@@ -22,6 +22,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 SCHEMA_VERSION = "1.0"
+SEVERE_FAILURE_DELTA = -0.8
+DEFAULT_COOLDOWN_ITERS = 4
 
 
 def utc_now_iso() -> str:
@@ -219,13 +221,18 @@ def weighted_score(uplift: float, confidence: float, time_to_signal: float, comp
     return round(score * 10.0, 3)  # 0..100 scale
 
 
-def build_candidates(signals: Dict[str, Any], priors: Dict[str, Any]) -> List[Candidate]:
+def build_candidates(signals: Dict[str, Any], priors: Dict[str, Any], iteration: int) -> List[Candidate]:
     p = safe_float(signals.get("plateau_strength")) or 0.0
     b = safe_float(signals.get("brittleness_strength")) or 0.0
     s = safe_float(signals.get("sweep_failure_strength")) or 0.0
 
     prior_adj = {}
-    for key in ("regime_state_transition_search", "robustness_repair_search", "parallel_parameter_beam"):
+    for key in (
+        "regime_state_transition_search",
+        "adaptive_undercut_search",
+        "robustness_repair_search",
+        "parallel_parameter_beam",
+    ):
         prior = priors.get(key, {})
         succ = int(prior.get("successes", 0) or 0)
         fail = int(prior.get("failures", 0) or 0)
@@ -242,6 +249,18 @@ def build_candidates(signals: Dict[str, Any], priors: Dict[str, Any]) -> List[Ca
             time_to_signal=6.0,
             complexity=6.0,
             overfit_risk=clamp(5.0 + 0.20 * b),
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="adaptive_undercut_search",
+            rationale="Undercut signal is strong; prefer lightweight regime-aware undercut before heavy state-machine logic.",
+            expected_uplift=clamp(4.8 + 0.20 * p + 0.10 * s + prior_adj["adaptive_undercut_search"]),
+            confidence=clamp(6.0 + 0.15 * p + prior_adj["adaptive_undercut_search"]),
+            time_to_signal=8.0,
+            complexity=3.0,
+            overfit_risk=4.0,
             weighted_score=0.0,
         )
     )
@@ -271,6 +290,15 @@ def build_candidates(signals: Dict[str, Any], priors: Dict[str, Any]) -> List[Ca
     )
 
     for c in cands:
+        prior = priors.get(c.id, {}) if isinstance(priors.get(c.id), dict) else {}
+        cooldown_until = int(prior.get("cooldown_until_iteration", 0) or 0)
+        if cooldown_until >= int(iteration):
+            remaining = cooldown_until - int(iteration) + 1
+            c.expected_uplift = clamp(c.expected_uplift - 3.0)
+            c.confidence = clamp(c.confidence - 4.0)
+            c.rationale = (
+                f"{c.rationale} [cooldown active: {remaining} iteration(s), until {cooldown_until}]"
+            )
         c.weighted_score = weighted_score(
             c.expected_uplift, c.confidence, c.time_to_signal, c.complexity, c.overfit_risk
         )
@@ -288,11 +316,13 @@ def default_plan_template(opportunity_id: str, target_edge: float, reference_bes
                 "mild timestamp-aware tightening in tight regime",
             ],
             "mutation_dimensions": [
-                "3-state mode machine (NORMAL/DEFENSIVE/RECOVERY)",
+                "lightweight mode gate over mispricing first (avoid heavy inventory/cooldown coupling)",
+                "3-state mode machine (NORMAL/DEFENSIVE/RECOVERY) only if lightweight gate passes",
                 "entry/exit hysteresis thresholds",
                 "cooldown lengths",
                 "inventory-trigger thresholds",
                 "mispricing-trigger thresholds",
+                "competitive_undercut_bps (8-12) by mode",
             ],
             "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
             "promotion_criteria": {
@@ -303,7 +333,36 @@ def default_plan_template(opportunity_id: str, target_edge: float, reference_bes
             "kill_criteria": {
                 "first_run_delta_below": -1.0,
                 "max_allowed_spread": 60.0,
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
             },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "adaptive_undercut_search":
+        return {
+            "frozen_core": [
+                "gamma^2 competitive anchoring",
+                "strict protective-side buffer",
+                "single-step fair update logic",
+            ],
+            "mutation_dimensions": [
+                "competitive_undercut_bps sweep (8-13)",
+                "tight_band_bps sweep (24-29)",
+                "minimal 2-state mispricing gate (NORMAL/DEFENSIVE)",
+                "protective_buffer_bps sweep (0-2)",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.3,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
         }
     if opportunity_id == "robustness_repair_search":
         return {
@@ -319,7 +378,10 @@ def default_plan_template(opportunity_id: str, target_edge: float, reference_bes
                 "required_repeats": 3,
                 "max_spread": 50.0,
             },
-            "kill_criteria": {"first_run_delta_below": -1.0},
+            "kill_criteria": {
+                "first_run_delta_below": -1.0,
+                "abort_family_if_first_4_below_reference_by": 0.8,
+            },
         }
     return {
         "frozen_core": ["existing champion mechanics"],
@@ -329,8 +391,11 @@ def default_plan_template(opportunity_id: str, target_edge: float, reference_bes
             "early elimination rules",
         ],
         "run_budget": {"variants": 12, "parallel_workers": 6, "authoritative_sims": 1000},
-        "promotion_criteria": {"median_delta_vs_reference": 1.5, "required_repeats": 2},
-        "kill_criteria": {"first_run_delta_below": -1.0},
+        "promotion_criteria": {"median_delta_vs_reference": 1.5, "required_repeats": 3},
+        "kill_criteria": {
+            "first_run_delta_below": -1.0,
+            "abort_family_if_first_4_below_reference_by": 0.8,
+        },
     }
 
 
@@ -460,7 +525,7 @@ def evaluate(args: argparse.Namespace) -> int:
         priors = {}
 
     signals = analyze_signals(entries, args.window_size)
-    candidates = build_candidates(signals, priors)
+    candidates = build_candidates(signals, priors, int(args.iteration))
     top = candidates[0]
 
     best_edge_ref = 0.0
@@ -530,6 +595,11 @@ def evaluate(args: argparse.Namespace) -> int:
             "confidence": round(top.confidence, 3),
             "weighted_score": top.weighted_score,
         },
+        "policy": {
+            "promotion_requires_repeats": 3,
+            "family_kill_first_4_below_reference_by": 0.8,
+            "family_cooldown_iterations_on_severe_failure": DEFAULT_COOLDOWN_ITERS,
+        },
         "ranked_opportunities": ranking_payload["ranked_opportunities"],
         "search_plan": plan_template,
     }
@@ -593,6 +663,7 @@ def record(args: argparse.Namespace) -> int:
     validated = None
     if delta is not None and promotion is not None:
         validated = bool(delta >= promotion)
+    severe_failure = bool(delta is not None and delta <= SEVERE_FAILURE_DELTA)
 
     history_path = state_dir / ".opportunity_history.json"
     history = load_json(history_path, [])
@@ -614,6 +685,7 @@ def record(args: argparse.Namespace) -> int:
         "final_score": final_score,
         "delta_vs_reference": delta,
         "validated": validated,
+        "severe_failure": severe_failure,
     }
     history.append(entry)
     atomic_write_json(history_path, history)
@@ -624,18 +696,45 @@ def record(args: argparse.Namespace) -> int:
         priors = {}
     opp = entry.get("selected_opportunity")
     if isinstance(opp, str) and opp:
-        bucket = priors.setdefault(opp, {"successes": 0, "failures": 0, "neutral": 0})
+        bucket = priors.setdefault(
+            opp,
+            {
+                "successes": 0,
+                "failures": 0,
+                "neutral": 0,
+                "severe_failures": 0,
+                "cooldown_until_iteration": 0,
+                "cooldown_reason": None,
+            },
+        )
         if validated is True:
             bucket["successes"] = int(bucket.get("successes", 0)) + 1
+            # Clear cooldown after validated recovery.
+            bucket["cooldown_until_iteration"] = 0
+            bucket["cooldown_reason"] = None
+            bucket["status"] = "ACTIVE"
         elif validated is False:
             bucket["failures"] = int(bucket.get("failures", 0)) + 1
         else:
             bucket["neutral"] = int(bucket.get("neutral", 0)) + 1
+        if severe_failure:
+            bucket["severe_failures"] = int(bucket.get("severe_failures", 0)) + 1
+            cooldown_until = int(args.iteration) + DEFAULT_COOLDOWN_ITERS
+            bucket["cooldown_until_iteration"] = max(
+                int(bucket.get("cooldown_until_iteration", 0) or 0),
+                cooldown_until,
+            )
+            bucket["cooldown_reason"] = (
+                f"severe failure: delta {delta:.2f} <= {SEVERE_FAILURE_DELTA:.2f}"
+            )
+            bucket["status"] = "FAILED"
+            bucket["failed_at_iteration"] = int(args.iteration)
         atomic_write_json(priors_path, priors)
 
     print(
         f"[opp-engine] recorded outcome iteration={args.iteration} "
-        f"opportunity={entry.get('selected_opportunity')} validated={validated}"
+        f"opportunity={entry.get('selected_opportunity')} validated={validated} "
+        f"severe_failure={severe_failure}"
     )
     return 0
 

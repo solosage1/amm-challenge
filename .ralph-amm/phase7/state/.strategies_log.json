@@ -3754,5 +3754,861 @@
       "stage": "extract",
       "message": "code extraction/validation failed"
     }
+  },
+  {
+    "iteration": 3,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T04:50:58.319395Z",
+    "final_edge": null,
+    "final_score": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_3_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_3_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_3_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_3_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_3.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_3.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_3_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413239Z",
+    "final_edge": 507.42,
+    "strategy_name": "GammaSquaredDualRegime_T28_B1_B29",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "strategy_edge50742.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "strategy_edge50742.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413261Z",
+    "final_edge": 503.78,
+    "strategy_name": "GammaSquaredIntervalOracle",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_interval_oracle.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_interval_oracle.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413303Z",
+    "final_edge": 504.69,
+    "strategy_name": "GammaSquaredDualRegime_RetailMarkup",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime_retailmarkup.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_retailmarkup.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413332Z",
+    "final_edge": 503.41,
+    "strategy_name": "GammaSquaredDualRegime_Buf10",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime_buf10.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_buf10.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413347Z",
+    "final_edge": 504.64,
+    "strategy_name": "GammaSquaredDualRegime_Tight25",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime_tight25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_tight25.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413363Z",
+    "final_edge": 507.38,
+    "strategy_name": "Tmp_Tight_B29_A27",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_tight_bid29_ask27.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_tight_bid29_ask27.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413374Z",
+    "final_edge": 507.37,
+    "strategy_name": "Tmp_Tight_B30_A28",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_tight_bid30_ask28.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_tight_bid30_ask28.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413386Z",
+    "final_edge": 507.41,
+    "strategy_name": "Tmp_Tight_B27_A29",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_tight_bid27_ask29.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_tight_bid27_ask29.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413396Z",
+    "final_edge": 507.14,
+    "strategy_name": "Tmp_CompMarkup2",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compmarkup2.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compmarkup2.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413406Z",
+    "final_edge": 507.56,
+    "strategy_name": "Tmp_CompUnder1",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut1.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut1.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413416Z",
+    "final_edge": 507.64,
+    "strategy_name": "Tmp_CompUnder2",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut2.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut2.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413425Z",
+    "final_edge": 507.74,
+    "strategy_name": "Tmp_CompUnder3",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut3.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut3.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413435Z",
+    "final_edge": 507.81,
+    "strategy_name": "Tmp_CompUnder4",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut4.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413444Z",
+    "final_edge": 507.89,
+    "strategy_name": "Tmp_CompUnder5",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut5.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut5.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413454Z",
+    "final_edge": 507.94,
+    "strategy_name": "Tmp_CompUnder6",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut6.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut6.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413463Z",
+    "final_edge": 507.97,
+    "strategy_name": "Tmp_CompUnder7",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut7.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut7.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413472Z",
+    "final_edge": 508.01,
+    "strategy_name": "Tmp_CompUnder8",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut8.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut8.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413483Z",
+    "final_edge": 508.03,
+    "strategy_name": "Tmp_CompUnder9",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut9.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut9.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413496Z",
+    "final_edge": 508.06,
+    "strategy_name": "Tmp_CompUnder10",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut10.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut10.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413506Z",
+    "final_edge": 507.99,
+    "strategy_name": "Tmp_CompUnder12",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut12.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut12.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413517Z",
+    "final_edge": 508.04,
+    "strategy_name": "Tmp_CompUnder11",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_compundercut11.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_compundercut11.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413528Z",
+    "final_edge": 508.02,
+    "strategy_name": "Tmp_U10_T29",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u10_t29.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u10_t29.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413536Z",
+    "final_edge": 507.79,
+    "strategy_name": "Tmp_U10_T27",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u10_t27.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u10_t27.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413546Z",
+    "final_edge": 508.13,
+    "strategy_name": "Tmp_U10_Band28",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u10_band28.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u10_band28.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413555Z",
+    "final_edge": 508.19,
+    "strategy_name": "Tmp_U10_Band27",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u10_band27.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u10_band27.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413564Z",
+    "final_edge": 508.22,
+    "strategy_name": "Tmp_U10_Band26",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u10_band26.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u10_band26.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413590Z",
+    "final_edge": 508.23,
+    "strategy_name": "Tmp_U10_Band25",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u10_band25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u10_band25.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413605Z",
+    "final_edge": 508.2,
+    "strategy_name": "Tmp_U10_Band24",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u10_band24.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u10_band24.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413615Z",
+    "final_edge": 508.25,
+    "strategy_name": "Tmp_U11_Band25",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u11_band25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u11_band25.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413624Z",
+    "final_edge": 508.23,
+    "strategy_name": "Tmp_U12_Band25",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u12_band25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u12_band25.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413634Z",
+    "final_edge": 508.09,
+    "strategy_name": "Tmp_U11_B25_T29",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u11_band25_t29.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u11_band25_t29.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413644Z",
+    "final_edge": 508.25,
+    "strategy_name": "Tmp_U11_B25_I20",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u11_band25_init20.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u11_band25_init20.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413653Z",
+    "final_edge": 508.25,
+    "strategy_name": "Tmp_U11_B25_I27",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u11_band25_init27.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u11_band25_init27.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413663Z",
+    "final_edge": 508.22,
+    "strategy_name": "Tmp_U11_B25_Buf0",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u11_band25_buf0.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u11_band25_buf0.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413673Z",
+    "final_edge": 508.16,
+    "strategy_name": "Tmp_U11_B25_Buf2",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u11_band25_buf2.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u11_band25_buf2.sol"
+    }
+  },
+  {
+    "iteration": 3,
+    "status": "harvested",
+    "timestamp": "2026-02-11T04:51:17.413683Z",
+    "final_edge": 506.36,
+    "strategy_name": "Tmp_U11_B25_A25",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u11_band25_alpha25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u11_band25_alpha25.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T05:10:10.095221Z",
+    "final_edge": null,
+    "final_score": null,
+    "effective_score": null,
+    "score_source": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_6_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_6_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_6_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_6_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_6.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_6.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_6_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278096Z",
+    "final_edge": 506.17,
+    "strategy_name": "GammaSquaredDualRegime",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278115Z",
+    "final_edge": 505.61,
+    "strategy_name": "ArbOracleDualRegime_Tight30_Buf4",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278125Z",
+    "final_edge": 508.25,
+    "strategy_name": "Tmp_U11_Band25",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u11_band25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u11_band25.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278324Z",
+    "final_edge": 506.75,
+    "strategy_name": "canary_mode3_v3",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_v3.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_v3.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278333Z",
+    "final_edge": 506.82,
+    "strategy_name": "canary_mode3_v4",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_v4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_v4.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278342Z",
+    "final_edge": 506.56,
+    "strategy_name": "canary_mode3_v2",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_v2.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_v2.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278350Z",
+    "final_edge": 506.98,
+    "strategy_name": "canary_mode3_v1",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_v1.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_v1.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278360Z",
+    "final_edge": 506.57,
+    "strategy_name": "canary_mode3_v6",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_v6.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_v6.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278368Z",
+    "final_edge": 506.73,
+    "strategy_name": "canary_mode3_v8",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_v8.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_v8.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278377Z",
+    "final_edge": 506.79,
+    "strategy_name": "canary_mode3_v5",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_v5.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_v5.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278385Z",
+    "final_edge": 506.99,
+    "strategy_name": "canary_mode3_v7",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_v7.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_v7.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278394Z",
+    "final_edge": 506.78,
+    "strategy_name": "canary_mode3_v9",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_v9.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_v9.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278403Z",
+    "final_edge": 506.81,
+    "strategy_name": "canary_mode3_v10",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_v10.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_v10.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278419Z",
+    "final_edge": 507.24,
+    "strategy_name": "canary_mode3_light_l3",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_light_l3.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_light_l3.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278430Z",
+    "final_edge": 506.73,
+    "strategy_name": "canary_mode3_light_l2",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_light_l2.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_light_l2.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278440Z",
+    "final_edge": 507.18,
+    "strategy_name": "canary_mode3_light_l4",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_light_l4.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_light_l4.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278450Z",
+    "final_edge": 507.31,
+    "strategy_name": "canary_mode3_light_l1",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_light_l1.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_light_l1.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278460Z",
+    "final_edge": 506.27,
+    "strategy_name": "canary_mode3_light_l5",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_light_l5.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_light_l5.sol"
+    }
+  },
+  {
+    "iteration": 6,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:10:10.278470Z",
+    "final_edge": 506.82,
+    "strategy_name": "canary_mode3_light_l6",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_light_l6.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_light_l6.sol"
+    }
+  },
+  {
+    "iteration": 7,
+    "status": "harvested",
+    "timestamp": "2026-02-11T05:12:54.871918Z",
+    "final_edge": 508.25,
+    "strategy_name": "Tmp_U11_Band25",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "tmp_u11_band25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_u11_band25.sol"
+    }
   }
 ]
