@@ -2225,5 +2225,1238 @@
     "artifact_paths": {
       "strategy_file": "gamma2_dualregime_tight25.sol"
     }
+  },
+  {
+    "iteration": 19,
+    "status": "ok",
+    "timestamp": "2026-02-10T22:14:57.928143",
+    "final_edge": 506.16513026031976,
+    "strategy_name": "GammaSquaredDualRegime",
+    "hypothesis_ids": [
+      "H-timeout-recovery"
+    ],
+    "git_sha": "aa8750d",
+    "git_dirty": true,
+    "slots_used": 0,
+    "key_innovation": "Recovered from timeout with edge 514.29",
+    "expected_edge_range": [
+      494.28999999999996,
+      534.29
+    ],
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_19_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_19_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_19_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_19_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_19.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_19.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_19_result.json"
+    },
+    "metrics": {
+      "edge_10": 534.2540861679348,
+      "edge_100": 519.6653045563332,
+      "edge_1000": 506.16513026031976
+    },
+    "error": {
+      "stage": null,
+      "message": null
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574525Z",
+    "final_edge": 512.88,
+    "strategy_name": "GammaSquaredDualRegime_RetailMarkup",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_dualregime_retailmarkup.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_retailmarkup.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574539Z",
+    "final_edge": 504.69,
+    "strategy_name": "GammaSquaredDualRegime_RetailMarkup",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime_retailmarkup.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_retailmarkup.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574553Z",
+    "final_edge": 497.88,
+    "strategy_name": "ArbOracleDualRegimeExact_Tight18",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime_exact_tight18.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact_tight18.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574564Z",
+    "final_edge": 510.98,
+    "strategy_name": "ArbOracleDualRegimeExact",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_exact.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574575Z",
+    "final_edge": 502.58,
+    "strategy_name": "ArbOracleDualRegimeExact",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime_exact.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574586Z",
+    "final_edge": 504.93,
+    "strategy_name": "ArbOracleDualRegimeRecenter",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime_recenter.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_recenter.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574595Z",
+    "final_edge": 502.27,
+    "strategy_name": "ArbOracleDualRegime",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574607Z",
+    "final_edge": 511.69,
+    "strategy_name": "GammaSquaredDualRegime_Buf10",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_dualregime_buf10.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_buf10.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574619Z",
+    "final_edge": 503.41,
+    "strategy_name": "GammaSquaredDualRegime_Buf10",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime_buf10.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_buf10.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574631Z",
+    "final_edge": 511.93,
+    "strategy_name": "GammaSquaredIntervalOracle",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_interval_oracle.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_interval_oracle.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574642Z",
+    "final_edge": 503.78,
+    "strategy_name": "GammaSquaredIntervalOracle",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_interval_oracle.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_interval_oracle.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574653Z",
+    "final_edge": 512.59,
+    "strategy_name": "GammaBlendDualRegime",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma_blend_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma_blend_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574663Z",
+    "final_edge": 504.55,
+    "strategy_name": "GammaBlendDualRegime",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma_blend_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma_blend_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574673Z",
+    "final_edge": 316.79,
+    "strategy_name": "ArbInferredSkew",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_infer_skew.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_skew.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574687Z",
+    "final_edge": 512.72,
+    "strategy_name": "GammaSquaredDualRegime_Protect60",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_dualregime_protect60.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_protect60.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574700Z",
+    "final_edge": 504.55,
+    "strategy_name": "GammaSquaredDualRegime_Protect60",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime_protect60.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_protect60.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574710Z",
+    "final_edge": 343.6,
+    "strategy_name": "Const_30bps",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "const30.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const30.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574723Z",
+    "final_edge": 421.22,
+    "strategy_name": "GammaSquaredDualRegime_Shock",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_dualregime_shock.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime_shock.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574733Z",
+    "final_edge": 237.77,
+    "strategy_name": "IntervalFilterGamma2",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "interval_filter_gamma2.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "interval_filter_gamma2.sol"
+    }
+  },
+  {
+    "iteration": 19,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:16:16.574744Z",
+    "final_edge": 491.19,
+    "strategy_name": "GammaSquaredAlwaysAsym",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "gamma2_always_asym.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_always_asym.sol"
+    }
+  },
+  {
+    "iteration": 20,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:16:29.035316Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_20_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_20_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_20_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_20_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_20.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_20.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_20_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_20_last_message.md"
+    }
+  },
+  {
+    "iteration": 21,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:16:42.023763Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_21_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_21_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_21_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_21_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_21.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_21.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_21_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_21_last_message.md"
+    }
+  },
+  {
+    "iteration": 22,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:16:56.461648Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_22_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_22_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_22_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_22_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_22.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_22.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_22_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_22_last_message.md"
+    }
+  },
+  {
+    "iteration": 23,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:17:08.737188Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_23_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_23_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_23_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_23_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_23.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_23.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_23_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_23_last_message.md"
+    }
+  },
+  {
+    "iteration": 24,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:17:20.223721Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_24_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_24_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_24_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_24_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_24.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_24.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_24_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_24_last_message.md"
+    }
+  },
+  {
+    "iteration": 25,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:17:33.122347Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_25_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_25_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_25_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_25_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_25.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_25.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_25_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_25_last_message.md"
+    }
+  },
+  {
+    "iteration": 26,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:17:45.141196Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_26_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_26_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_26_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_26_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_26.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_26.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_26_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_26_last_message.md"
+    }
+  },
+  {
+    "iteration": 27,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:17:57.166059Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_27_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_27_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_27_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_27_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_27.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_27.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_27_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_27_last_message.md"
+    }
+  },
+  {
+    "iteration": 28,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:18:10.155822Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_28_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_28_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_28_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_28_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_28.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_28.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_28_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_28_last_message.md"
+    }
+  },
+  {
+    "iteration": 29,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:18:22.424198Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_29_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_29_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_29_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_29_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_29.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_29.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_29_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_29_last_message.md"
+    }
+  },
+  {
+    "iteration": 30,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:18:34.470685Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_30_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_30_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_30_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_30_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_30.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_30.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_30_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_30_last_message.md"
+    }
+  },
+  {
+    "iteration": 31,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:18:48.260958Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_31_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_31_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_31_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_31_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_31.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_31.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_31_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_31_last_message.md"
+    }
+  },
+  {
+    "iteration": 32,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:19:00.403420Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_32_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_32_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_32_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_32_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_32.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_32.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_32_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_32_last_message.md"
+    }
+  },
+  {
+    "iteration": 33,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:19:11.742867Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_33_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_33_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_33_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_33_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_33.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_33.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_33_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_33_last_message.md"
+    }
+  },
+  {
+    "iteration": 34,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:19:23.073367Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_34_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_34_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_34_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_34_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_34.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_34.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_34_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_34_last_message.md"
+    }
+  },
+  {
+    "iteration": 35,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:19:35.180517Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_35_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_35_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_35_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_35_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_35.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_35.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_35_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_35_last_message.md"
+    }
+  },
+  {
+    "iteration": 36,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:19:47.053997Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_36_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_36_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_36_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_36_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_36.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_36.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_36_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_36_last_message.md"
+    }
+  },
+  {
+    "iteration": 37,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:19:59.592956Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_37_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_37_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_37_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_37_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_37.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_37.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_37_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_37_last_message.md"
+    }
+  },
+  {
+    "iteration": 38,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:20:11.367818Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_38_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_38_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_38_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_38_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_38.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_38.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_38_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_38_last_message.md"
+    }
+  },
+  {
+    "iteration": 39,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:20:23.813888Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_39_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_39_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_39_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_39_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_39.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_39.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_39_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_39_last_message.md"
+    }
+  },
+  {
+    "iteration": 40,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:20:35.210843Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_40_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_40_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_40_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_40_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_40.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_40.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_40_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_40_last_message.md"
+    }
+  },
+  {
+    "iteration": 41,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:20:49.613103Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_41_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_41_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_41_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_41_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_41.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_41.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_41_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_41_last_message.md"
+    }
+  },
+  {
+    "iteration": 42,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:21:01.580260Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_42_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_42_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_42_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_42_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_42.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_42.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_42_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_42_last_message.md"
+    }
+  },
+  {
+    "iteration": 43,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:21:13.188362Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_43_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_43_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_43_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_43_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_43.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_43.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_43_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_43_last_message.md"
+    }
+  },
+  {
+    "iteration": 44,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:21:25.041890Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_44_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_44_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_44_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_44_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_44.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_44.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_44_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_44_last_message.md"
+    }
+  },
+  {
+    "iteration": 45,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:21:38.699524Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_45_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_45_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_45_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_45_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_45.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_45.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_45_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_45_last_message.md"
+    }
+  },
+  {
+    "iteration": 46,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:21:51.771710Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_46_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_46_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_46_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_46_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_46.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_46.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_46_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_46_last_message.md"
+    }
+  },
+  {
+    "iteration": 47,
+    "status": "codex_failed",
+    "timestamp": "2026-02-11T03:22:02.433779Z",
+    "final_edge": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_47_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_47_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_47_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_47_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_47.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_47.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_47_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null
+    },
+    "error": {
+      "stage": "codex",
+      "message": "Warning: no last agent message; wrote empty content to .ralph-amm/phase7/state/iteration_47_last_message.md"
+    }
+  },
+  {
+    "iteration": 21,
+    "status": "harvested",
+    "timestamp": "2026-02-11T03:40:22.115611Z",
+    "final_edge": 506.17,
+    "strategy_name": "GammaSquaredDualRegime",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "gamma2_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "gamma2_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 21,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T03:55:20.706577Z",
+    "final_edge": null,
+    "final_score": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_21_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_21_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_21_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_21_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_21.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_21.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_21_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
   }
 ]

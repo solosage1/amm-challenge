@@ -56,3 +56,57 @@ strategies/
 # Misc
 *.log
 .env
+
+# =============================================================================
+# Phase 7 AMM Strategy Exploration
+# =============================================================================
+# These patterns prevent repo bloat from iterative AI-driven strategy testing
+# while preserving valuable learned knowledge.
+
+# --- TEMPORARY FILES (regenerable, large) ---
+# Codex response logs (up to 400KB each, regenerable)
+.ralph-amm/phase7/state/iteration_*_codex.jsonl
+.ralph-amm/phase7/state/iteration_*_codex.stderr
+
+# Live extraction checkpoints (temporary)
+.ralph-amm/phase7/state/checkpoints_iter*/
+
+# Generated prompts (regenerable from knowledge context)
+.ralph-amm/phase7/prompts/iteration_*_prompt.md
+
+# Per-iteration artifacts (knowledge is aggregated to .knowledge_context.json)
+.ralph-amm/phase7/state/iteration_*_result.json
+.ralph-amm/phase7/state/iteration_*_knowledge.json
+.ralph-amm/phase7/state/iteration_*_last_message.md
+.ralph-amm/phase7/state/iteration_*_template_extracted.ok
+
+# --- RUNTIME STATE (resets on restart) ---
+.ralph-amm/phase7/state/.iteration_count.txt
+.ralph-amm/phase7/state/.start_timestamp.txt
+.ralph-amm/phase7/state/.rate_limit_tracker.json
+.ralph-amm/phase7/phase7.pid
+.ralph-amm/phase7/phase7_run.log
+
+# --- TEMPORARY EXPERIMENT FILES IN REPO ROOT ---
+# Parameter sweep temp files
+tmp_*.sol
+tmp_r2_*.sol
+
+# Experimental strategy variants (commit only proven winners)
+gamma2_*.sol
+gamma_*.sol
+interval_*.sol
+arb_*.sol
+phase7_iter*_candidate.sol
+_tmp_*.txt
+
+# =============================================================================
+# PRESERVED (tracked) - Valuable learned knowledge:
+# - .ralph-amm/phase7/state/.knowledge_context.json  (aggregated lessons)
+# - .ralph-amm/phase7/state/.strategies_log.json     (full history)
+# - .ralph-amm/phase7/state/.strategies_tested.json  (quick reference)
+# - .ralph-amm/phase7/state/.templates_created.json  (reusable patterns)
+# - .ralph-amm/phase7/state/.best_strategy.sol       (best performing code)
+# - .ralph-amm/phase7/state/.best_edge.txt           (benchmark score)
+# - .ralph-amm/phase7/generated/                     (validated strategies)
+# =============================================================================
