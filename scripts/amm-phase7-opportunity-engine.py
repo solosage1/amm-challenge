@@ -40,6 +40,8 @@ DEFAULT_EXPLORE_TARGET_CLASSES = {
     "bayesian_optimization",
     "microstructure",
     "adversarial_robustness",
+    "state_estimation",
+    "volatility_targeting",
 }
 DEFAULT_EXPLORE_MIN_NO_UPLIFT = 3
 DEFAULT_EXPLORE_MIN_REPEAT_SHARE = 0.60
@@ -62,18 +64,38 @@ DEFAULT_CONFORMANCE_WEIGHT_MISMATCH = 0.10
 
 FAMILY_CLASS_BY_ID = {
     "adaptive_undercut_search": "undercut_sweep",
+    "undercut_band_joint_search": "undercut_sweep",
+    "protective_buffer_undercut_search": "undercut_sweep",
     "regime_state_transition_search": "gating_adaptive",
+    "hysteresis_gate_search": "gating_adaptive",
+    "cooldown_gate_search": "gating_adaptive",
     "parallel_parameter_beam": "gating_adaptive",
     "robustness_repair_search": "ema_smoothing",
     "gamma_formula_search": "gamma_formula",
+    "gamma_exponent_sweep_search": "gamma_formula",
+    "gamma_anchor_blend_search": "gamma_formula",
     "ema_smoothing_search": "ema_smoothing",
+    "jump_limiter_smoothing_search": "ema_smoothing",
+    "robust_smoothing_filters_search": "ema_smoothing",
     "asymmetric_bid_ask_search": "asymmetric",
+    "inventory_skew_asymmetry_search": "asymmetric",
+    "flow_skew_asymmetry_search": "asymmetric",
     "contextual_bandit_policy_search": "online_learning",
+    "online_parameter_tuning_search": "online_learning",
+    "meta_learning_fee_schedule_search": "online_learning",
     "distributionally_robust_control_search": "adversarial_robustness",
     "bayesian_optimization_meta_search": "bayesian_optimization",
+    "bayesopt_multiobjective_search": "bayesian_optimization",
     "inventory_hjb_control_search": "optimal_control",
+    "mpc_inventory_control_search": "optimal_control",
     "queue_microprice_impact_search": "microstructure",
+    "order_flow_imbalance_search": "microstructure",
+    "arb_implied_price_inference_search": "state_estimation",
+    "latent_regime_filter_search": "state_estimation",
+    "volatility_scaled_fee_search": "volatility_targeting",
+    "uncertainty_aware_band_search": "volatility_targeting",
     "adversarial_regime_sim_search": "adversarial_robustness",
+    "distribution_shift_robustness_search": "adversarial_robustness",
 }
 
 SUBFAMILY_CATALOG_BY_ID = {
@@ -83,19 +105,79 @@ SUBFAMILY_CATALOG_BY_ID = {
         "step_aware_undercut",
         "flow_burst_memory",
     ],
+    "undercut_band_joint_search": [
+        "coarse_grid",
+        "adaptive_grid",
+        "local_refine",
+    ],
+    "protective_buffer_undercut_search": [
+        "buffer_sweep",
+        "buffer_asym",
+        "buffer_dynamic",
+    ],
     "regime_state_transition_search": [
         "light_state_machine",
         "heavy_state_machine",
     ],
+    "hysteresis_gate_search": [
+        "band_hysteresis",
+        "trade_index_hysteresis",
+        "cooldown_hysteresis",
+    ],
+    "cooldown_gate_search": [
+        "timestamp_cooldown",
+        "trade_count_cooldown",
+        "decay_cooldown",
+    ],
     "parallel_parameter_beam": ["parameter_beam"],
     "robustness_repair_search": ["spread_stabilizer"],
     "gamma_formula_search": ["gamma_transform"],
+    "gamma_exponent_sweep_search": [
+        "gamma_k_global",
+        "gamma_k_piecewise",
+        "gamma_k_clamped",
+    ],
+    "gamma_anchor_blend_search": [
+        "anchor_blend",
+        "anchor_switch",
+        "anchor_clip",
+    ],
     "ema_smoothing_search": ["ema_smoothing"],
+    "jump_limiter_smoothing_search": [
+        "max_jump_limit",
+        "piecewise_jump",
+        "adaptive_jump",
+    ],
+    "robust_smoothing_filters_search": [
+        "median_filter",
+        "trimmed_mean",
+        "adaptive_alpha",
+    ],
     "asymmetric_bid_ask_search": ["bid_ask_asymmetry"],
+    "inventory_skew_asymmetry_search": [
+        "linear_imbalance_skew",
+        "nonlinear_skew",
+        "target_inventory",
+    ],
+    "flow_skew_asymmetry_search": [
+        "streak_skew",
+        "signed_volume_skew",
+        "shock_skew",
+    ],
     "contextual_bandit_policy_search": [
         "thompson_quote_arms",
         "ucb_quote_arms",
         "exp3_adversarial_bandit",
+    ],
+    "online_parameter_tuning_search": [
+        "bandit_undercut",
+        "bandit_buffers",
+        "bandit_bands",
+    ],
+    "meta_learning_fee_schedule_search": [
+        "adaptive_step_size",
+        "regret_minimization",
+        "meta_alpha",
     ],
     "distributionally_robust_control_search": [
         "cvar_objective",
@@ -107,20 +189,60 @@ SUBFAMILY_CATALOG_BY_ID = {
         "turbo_trust_region",
         "multi_fidelity_bayesopt",
     ],
+    "bayesopt_multiobjective_search": [
+        "pareto_edge_robust",
+        "constraints_first",
+        "scalarized_objective",
+    ],
     "inventory_hjb_control_search": [
         "avellaneda_stoikov_like",
         "hjb_discrete_inventory",
         "risk_aversion_schedule",
+    ],
+    "mpc_inventory_control_search": [
+        "linearized_mpc",
+        "scenario_mpc",
+        "mpc_with_clamps",
     ],
     "queue_microprice_impact_search": [
         "microprice_imbalance",
         "queue_reactive_spread",
         "impact_decay",
     ],
+    "order_flow_imbalance_search": [
+        "signed_volume",
+        "trade_count_imbalance",
+        "impact_proxy",
+    ],
+    "arb_implied_price_inference_search": [
+        "arb_classifier",
+        "arb_implied_p",
+        "p_ewma",
+    ],
+    "latent_regime_filter_search": [
+        "hmm_2state",
+        "quantized_belief",
+        "change_point",
+    ],
+    "volatility_scaled_fee_search": [
+        "vol_ema",
+        "vol_burst",
+        "vol_clamped",
+    ],
+    "uncertainty_aware_band_search": [
+        "confidence_band",
+        "uncertainty_penalty",
+        "bandwidth_control",
+    ],
     "adversarial_regime_sim_search": [
         "stress_regime_mixture",
         "adversarial_replay",
         "change_point_guard",
+    ],
+    "distribution_shift_robustness_search": [
+        "robust_clamps",
+        "fallback_policy",
+        "stress_mode",
     ],
 }
 
@@ -135,6 +257,8 @@ NOVELTY_PRIOR_BY_FAMILY_CLASS = {
     "bayesian_optimization": 8.0,
     "optimal_control": 8.7,
     "microstructure": 8.2,
+    "state_estimation": 8.6,
+    "volatility_targeting": 8.1,
 }
 
 BREAKTHROUGH_PRIOR_BY_FAMILY_CLASS = {
@@ -148,6 +272,8 @@ BREAKTHROUGH_PRIOR_BY_FAMILY_CLASS = {
     "bayesian_optimization": 7.2,
     "optimal_control": 8.0,
     "microstructure": 7.5,
+    "state_estimation": 7.8,
+    "volatility_targeting": 7.2,
 }
 
 
@@ -744,27 +870,14 @@ def build_candidates(
         no_uplift_epsilon=no_uplift_epsilon,
     )
 
-    prior_adj = {}
-    for key in (
-        "regime_state_transition_search",
-        "adaptive_undercut_search",
-        "robustness_repair_search",
-        "parallel_parameter_beam",
-        "gamma_formula_search",
-        "ema_smoothing_search",
-        "asymmetric_bid_ask_search",
-        "contextual_bandit_policy_search",
-        "distributionally_robust_control_search",
-        "bayesian_optimization_meta_search",
-        "inventory_hjb_control_search",
-        "queue_microprice_impact_search",
-        "adversarial_regime_sim_search",
-    ):
-        prior = priors.get(key, {})
+    def pa(opportunity_id: str) -> float:
+        prior = priors.get(opportunity_id)
+        if not isinstance(prior, dict):
+            return 0.0
         succ = int(prior.get("successes", 0) or 0)
         fail = int(prior.get("failures", 0) or 0)
         denom = max(1, succ + fail)
-        prior_adj[key] = ((succ / denom) - 0.5) * 1.5  # -0.75..+0.75
+        return ((succ / denom) - 0.5) * 1.5  # -0.75..+0.75
 
     cands: List[Candidate] = []
     cands.append(
@@ -772,8 +885,8 @@ def build_candidates(
             id="regime_state_transition_search",
             family_class=family_class("regime_state_transition_search"),
             rationale="Plateau/brittleness suggest structure-level transition logic is under-optimized.",
-            expected_uplift=clamp(5.5 + 0.30 * p + 0.10 * b + prior_adj["regime_state_transition_search"]),
-            confidence=clamp(5.0 + 0.25 * p + prior_adj["regime_state_transition_search"]),
+            expected_uplift=clamp(5.5 + 0.30 * p + 0.10 * b + pa("regime_state_transition_search")),
+            confidence=clamp(5.0 + 0.25 * p + pa("regime_state_transition_search")),
             time_to_signal=6.0,
             complexity=6.0,
             overfit_risk=clamp(5.0 + 0.20 * b),
@@ -782,13 +895,65 @@ def build_candidates(
     )
     cands.append(
         Candidate(
+            id="hysteresis_gate_search",
+            family_class=family_class("hysteresis_gate_search"),
+            rationale="Hysteresis can reduce fee oscillation and capture post-arb retail flow more reliably.",
+            expected_uplift=clamp(4.9 + 0.25 * p + 0.25 * b + pa("hysteresis_gate_search")),
+            confidence=clamp(4.6 + 0.20 * p + pa("hysteresis_gate_search")),
+            time_to_signal=6.5,
+            complexity=6.8,
+            overfit_risk=clamp(5.0 + 0.15 * b),
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="cooldown_gate_search",
+            family_class=family_class("cooldown_gate_search"),
+            rationale="Cooldown/decay gates can prevent overreacting to noisy retail while still reacting to shocks.",
+            expected_uplift=clamp(4.7 + 0.20 * p + 0.30 * b + pa("cooldown_gate_search")),
+            confidence=clamp(4.5 + 0.25 * b + pa("cooldown_gate_search")),
+            time_to_signal=7.0,
+            complexity=6.2,
+            overfit_risk=clamp(4.8 + 0.20 * b),
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
             id="adaptive_undercut_search",
             family_class=family_class("adaptive_undercut_search"),
             rationale="Undercut signal is strong; prefer lightweight regime-aware undercut before heavy state-machine logic.",
-            expected_uplift=clamp(4.8 + 0.20 * p + 0.10 * s + prior_adj["adaptive_undercut_search"]),
-            confidence=clamp(6.0 + 0.15 * p + prior_adj["adaptive_undercut_search"]),
+            expected_uplift=clamp(4.8 + 0.20 * p + 0.10 * s + pa("adaptive_undercut_search")),
+            confidence=clamp(6.0 + 0.15 * p + pa("adaptive_undercut_search")),
             time_to_signal=8.0,
             complexity=3.0,
+            overfit_risk=4.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="undercut_band_joint_search",
+            family_class=family_class("undercut_band_joint_search"),
+            rationale="Jointly tuning undercut and tight-band thresholds can expose non-linear routing/arb tradeoffs.",
+            expected_uplift=clamp(4.6 + 0.15 * p + 0.25 * s + pa("undercut_band_joint_search")),
+            confidence=clamp(5.7 + 0.10 * p + pa("undercut_band_joint_search")),
+            time_to_signal=8.0,
+            complexity=3.6,
+            overfit_risk=4.2,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="protective_buffer_undercut_search",
+            family_class=family_class("protective_buffer_undercut_search"),
+            rationale="Protective-side buffer and undercut interact; a small buffer may reduce arb leakage without losing retail share.",
+            expected_uplift=clamp(4.3 + 0.10 * p + 0.20 * b + 0.15 * s + pa("protective_buffer_undercut_search")),
+            confidence=clamp(5.2 + 0.10 * b + pa("protective_buffer_undercut_search")),
+            time_to_signal=7.5,
+            complexity=4.2,
             overfit_risk=4.0,
             weighted_score=0.0,
         )
@@ -798,8 +963,8 @@ def build_candidates(
             id="robustness_repair_search",
             family_class=family_class("robustness_repair_search"),
             rationale="Spread instability indicates robust-score improvements may unlock reliable gains.",
-            expected_uplift=clamp(3.5 + 0.35 * b + prior_adj["robustness_repair_search"]),
-            confidence=clamp(4.5 + 0.30 * b + prior_adj["robustness_repair_search"]),
+            expected_uplift=clamp(3.5 + 0.35 * b + pa("robustness_repair_search")),
+            confidence=clamp(4.5 + 0.30 * b + pa("robustness_repair_search")),
             time_to_signal=7.0,
             complexity=5.0,
             overfit_risk=3.0,
@@ -811,7 +976,7 @@ def build_candidates(
             id="parallel_parameter_beam",
             family_class=family_class("parallel_parameter_beam"),
             rationale="If sweep throughput is bottlenecked, parallel beams can improve search efficiency.",
-            expected_uplift=clamp(2.5 + 0.25 * s + prior_adj["parallel_parameter_beam"]),
+            expected_uplift=clamp(2.5 + 0.25 * s + pa("parallel_parameter_beam")),
             confidence=6.0,
             time_to_signal=9.0,
             complexity=4.0,
@@ -824,8 +989,8 @@ def build_candidates(
             id="gamma_formula_search",
             family_class=family_class("gamma_formula_search"),
             rationale="Local sweep stagnation suggests changing competitive/protective gamma math itself.",
-            expected_uplift=clamp(4.2 + 0.25 * p + 0.15 * b + prior_adj["gamma_formula_search"]),
-            confidence=clamp(4.6 + 0.20 * p + prior_adj["gamma_formula_search"]),
+            expected_uplift=clamp(4.2 + 0.25 * p + 0.15 * b + pa("gamma_formula_search")),
+            confidence=clamp(4.6 + 0.20 * p + pa("gamma_formula_search")),
             time_to_signal=6.5,
             complexity=7.0,
             overfit_risk=4.0,
@@ -834,11 +999,37 @@ def build_candidates(
     )
     cands.append(
         Candidate(
+            id="gamma_exponent_sweep_search",
+            family_class=family_class("gamma_exponent_sweep_search"),
+            rationale="Explore gamma^k anchors and piecewise exponents to re-shape the no-arb band without huge code changes.",
+            expected_uplift=clamp(4.4 + 0.25 * p + 0.15 * b + pa("gamma_exponent_sweep_search")),
+            confidence=clamp(4.2 + 0.20 * p + pa("gamma_exponent_sweep_search")),
+            time_to_signal=6.5,
+            complexity=7.4,
+            overfit_risk=4.2,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="gamma_anchor_blend_search",
+            family_class=family_class("gamma_anchor_blend_search"),
+            rationale="Blend multiple competitive anchors (e.g., gamma^2 + undercut) to reduce brittleness across regimes.",
+            expected_uplift=clamp(4.1 + 0.20 * p + 0.25 * b + pa("gamma_anchor_blend_search")),
+            confidence=clamp(4.0 + 0.25 * b + pa("gamma_anchor_blend_search")),
+            time_to_signal=7.0,
+            complexity=7.2,
+            overfit_risk=4.2,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
             id="ema_smoothing_search",
             family_class=family_class("ema_smoothing_search"),
             rationale="Fair-value smoothing/jump-limiter dynamics are likely under-tuned near the local optimum.",
-            expected_uplift=clamp(3.8 + 0.20 * p + 0.30 * b + prior_adj["ema_smoothing_search"]),
-            confidence=clamp(4.8 + 0.20 * b + prior_adj["ema_smoothing_search"]),
+            expected_uplift=clamp(3.8 + 0.20 * p + 0.30 * b + pa("ema_smoothing_search")),
+            confidence=clamp(4.8 + 0.20 * b + pa("ema_smoothing_search")),
             time_to_signal=7.0,
             complexity=5.0,
             overfit_risk=3.5,
@@ -847,14 +1038,66 @@ def build_candidates(
     )
     cands.append(
         Candidate(
+            id="jump_limiter_smoothing_search",
+            family_class=family_class("jump_limiter_smoothing_search"),
+            rationale="Jump-limiters and bounded updates can reduce arb leakage when fair price moves quickly.",
+            expected_uplift=clamp(4.0 + 0.20 * p + 0.35 * b + pa("jump_limiter_smoothing_search")),
+            confidence=clamp(4.5 + 0.25 * b + pa("jump_limiter_smoothing_search")),
+            time_to_signal=7.0,
+            complexity=6.0,
+            overfit_risk=3.6,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="robust_smoothing_filters_search",
+            family_class=family_class("robust_smoothing_filters_search"),
+            rationale="Robust filters (median/trimmed mean) can stabilize estimates under heavy-tailed retail sizes.",
+            expected_uplift=clamp(3.7 + 0.15 * p + 0.40 * b + pa("robust_smoothing_filters_search")),
+            confidence=clamp(4.2 + 0.30 * b + pa("robust_smoothing_filters_search")),
+            time_to_signal=7.5,
+            complexity=6.5,
+            overfit_risk=3.4,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
             id="asymmetric_bid_ask_search",
             family_class=family_class("asymmetric_bid_ask_search"),
             rationale="Directional asymmetry can create edge where symmetric undercut sweeps plateau.",
-            expected_uplift=clamp(4.0 + 0.20 * p + 0.20 * s + prior_adj["asymmetric_bid_ask_search"]),
-            confidence=clamp(4.7 + 0.15 * p + prior_adj["asymmetric_bid_ask_search"]),
+            expected_uplift=clamp(4.0 + 0.20 * p + 0.20 * s + pa("asymmetric_bid_ask_search")),
+            confidence=clamp(4.7 + 0.15 * p + pa("asymmetric_bid_ask_search")),
             time_to_signal=7.5,
             complexity=6.0,
             overfit_risk=4.2,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="inventory_skew_asymmetry_search",
+            family_class=family_class("inventory_skew_asymmetry_search"),
+            rationale="Inventory-skewed bid/ask fees can bias toward the 'good' side of retail flow while limiting adverse arb exposure.",
+            expected_uplift=clamp(4.6 + 0.20 * p + 0.15 * b + pa("inventory_skew_asymmetry_search")),
+            confidence=clamp(4.5 + 0.15 * p + pa("inventory_skew_asymmetry_search")),
+            time_to_signal=7.0,
+            complexity=6.4,
+            overfit_risk=4.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="flow_skew_asymmetry_search",
+            family_class=family_class("flow_skew_asymmetry_search"),
+            rationale="Flow-reactive asymmetry (streak/imbalance) may capture transient routing advantages without full learning loops.",
+            expected_uplift=clamp(4.3 + 0.15 * p + 0.25 * s + 0.10 * b + pa("flow_skew_asymmetry_search")),
+            confidence=clamp(4.3 + 0.20 * s + pa("flow_skew_asymmetry_search")),
+            time_to_signal=7.0,
+            complexity=6.0,
+            overfit_risk=4.5,
             weighted_score=0.0,
         )
     )
@@ -866,11 +1109,37 @@ def build_candidates(
                 "Use contextual bandits to choose quote aggressiveness online by flow state "
                 "instead of static parameter families."
             ),
-            expected_uplift=clamp(6.1 + 0.25 * p + 0.20 * s + prior_adj["contextual_bandit_policy_search"]),
-            confidence=clamp(4.2 + 0.20 * p + prior_adj["contextual_bandit_policy_search"]),
+            expected_uplift=clamp(6.1 + 0.25 * p + 0.20 * s + pa("contextual_bandit_policy_search")),
+            confidence=clamp(4.2 + 0.20 * p + pa("contextual_bandit_policy_search")),
             time_to_signal=6.5,
             complexity=7.2,
             overfit_risk=4.5,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="online_parameter_tuning_search",
+            family_class=family_class("online_parameter_tuning_search"),
+            rationale="Tune key knobs (undercut/buffer/band) online via light bandit updates instead of fixed sweeps.",
+            expected_uplift=clamp(5.8 + 0.20 * p + 0.25 * s + pa("online_parameter_tuning_search")),
+            confidence=clamp(3.9 + 0.25 * p + pa("online_parameter_tuning_search")),
+            time_to_signal=6.5,
+            complexity=7.6,
+            overfit_risk=4.8,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="meta_learning_fee_schedule_search",
+            family_class=family_class("meta_learning_fee_schedule_search"),
+            rationale="Meta-adapt update step sizes/thresholds to reduce brittleness while retaining responsiveness.",
+            expected_uplift=clamp(5.5 + 0.25 * p + 0.20 * b + pa("meta_learning_fee_schedule_search")),
+            confidence=clamp(3.8 + 0.25 * b + pa("meta_learning_fee_schedule_search")),
+            time_to_signal=7.0,
+            complexity=7.4,
+            overfit_risk=4.6,
             weighted_score=0.0,
         )
     )
@@ -883,9 +1152,9 @@ def build_candidates(
                 "collapse under adversarial flow."
             ),
             expected_uplift=clamp(
-                6.3 + 0.25 * b + 0.15 * p + prior_adj["distributionally_robust_control_search"]
+                6.3 + 0.25 * b + 0.15 * p + pa("distributionally_robust_control_search")
             ),
-            confidence=clamp(4.0 + 0.25 * b + prior_adj["distributionally_robust_control_search"]),
+            confidence=clamp(4.0 + 0.25 * b + pa("distributionally_robust_control_search")),
             time_to_signal=5.5,
             complexity=7.8,
             overfit_risk=3.0,
@@ -901,12 +1170,25 @@ def build_candidates(
                 "strategy manifolds instead of linear sweeps."
             ),
             expected_uplift=clamp(
-                5.8 + 0.20 * p + 0.25 * s + prior_adj["bayesian_optimization_meta_search"]
+                5.8 + 0.20 * p + 0.25 * s + pa("bayesian_optimization_meta_search")
             ),
-            confidence=clamp(4.1 + 0.20 * s + prior_adj["bayesian_optimization_meta_search"]),
+            confidence=clamp(4.1 + 0.20 * s + pa("bayesian_optimization_meta_search")),
             time_to_signal=6.0,
             complexity=7.4,
             overfit_risk=3.8,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="bayesopt_multiobjective_search",
+            family_class=family_class("bayesopt_multiobjective_search"),
+            rationale="Use multi-objective BayesOpt (edge + robustness diagnostics) to find less brittle strategies.",
+            expected_uplift=clamp(5.4 + 0.20 * p + 0.25 * s + pa("bayesopt_multiobjective_search")),
+            confidence=clamp(3.6 + 0.20 * s + pa("bayesopt_multiobjective_search")),
+            time_to_signal=6.5,
+            complexity=7.6,
+            overfit_risk=3.9,
             weighted_score=0.0,
         )
     )
@@ -918,11 +1200,24 @@ def build_candidates(
                 "Introduce inventory-aware optimal control (HJB/Avellaneda-Stoikov style) so "
                 "spread/undercut adapts to risk state, not just mispricing."
             ),
-            expected_uplift=clamp(6.6 + 0.20 * p + 0.20 * b + prior_adj["inventory_hjb_control_search"]),
-            confidence=clamp(3.9 + 0.20 * p + prior_adj["inventory_hjb_control_search"]),
+            expected_uplift=clamp(6.6 + 0.20 * p + 0.20 * b + pa("inventory_hjb_control_search")),
+            confidence=clamp(3.9 + 0.20 * p + pa("inventory_hjb_control_search")),
             time_to_signal=5.5,
             complexity=8.0,
             overfit_risk=4.2,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="mpc_inventory_control_search",
+            family_class=family_class("mpc_inventory_control_search"),
+            rationale="Receding-horizon (MPC-like) control can adapt spread to inventory and recent shocks with explicit constraints.",
+            expected_uplift=clamp(6.0 + 0.25 * p + 0.20 * b + pa("mpc_inventory_control_search")),
+            confidence=clamp(3.5 + 0.20 * p + pa("mpc_inventory_control_search")),
+            time_to_signal=5.5,
+            complexity=8.3,
+            overfit_risk=4.5,
             weighted_score=0.0,
         )
     )
@@ -934,11 +1229,76 @@ def build_candidates(
                 "Quote off queue/microprice and short-horizon impact estimates to capture "
                 "microstructure alpha orthogonal to undercut tuning."
             ),
-            expected_uplift=clamp(6.0 + 0.20 * s + 0.15 * b + prior_adj["queue_microprice_impact_search"]),
-            confidence=clamp(4.1 + 0.20 * s + prior_adj["queue_microprice_impact_search"]),
+            expected_uplift=clamp(6.0 + 0.20 * s + 0.15 * b + pa("queue_microprice_impact_search")),
+            confidence=clamp(4.1 + 0.20 * s + pa("queue_microprice_impact_search")),
             time_to_signal=6.0,
             complexity=7.3,
             overfit_risk=4.1,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="order_flow_imbalance_search",
+            family_class=family_class("order_flow_imbalance_search"),
+            rationale="Order-flow imbalance features (signed volume/streaks) can predict near-term routing and adverse selection risk.",
+            expected_uplift=clamp(5.5 + 0.25 * s + 0.15 * b + pa("order_flow_imbalance_search")),
+            confidence=clamp(3.8 + 0.20 * s + pa("order_flow_imbalance_search")),
+            time_to_signal=6.0,
+            complexity=7.2,
+            overfit_risk=4.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="arb_implied_price_inference_search",
+            family_class=family_class("arb_implied_price_inference_search"),
+            rationale="Infer fair price from arbitrage-like trades and use it to tighten quotes post-arb and reduce stale pricing.",
+            expected_uplift=clamp(6.2 + 0.30 * p + 0.10 * s + pa("arb_implied_price_inference_search")),
+            confidence=clamp(3.8 + 0.25 * p + pa("arb_implied_price_inference_search")),
+            time_to_signal=6.0,
+            complexity=8.2,
+            overfit_risk=4.3,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="latent_regime_filter_search",
+            family_class=family_class("latent_regime_filter_search"),
+            rationale="Use a simple latent-state filter (e.g., 2-state HMM) to gate between retail-capture and defense modes.",
+            expected_uplift=clamp(5.8 + 0.20 * p + 0.35 * b + pa("latent_regime_filter_search")),
+            confidence=clamp(3.5 + 0.30 * b + pa("latent_regime_filter_search")),
+            time_to_signal=6.5,
+            complexity=8.4,
+            overfit_risk=4.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="volatility_scaled_fee_search",
+            family_class=family_class("volatility_scaled_fee_search"),
+            rationale="Scale base fees with a volatility proxy to trade off retail capture against increased adverse selection in fast markets.",
+            expected_uplift=clamp(5.2 + 0.10 * p + 0.45 * b + pa("volatility_scaled_fee_search")),
+            confidence=clamp(3.7 + 0.30 * b + pa("volatility_scaled_fee_search")),
+            time_to_signal=6.5,
+            complexity=6.8,
+            overfit_risk=3.8,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="uncertainty_aware_band_search",
+            family_class=family_class("uncertainty_aware_band_search"),
+            rationale="Control tight-band width using confidence/uncertainty to avoid being too aggressive when inference is noisy.",
+            expected_uplift=clamp(5.0 + 0.20 * p + 0.35 * b + pa("uncertainty_aware_band_search")),
+            confidence=clamp(3.6 + 0.30 * b + pa("uncertainty_aware_band_search")),
+            time_to_signal=7.0,
+            complexity=6.6,
+            overfit_risk=3.9,
             weighted_score=0.0,
         )
     )
@@ -950,11 +1310,24 @@ def build_candidates(
                 "Stress-test with adversarial regime replay/change-point detectors to learn "
                 "policies that survive worst-case transitions."
             ),
-            expected_uplift=clamp(5.9 + 0.25 * b + 0.15 * p + prior_adj["adversarial_regime_sim_search"]),
-            confidence=clamp(3.8 + 0.25 * b + prior_adj["adversarial_regime_sim_search"]),
+            expected_uplift=clamp(5.9 + 0.25 * b + 0.15 * p + pa("adversarial_regime_sim_search")),
+            confidence=clamp(3.8 + 0.25 * b + pa("adversarial_regime_sim_search")),
             time_to_signal=5.0,
             complexity=7.9,
             overfit_risk=2.8,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="distribution_shift_robustness_search",
+            family_class=family_class("distribution_shift_robustness_search"),
+            rationale="Add guardrails and fallbacks to stay stable across distribution shifts (sigma/retail rate) without collapsing retail share.",
+            expected_uplift=clamp(5.4 + 0.30 * b + 0.15 * p + pa("distribution_shift_robustness_search")),
+            confidence=clamp(3.9 + 0.30 * b + pa("distribution_shift_robustness_search")),
+            time_to_signal=5.5,
+            complexity=7.2,
+            overfit_risk=3.2,
             weighted_score=0.0,
         )
     )
@@ -1331,6 +1704,311 @@ def default_plan_template(opportunity_id: str, target_edge: float, reference_bes
                 "first_run_delta_below": -1.0,
                 "abort_family_if_first_4_below_reference_by": 0.8,
             },
+        }
+
+    # Family-class defaults (covers catalog expansions without requiring per-ID templates).
+    cls = family_class(opportunity_id)
+    if cls == "undercut_sweep":
+        return {
+            "frozen_core": [
+                "gamma^2 competitive anchoring",
+                "strict protective-side buffer",
+            ],
+            "mutation_dimensions": [
+                "competitive_undercut_bps sweep (8-13)",
+                "tight_band_bps sweep (24-30)",
+                "protective_buffer_bps sweep (0-2)",
+                "coarse-to-fine sweeps for undercut/band jointly",
+            ],
+            "run_budget": {"variants": 12, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "gating_adaptive":
+        return {
+            "frozen_core": [
+                "champion core quote engine",
+                "safety clamps and rollback rules",
+            ],
+            "mutation_dimensions": [
+                "2-3 state gating (NORMAL/DEFENSIVE/RECOVERY)",
+                "entry/exit hysteresis thresholds",
+                "timestamp and trade-index gates (post-arb tighten)",
+                "cooldown/decay lengths after shocks",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "ema_smoothing":
+        return {
+            "frozen_core": [
+                "gamma^2 competitive anchoring",
+                "protective-side buffer defaults",
+            ],
+            "mutation_dimensions": [
+                "EMA alpha / robust filter choice (median/trimmed)",
+                "jump limiter cap and asymmetry by side",
+                "decay schedule toward baseline fees",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 50.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "gamma_formula":
+        return {
+            "frozen_core": [
+                "tight-band control path",
+                "authoritative 1000-sim validation",
+            ],
+            "mutation_dimensions": [
+                "gamma^2 -> gamma^k anchor variants",
+                "anchor blending/switching logic",
+                "piecewise transforms by mispricing bucket",
+                "clamps to keep average fee near competitive regime",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "asymmetric":
+        return {
+            "frozen_core": [
+                "fair-value inference pipeline",
+                "protective-side safety constraints",
+            ],
+            "mutation_dimensions": [
+                "inventory-skewed bid/ask fees",
+                "flow-streak / signed-volume skew",
+                "side-specific hysteresis and caps",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "online_learning":
+        return {
+            "frozen_core": [
+                "canonical 1000-sim validation",
+                "champion safety clamps",
+                "deterministic and bounded updates",
+            ],
+            "mutation_dimensions": [
+                "arm definitions (fee/band/buffer actions)",
+                "context features from mispricing/flow/inventory proxies",
+                "learning rate/temperature and regret caps",
+                "fallback to static control when uncertain",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "adversarial_robustness":
+        return {
+            "frozen_core": [
+                "champion core quote engine",
+                "existing gate and rollback safety rules",
+            ],
+            "mutation_dimensions": [
+                "stress triggers and safe-mode clamps",
+                "tail-risk penalties (CVaR/ambiguity)",
+                "change-point sensitivity and replay weighting",
+                "fallback policy for uncertain regimes",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 52.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "bayesian_optimization":
+        return {
+            "frozen_core": [
+                "bounded parallel execution and gate monitor",
+                "template-based candidates (avoid ad-hoc rewrites)",
+            ],
+            "mutation_dimensions": [
+                "search space parameterization (low-dim knobs)",
+                "acquisition function (EI/TS/UCB)",
+                "trust region schedule / multi-fidelity allocation",
+                "multi-objective scalarization (edge + robustness)",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "optimal_control":
+        return {
+            "frozen_core": [
+                "fair-value and jump logic from champion",
+                "strict protection-side constraints",
+            ],
+            "mutation_dimensions": [
+                "inventory-risk aversion coefficient schedule",
+                "reservation price skew by inventory bucket",
+                "control smoothing (avoid oscillation)",
+                "MPC horizon/bucket granularity (if used)",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.1,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "microstructure":
+        return {
+            "frozen_core": [
+                "champion timing and baseline undercut clamp",
+                "canonical 1000-sim metrics only",
+            ],
+            "mutation_dimensions": [
+                "order-flow imbalance and shock proxies",
+                "impact decay half-life and cap",
+                "queue-reactive spread response and hysteresis",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "state_estimation":
+        return {
+            "frozen_core": [
+                "deterministic inference only (no randomness)",
+                "safe fallback when uncertainty is high",
+                "canonical 1000-sim validation",
+            ],
+            "mutation_dimensions": [
+                "arb-vs-retail classifier from TradeInfo/reserves",
+                "arb-implied fair-price estimator (and confidence score)",
+                "filter update rule (EMA/Kalman-like/quantized belief)",
+                "confidence-aware gating into tight/defensive modes",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "falsification_test": "If inference-guided variants do not beat the same policy without inference, reject state-estimation family.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "volatility_targeting":
+        return {
+            "frozen_core": [
+                "bounded volatility proxy and mapping",
+                "safety clamps and rollback rules",
+                "canonical 1000-sim validation",
+            ],
+            "mutation_dimensions": [
+                "volatility proxy choice (returns/impact/arb frequency)",
+                "mapping from vol -> base fee (clamped)",
+                "mapping from vol -> tight-band bandwidth",
+                "hysteresis/decay to avoid oscillation",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "falsification_test": "If vol-adaptive variants do not improve canonical edge without destroying retail share, reject volatility-targeting family.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
         }
     return {
         "frozen_core": ["existing champion mechanics"],

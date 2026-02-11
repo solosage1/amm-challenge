@@ -270,5 +270,71 @@
       }
     },
     "last_selected_subfamily": "microprice_imbalance"
+  },
+  "bayesian_optimization_meta_search": {
+    "attempts": 1,
+    "successes": 0,
+    "failures": 1,
+    "neutral": 0,
+    "severe_failures": 0,
+    "cooldown_until_iteration": 0,
+    "cooldown_reason": null,
+    "non_uplift_streak": 0,
+    "no_uplift_outcomes": 0,
+    "last_uplift_iteration": null,
+    "ewma_delta": 0.02400000000000091,
+    "ewma_count": 1,
+    "subfamilies": {
+      "gp_expected_improvement": {
+        "attempts": 1,
+        "successes": 0,
+        "failures": 1,
+        "neutral": 0,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 0,
+        "cooldown_reason": null,
+        "non_uplift_streak": 0,
+        "no_uplift_outcomes": 0,
+        "last_uplift_iteration": 46,
+        "last_attempt_iteration": 46,
+        "breakthrough_probe_hits": 1,
+        "ewma_delta": 0.02400000000000091,
+        "ewma_count": 1
+      }
+    },
+    "last_selected_subfamily": "gp_expected_improvement"
+  },
+  "adversarial_regime_sim_search": {
+    "attempts": 1,
+    "successes": 0,
+    "failures": 1,
+    "neutral": 0,
+    "severe_failures": 0,
+    "cooldown_until_iteration": 0,
+    "cooldown_reason": null,
+    "non_uplift_streak": 0,
+    "no_uplift_outcomes": 0,
+    "last_uplift_iteration": null,
+    "ewma_delta": 0.0,
+    "ewma_count": 1,
+    "subfamilies": {
+      "stress_regime_mixture": {
+        "attempts": 1,
+        "successes": 0,
+        "failures": 1,
+        "neutral": 0,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 0,
+        "cooldown_reason": null,
+        "non_uplift_streak": 0,
+        "no_uplift_outcomes": 0,
+        "last_uplift_iteration": null,
+        "last_attempt_iteration": 47,
+        "breakthrough_probe_hits": 1,
+        "ewma_delta": 0.0,
+        "ewma_count": 1
+      }
+    },
+    "last_selected_subfamily": "stress_regime_mixture"
   }
 }
