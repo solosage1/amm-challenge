@@ -597,3 +597,133 @@ contract Strategy {
     ok, reason = module.validate_candidate(champion, candidate, "flow_memory", definitions)
     assert ok is True
     assert reason == "valid"
+
+
+def test_parse_seed_offsets_handles_invalid_tokens() -> None:
+    module = load_simplified_module()
+    assert module.parse_seed_offsets("0, 10000,abc, ,20000") == [0, 10000, 20000]
+    assert module.parse_seed_offsets("") == [0]
+
+
+def test_evaluate_with_pipeline_accepts_screen_only_results(tmp_path: Path) -> None:
+    module = load_simplified_module()
+    candidate = tmp_path / "candidate.sol"
+    candidate.write_text("pragma solidity ^0.8.24; contract Strategy {}")
+    result_path = tmp_path / "result.json"
+
+    class FakeProc:
+        def __init__(self) -> None:
+            self.returncode = 0
+            self.stdout = ""
+            self.stderr = ""
+
+    original_run = module.subprocess.run
+    try:
+        def fake_run(cmd, capture_output=False, text=False):  # type: ignore[no-untyped-def]
+            output_path = Path(cmd[cmd.index("--output") + 1])
+            seed_offset = int(cmd[cmd.index("--seed-offset") + 1])
+            payload = {
+                "final_edge": None,
+                "final_score": None,
+                "testing": {"edge_screen": 510.0 + seed_offset / 100000.0},
+            }
+            output_path.write_text(json.dumps(payload))
+            return FakeProc()
+
+        module.subprocess.run = fake_run
+        summary, error = module.evaluate_with_pipeline(
+            candidate_path=candidate,
+            result_path=result_path,
+            python_exe="python3",
+            screen_sims=200,
+            seed_offsets="0,10000,20000",
+            promotion_std_penalty=0.5,
+        )
+    finally:
+        module.subprocess.run = original_run
+
+    assert error is None
+    assert summary is not None
+    assert summary["screen_only"] is True
+    assert summary["promotable"] is False
+    assert int(summary["seed_count"]) == 3
+
+
+def test_bootstrap_champion_selects_best_candidate(tmp_path: Path) -> None:
+    module = load_simplified_module()
+    state = tmp_path / "state"
+    state.mkdir(parents=True, exist_ok=True)
+    (state / ".best_strategy.sol").write_text("pragma solidity ^0.8.24; contract Strategy { function getName() external pure returns (string memory) { return \"old\"; } }")
+    (state / ".best_edge.txt").write_text("500.00\n")
+
+    definitions_path = tmp_path / "definitions.json"
+    definitions_payload = {
+        "schema_version": "1.0",
+        "champion_file": ".best_strategy.sol",
+        "champion_edge": 500.0,
+        "mechanisms": {
+            "fair_price_and_arb": {
+                "current_implementation": "",
+                "code_location": "x",
+                "allowed_overlap_with": [],
+                "anchors": [{"start": "pragma", "end": "contract Strategy"}],
+                "parameters": {},
+                "modification_directions": [],
+            }
+        },
+    }
+    definitions_path.write_text(json.dumps(definitions_payload))
+    install_definitions = tmp_path / "definitions_bandshield.json"
+    install_definitions.write_text(json.dumps(definitions_payload))
+
+    source_a = tmp_path / "a.sol"
+    source_b = tmp_path / "b.sol"
+    source_a.write_text("pragma solidity ^0.8.24; contract Strategy { function getName() external pure returns (string memory) { return \"A\"; } }")
+    source_b.write_text("pragma solidity ^0.8.24; contract Strategy { function getName() external pure returns (string memory) { return \"B\"; } }")
+
+    original_eval = module.evaluate_with_pipeline
+    try:
+        def fake_eval(candidate_path, result_path, python_exe, screen_sims, seed_offsets, promotion_std_penalty):  # type: ignore[no-untyped-def]
+            if str(candidate_path).endswith("a.sol"):
+                return {
+                    "primary_edge": 510.0,
+                    "promotion_edge": 510.0,
+                    "promotable": True,
+                    "screen_only": False,
+                    "seed_count": 3,
+                    "seed_offsets": [0, 10000, 20000],
+                    "seed_results": [],
+                }, None
+            return {
+                "primary_edge": 520.0,
+                "promotion_edge": 520.0,
+                "promotable": True,
+                "screen_only": False,
+                "seed_count": 3,
+                "seed_offsets": [0, 10000, 20000],
+                "seed_results": [],
+            }, None
+
+        module.evaluate_with_pipeline = fake_eval
+        args = argparse.Namespace(
+            state_dir=str(state),
+            definitions=str(definitions_path),
+            from_paths=[str(source_a), str(source_b)],
+            install_definitions=str(install_definitions),
+            python_exe="python3",
+            screen_sims=200,
+            seed_offsets="0,10000,20000",
+            promotion_std_penalty=0.5,
+            exploration_c=0.5,
+            improvement_threshold=0.02,
+            max_retries_on_invalid=2,
+            wildcard_frequency=10,
+        )
+        code = module.bootstrap_champion(args)
+    finally:
+        module.evaluate_with_pipeline = original_eval
+
+    assert code == 0
+    assert "return \"B\";" in (state / ".best_strategy.sol").read_text()
+    assert (state / ".best_edge.txt").read_text().strip() == "520.00"
+    assert (state / "mechanism_stats.json").exists()

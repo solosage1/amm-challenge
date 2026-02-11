@@ -1,13 +1,13 @@
 {
   "schema_version": "2.0",
   "champion": {
-    "name": "BandShield_ghost",
-    "edge": 516.54,
-    "baseline_edge": 516.54,
-    "promoted_at": "2026-02-11T17:26:35.511321+00:00"
+    "name": "GammaSquaredDualRegime",
+    "edge": 509.23,
+    "baseline_edge": 509.23,
+    "promoted_at": "2026-02-11T17:04:36.394846+00:00"
   },
   "mechanisms": {
-    "fair_price_and_arb": {
+    "fair_price_estimation": {
       "tries": 0,
       "successes": 0,
       "total_uplift": 0.0,
@@ -16,7 +16,16 @@
       "last_tried": null,
       "best_delta": null
     },
-    "regime_estimators": {
+    "flow_memory": {
+      "tries": 1,
+      "successes": 0,
+      "total_uplift": -3.0721126279241844,
+      "invalid_count": 0,
+      "compile_fail_count": 0,
+      "last_tried": "2026-02-11T17:10:25.357137+00:00",
+      "best_delta": -3.0721126279241844
+    },
+    "arbitrage_response": {
       "tries": 0,
       "successes": 0,
       "total_uplift": 0.0,
@@ -25,7 +34,7 @@
       "last_tried": null,
       "best_delta": null
     },
-    "toxicity_and_activity": {
+    "tight_band_pricing": {
       "tries": 0,
       "successes": 0,
       "total_uplift": 0.0,
@@ -34,16 +43,7 @@
       "last_tried": null,
       "best_delta": null
     },
-    "directional_skew_and_stale_protection": {
-      "tries": 0,
-      "successes": 0,
-      "total_uplift": 0.0,
-      "invalid_count": 0,
-      "compile_fail_count": 0,
-      "last_tried": null,
-      "best_delta": null
-    },
-    "tail_compression": {
+    "outer_regime_pricing": {
       "tries": 0,
       "successes": 0,
       "total_uplift": 0.0,
@@ -54,14 +54,14 @@
     }
   },
   "global": {
-    "total_iterations": 0,
+    "total_iterations": 1,
     "total_champion_updates": 0,
     "exploration_constant": 0.5,
     "improvement_threshold": 0.02,
     "max_retries_on_invalid": 2,
     "wildcard_frequency": 10,
-    "rollback_triggered": false,
-    "rollback_reason": null,
+    "rollback_triggered": true,
+    "rollback_reason": "severe_regression<=-0.5",
     "consecutive_invalid": 0
   }
 }

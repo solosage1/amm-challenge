@@ -15,6 +15,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from datetime import datetime, timezone
@@ -56,6 +57,13 @@ DEFAULT_LLM_MODEL = os.environ.get("CODEX_MODEL", "")
 DEFAULT_LLM_TIMEOUT_MINUTES = env_float("CODEX_TIMEOUT_MINUTES", 40.0)
 DEFAULT_LLM_MAX_OUTPUT_TOKENS = env_int("CODEX_MAX_OUTPUT_TOKENS", 8000)
 DEFAULT_POLICY_EVOLUTION_FREQUENCY = 5
+DEFAULT_SEED_OFFSETS = "0"
+DEFAULT_BOOTSTRAP_SEED_OFFSETS = "0,10000,20000"
+DEFAULT_PROMOTION_STD_PENALTY = 0.5
+DEFAULT_BOOTSTRAP_CANDIDATES = [
+    ".ralph-amm/research/forks/shl0k28/strategies/Strategy.sol",
+    ".ralph-amm/research/forks/MacroWang001/strategies/yq-v2_523.sol",
+]
 POLICY_EVOLUTION_LOOKBACK = 25
 POLICY_EVOLUTION_MAX_NEW_MECHANISMS = 3
 POLICY_EVOLUTION_MAX_SPAN_RATIO = 0.85
@@ -85,6 +93,15 @@ Modify the **{mechanism_name}** mechanism to improve expected edge.
 ### Suggested Directions to Explore
 {modification_directions}
 
+## PRIORS
+- Preserve the estimator spine, slot layout, and public interfaces.
+- Refactor with helpers only when needed for compileability.
+
+## DO NOT PURSUE
+- Regime FSM/ladders, continuation-hazard rebates, offside gating
+- PI/control-loop feedback, Bayesian arb probability blending
+- First-trade-only recentering or high-gain noisy feedback states
+
 ## CONSTRAINTS
 1. ONLY modify code related to {mechanism_name}
 2. Keep all other mechanisms unchanged:
@@ -109,6 +126,11 @@ You are improving an AMM fee strategy with a broad structural change.
 
 ## YOUR TASK
 Propose a complete contract revision that can modify any mechanism if it improves expected edge.
+
+## DO NOT PURSUE
+- Regime FSM/ladders, continuation-hazard rebates, offside gating
+- PI/control-loop feedback, Bayesian arb probability blending
+- First-trade-only recentering or high-gain noisy feedback states
 
 ## CONSTRAINTS
 1. Output a complete, compilable Solidity contract
@@ -187,6 +209,57 @@ def append_jsonl(path: Path, payload: Dict[str, Any]) -> None:
 def parse_get_name(source: str) -> Optional[str]:
     match = re.search(r'return\s+"([^"]+)";', source)
     return match.group(1) if match else None
+
+
+def parse_seed_offsets(raw: str) -> List[int]:
+    offsets: List[int] = []
+    for token in str(raw).split(","):
+        value = token.strip()
+        if not value:
+            continue
+        try:
+            offsets.append(int(value))
+        except ValueError:
+            continue
+    return offsets if offsets else [0]
+
+
+def python_has_pipeline_deps(python_exe: str, repo_root: Path) -> bool:
+    env = os.environ.copy()
+    existing_pythonpath = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = str(repo_root) if not existing_pythonpath else f"{repo_root}:{existing_pythonpath}"
+    cmd = [python_exe, "-c", "import pyrevm, amm_competition"]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, cwd=str(repo_root), env=env)
+    except OSError:
+        return False
+    return proc.returncode == 0
+
+
+def resolve_python_executable(requested: str) -> str:
+    requested_clean = str(requested or "").strip()
+    if requested_clean and requested_clean.lower() not in {"auto", "default"}:
+        return requested_clean
+
+    repo_root = Path(__file__).resolve().parents[1]
+    candidates: List[str] = []
+    for candidate in [
+        str(repo_root / "venv_fresh/bin/python"),
+        str(repo_root / ".venv/bin/python"),
+        sys.executable,
+        "python3",
+    ]:
+        if candidate not in candidates:
+            candidates.append(candidate)
+
+    for candidate in candidates:
+        if python_has_pipeline_deps(candidate, repo_root):
+            return candidate
+
+    for candidate in candidates:
+        if Path(candidate).exists() or shutil.which(candidate):
+            return candidate
+    return sys.executable
 
 
 def parse_line_ranges(code_location: str) -> List[Tuple[int, int]]:
@@ -749,10 +822,17 @@ def validate_candidate(
     candidate_code: str,
     target_mechanism: str,
     definitions: Dict[str, Any],
-) -> Tuple[bool, str]:
+) -> Tuple[bool, str, List[str]]:
+    """Validate candidate code against mechanism boundaries.
+
+    Returns:
+        (valid, reason, warnings) where warnings contains soft notices about
+        anchor drift that don't block validation but should be logged.
+    """
+    warnings: List[str] = []
     mechanisms = definitions.get("mechanisms", {})
     if not isinstance(mechanisms, dict):
-        return False, "definitions has no mechanisms"
+        return False, "definitions has no mechanisms", warnings
 
     regions_original: Dict[str, str] = {}
     regions_candidate: Dict[str, str] = {}
@@ -778,22 +858,34 @@ def validate_candidate(
     allowed_overlap = allowed_overlap_for_target(definitions, target_mechanism)
 
     if target_mechanism not in regions_original:
-        return False, f"target mechanism not found: {target_mechanism}"
+        return False, f"target mechanism not found: {target_mechanism}", warnings
 
     target_before = normalize_region(regions_original[target_mechanism])
     target_after = normalize_region(regions_candidate.get(target_mechanism, ""))
     if target_before and target_after:
         if target_before == target_after:
-            return False, f"target mechanism '{target_mechanism}' was not modified"
+            return False, f"target mechanism '{target_mechanism}' was not modified", warnings
     else:
         # If candidate-side anchors drifted, use whole-contract identity as minimal guard.
         if normalize_region(original_code) == normalize_region(candidate_code):
-            return False, f"target mechanism '{target_mechanism}' was not modified"
+            return False, f"target mechanism '{target_mechanism}' was not modified", warnings
+
+    # Collect anchor drift warnings (soft notices, not blockers)
+    drifted_mechanisms: List[str] = []
+    for mech, status in candidate_span_status.items():
+        if status == "anchor_unresolved" and mech != target_mechanism:
+            drifted_mechanisms.append(mech)
+
+    if drifted_mechanisms:
+        warnings.append(f"anchor_drift:{','.join(drifted_mechanisms)}")
 
     for mech in regions_original:
         if mech == target_mechanism:
             continue
         if candidate_span_status.get(mech) == "anchor_unresolved":
+            # Anchor drifted - this is a soft warning, not a blocker.
+            # Innovation may legitimately restructure code such that old anchors
+            # no longer match. Allow the change but track it.
             continue
         before = normalize_region(regions_original.get(mech, ""))
         after = normalize_region(regions_candidate.get(mech, ""))
@@ -802,9 +894,9 @@ def validate_candidate(
         if before != after:
             if mech in allowed_overlap:
                 continue
-            return False, f"non-target mechanism '{mech}' was modified"
+            return False, f"non-target mechanism '{mech}' was modified", warnings
 
-    return True, "valid"
+    return True, "valid", warnings
 
 
 def default_mechanism_stats() -> Dict[str, Any]:
@@ -1057,13 +1149,13 @@ def shadow_score_policy_candidate(
             missing_candidate_file += 1
             continue
 
-        old_valid, _ = validate_candidate(
+        old_valid, _, _ = validate_candidate(
             champion_code,
             candidate_code,
             mechanism_name,
             current_definitions,
         )
-        new_valid, _ = validate_candidate(
+        new_valid, _, _ = validate_candidate(
             champion_code,
             candidate_code,
             mechanism_name,
@@ -1314,25 +1406,99 @@ def evaluate_with_pipeline(
     result_path: Path,
     python_exe: str,
     screen_sims: int,
-) -> Tuple[Optional[float], Optional[str]]:
-    cmd = [
-        python_exe,
-        "scripts/amm-test-pipeline.py",
-        str(candidate_path),
-        "--output",
-        str(result_path),
-        "--screen-sims",
-        str(screen_sims),
-    ]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    if proc.returncode != 0:
-        return None, f"pipeline_failed:{proc.returncode}"
+    seed_offsets: str,
+    promotion_std_penalty: float,
+) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    offsets = parse_seed_offsets(seed_offsets)
+    seed_results: List[Dict[str, Any]] = []
+    scores: List[float] = []
+    authoritative_count = 0
+    result_paths: List[str] = []
 
-    result = load_json(result_path, {})
-    edge = result.get("final_edge")
-    if edge is None:
-        return None, "pipeline_no_final_edge"
-    return float(edge), None
+    for idx, seed_offset in enumerate(offsets):
+        current_result_path = result_path
+        if len(offsets) > 1:
+            current_result_path = result_path.with_name(
+                f"{result_path.stem}.seed_{seed_offset}{result_path.suffix}"
+            )
+
+        cmd = [
+            python_exe,
+            "scripts/amm-test-pipeline.py",
+            str(candidate_path),
+            "--output",
+            str(current_result_path),
+            "--screen-sims",
+            str(screen_sims),
+            "--seed-offset",
+            str(seed_offset),
+        ]
+        repo_root = Path(__file__).resolve().parents[1]
+        env = os.environ.copy()
+        existing_pythonpath = env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = str(repo_root) if not existing_pythonpath else f"{repo_root}:{existing_pythonpath}"
+        proc = subprocess.run(cmd, capture_output=True, text=True, cwd=str(repo_root), env=env)
+        if proc.returncode != 0:
+            stderr_lines = (proc.stderr or proc.stdout or "").strip().splitlines()
+            detail = stderr_lines[-1][:180] if stderr_lines else "unknown_error"
+            return None, f"pipeline_failed:{proc.returncode}:seed_offset={seed_offset}:{detail}"
+
+        result = load_json(current_result_path, {})
+        testing = result.get("testing", {}) if isinstance(result, dict) else {}
+        final_edge = result.get("final_edge") if isinstance(result, dict) else None
+        final_score = result.get("final_score") if isinstance(result, dict) else None
+        edge_screen = testing.get("edge_screen") if isinstance(testing, dict) else None
+
+        if final_score is None and final_edge is not None:
+            final_score = final_edge
+        if final_score is None and edge_screen is not None:
+            final_score = edge_screen
+
+        if final_score is None:
+            return None, f"pipeline_no_edge:seed_offset={seed_offset}"
+
+        score = float(final_score)
+        scores.append(score)
+        authoritative = final_edge is not None
+        if authoritative:
+            authoritative_count += 1
+
+        entry: Dict[str, Any] = {
+            "seed_offset": seed_offset,
+            "result_path": str(current_result_path),
+            "score": score,
+            "screen_edge": float(edge_screen) if edge_screen is not None else None,
+            "final_edge": float(final_edge) if final_edge is not None else None,
+            "final_score": float(final_score),
+            "screen_only": not authoritative,
+        }
+        seed_results.append(entry)
+        result_paths.append(str(current_result_path))
+
+    mean_score = sum(scores) / len(scores)
+    variance = 0.0
+    if len(scores) > 1:
+        variance = sum((value - mean_score) ** 2 for value in scores) / len(scores)
+    std_score = math.sqrt(variance)
+    robust_score = mean_score - max(0.0, float(promotion_std_penalty)) * std_score
+    all_authoritative = authoritative_count == len(seed_results)
+    primary_edge = robust_score if all_authoritative else mean_score
+    promotion_edge = robust_score if all_authoritative else None
+
+    return {
+        "primary_edge": float(primary_edge),
+        "promotion_edge": float(promotion_edge) if promotion_edge is not None else None,
+        "promotable": bool(all_authoritative),
+        "screen_only": not bool(all_authoritative),
+        "mean_score": float(mean_score),
+        "std_score": float(std_score),
+        "robust_score": float(robust_score),
+        "authoritative_count": authoritative_count,
+        "seed_count": len(seed_results),
+        "seed_offsets": offsets,
+        "seed_results": seed_results,
+        "result_paths": result_paths,
+    }, None
 
 
 def mock_delta(mechanism: str, iteration: int, seed: int) -> float:
@@ -1528,6 +1694,140 @@ def read_iteration_log(path: Path) -> List[Dict[str, Any]]:
     return rows
 
 
+def bootstrap_champion(args: argparse.Namespace) -> int:
+    state_dir = Path(args.state_dir)
+    state_dir.mkdir(parents=True, exist_ok=True)
+    definitions_path = Path(args.definitions)
+
+    source_values = list(getattr(args, "from_paths", []) or [])
+    if not source_values:
+        source_values = list(DEFAULT_BOOTSTRAP_CANDIDATES)
+    source_paths = [Path(value) for value in source_values]
+
+    missing_sources = [str(path) for path in source_paths if not path.exists()]
+    if missing_sources:
+        print(json.dumps({"status": "bootstrap_failed", "reason": "missing_sources", "sources": missing_sources}, indent=2))
+        return 1
+
+    eval_dir = state_dir / "bootstrap_eval"
+    eval_dir.mkdir(parents=True, exist_ok=True)
+    seed_offsets = str(args.seed_offsets)
+    evaluations: List[Dict[str, Any]] = []
+    winners: List[Dict[str, Any]] = []
+
+    for index, source_path in enumerate(source_paths):
+        result_path = eval_dir / f"{source_path.stem}.result.json"
+        summary, error = evaluate_with_pipeline(
+            candidate_path=source_path,
+            result_path=result_path,
+            python_exe=str(args.python_exe),
+            screen_sims=int(args.screen_sims),
+            seed_offsets=seed_offsets,
+            promotion_std_penalty=float(args.promotion_std_penalty),
+        )
+        row: Dict[str, Any] = {
+            "source": str(source_path),
+            "error": error,
+        }
+        if summary:
+            row.update(summary)
+            primary_edge = float(summary.get("primary_edge", float("-inf")))
+            promotable = bool(summary.get("promotable", False))
+            promotion_edge = summary.get("promotion_edge")
+            objective = float(promotion_edge) if promotion_edge is not None else primary_edge
+            winners.append(
+                {
+                    "source": str(source_path),
+                    "objective": objective,
+                    "promotable": promotable,
+                    "index": index,
+                    "summary": summary,
+                }
+            )
+        evaluations.append(row)
+
+    if not winners:
+        print(json.dumps({"status": "bootstrap_failed", "reason": "all_candidates_failed", "evaluations": evaluations}, indent=2))
+        return 1
+
+    winners.sort(key=lambda item: (1 if item["promotable"] else 0, item["objective"]), reverse=True)
+    chosen = winners[0]
+    chosen_source = Path(str(chosen["source"]))
+    chosen_summary = dict(chosen["summary"])
+    chosen_edge = chosen_summary.get("promotion_edge")
+    if chosen_edge is None:
+        chosen_edge = chosen_summary.get("primary_edge")
+    if chosen_edge is None:
+        print(json.dumps({"status": "bootstrap_failed", "reason": "winner_missing_edge", "winner": chosen}, indent=2))
+        return 1
+
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    archive_dir = state_dir / ".archive" / f"bootstrap_{stamp}"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    backed_up: List[str] = []
+
+    for name in (
+        ".best_strategy.sol",
+        ".best_edge.txt",
+        "mechanism_stats.json",
+        "iteration_log.jsonl",
+        "policy_evolution_log.jsonl",
+        "policy_evolution_state.json",
+        "shadow_selections.jsonl",
+    ):
+        path = state_dir / name
+        if path.exists():
+            backup = archive_dir / path.name
+            shutil.copy2(path, backup)
+            backed_up.append(str(backup))
+
+    atomic_write_text(state_dir / ".best_strategy.sol", chosen_source.read_text())
+    atomic_write_text(state_dir / ".best_edge.txt", f"{float(chosen_edge):.2f}\n")
+
+    install_definitions = Path(str(args.install_definitions))
+    if install_definitions.exists():
+        new_definitions = load_definitions(install_definitions)
+        write_definitions_with_optional_mirror(definitions_path, new_definitions)
+
+    for name in (
+        "mechanism_stats.json",
+        "iteration_log.jsonl",
+        "policy_evolution_log.jsonl",
+        "policy_evolution_state.json",
+        "shadow_selections.jsonl",
+    ):
+        target = state_dir / name
+        if target.exists():
+            target.unlink()
+
+    final_definitions = load_definitions(definitions_path)
+    stats = initialize_stats(
+        state_dir=state_dir,
+        definitions=final_definitions,
+        exploration_c=float(args.exploration_c),
+        improvement_threshold=float(args.improvement_threshold),
+        max_retries_on_invalid=int(args.max_retries_on_invalid),
+        wildcard_frequency=int(args.wildcard_frequency),
+    )
+    atomic_write_json(state_dir / "mechanism_stats.json", stats)
+
+    payload = {
+        "status": "bootstrap_complete",
+        "chosen_source": str(chosen_source),
+        "chosen_edge": float(chosen_edge),
+        "promotable": bool(chosen_summary.get("promotable", False)),
+        "chosen_summary": chosen_summary,
+        "seed_offsets": parse_seed_offsets(seed_offsets),
+        "definitions_installed_from": str(install_definitions) if install_definitions.exists() else None,
+        "definitions_path": str(definitions_path),
+        "archive_dir": str(archive_dir),
+        "backed_up": backed_up,
+        "evaluations": evaluations,
+    }
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
 def run_iteration(args: argparse.Namespace) -> int:
     state_dir = Path(args.state_dir)
     state_dir.mkdir(parents=True, exist_ok=True)
@@ -1658,11 +1958,16 @@ def run_iteration(args: argparse.Namespace) -> int:
 
     valid = True
     reason = "valid"
+    validation_warnings: List[str] = []
     retries = int(args.max_retries_on_invalid)
     if not wildcard:
         for attempt in range(retries + 1):
-            valid, reason = validate_candidate(champion_code, candidate_code, mechanism_name, definitions)
+            valid, reason, validation_warnings = validate_candidate(champion_code, candidate_code, mechanism_name, definitions)
             if valid:
+                # Log anchor drift warnings if any (soft notices, not blockers)
+                if validation_warnings:
+                    for warn in validation_warnings:
+                        print(f"[validation_warning] {warn}", file=sys.stderr)
                 break
             if attempt >= retries:
                 break
@@ -1709,6 +2014,8 @@ def run_iteration(args: argparse.Namespace) -> int:
             "prompt_path": str(prompt_path),
             "candidate_path": str(candidate_path),
         }
+        if validation_warnings:
+            entry["validation_warnings"] = validation_warnings
         if llm_artifacts:
             entry.update(llm_artifacts)
         append_jsonl(log_path, entry)
@@ -1731,18 +2038,42 @@ def run_iteration(args: argparse.Namespace) -> int:
 
     result_path = candidate_dir / f"iter_{iteration}_{mechanism_name}.result.json"
     candidate_edge: Optional[float]
+    promotion_edge: Optional[float]
+    promotable: bool = True
+    screen_only_eval: bool = False
+    evaluation_summary: Dict[str, Any] = {}
     eval_error: Optional[str]
     if args.dry_run:
         delta = mock_delta(mechanism_name, iteration, int(args.seed))
         candidate_edge = champion_edge + delta
+        promotion_edge = candidate_edge
         eval_error = None
+        evaluation_summary = {
+            "primary_edge": float(candidate_edge),
+            "promotion_edge": float(candidate_edge),
+            "promotable": True,
+            "screen_only": False,
+            "seed_offsets": parse_seed_offsets(str(args.seed_offsets)),
+            "seed_results": [],
+        }
     else:
-        candidate_edge, eval_error = evaluate_with_pipeline(
+        evaluation_summary, eval_error = evaluate_with_pipeline(
             candidate_path=candidate_path,
             result_path=result_path,
             python_exe=str(args.python_exe),
             screen_sims=int(args.screen_sims),
+            seed_offsets=str(args.seed_offsets),
+            promotion_std_penalty=float(args.promotion_std_penalty),
         )
+        if evaluation_summary is None:
+            candidate_edge = None
+            promotion_edge = None
+        else:
+            candidate_edge = float(evaluation_summary.get("primary_edge", 0.0))
+            raw_promotion_edge = evaluation_summary.get("promotion_edge")
+            promotion_edge = float(raw_promotion_edge) if raw_promotion_edge is not None else None
+            promotable = bool(evaluation_summary.get("promotable", False))
+            screen_only_eval = bool(evaluation_summary.get("screen_only", False))
 
     if candidate_edge is None:
         if mechanism_name in stats["mechanisms"]:
@@ -1765,6 +2096,8 @@ def run_iteration(args: argparse.Namespace) -> int:
             "candidate_path": str(candidate_path),
             "result_path": str(result_path),
         }
+        if evaluation_summary:
+            entry["evaluation"] = evaluation_summary
         if llm_artifacts:
             entry.update(llm_artifacts)
         append_jsonl(log_path, entry)
@@ -1785,14 +2118,15 @@ def run_iteration(args: argparse.Namespace) -> int:
         print(json.dumps(entry, indent=2))
         return 1
 
+    promotion_candidate = promotion_edge if promotion_edge is not None else candidate_edge
     delta = candidate_edge - champion_edge
 
     promoted = False
-    if candidate_edge > champion_edge:
+    if promotable and promotion_candidate > champion_edge:
         atomic_write_text(state_dir / ".best_strategy.sol", candidate_code)
-        atomic_write_text(state_dir / ".best_edge.txt", f"{candidate_edge:.2f}\n")
+        atomic_write_text(state_dir / ".best_edge.txt", f"{promotion_candidate:.2f}\n")
         promoted = True
-        stats["champion"]["edge"] = candidate_edge
+        stats["champion"]["edge"] = promotion_candidate
         stats["champion"]["name"] = parse_get_name(candidate_code) or f"iter_{iteration}_champion"
         stats["champion"]["promoted_at"] = utc_now_iso()
         stats["global"]["total_champion_updates"] = int(
@@ -1823,13 +2157,20 @@ def run_iteration(args: argparse.Namespace) -> int:
         "valid": True,
         "delta": delta,
         "edge": candidate_edge,
+        "promotion_edge": promotion_candidate,
         "promoted": promoted,
+        "promotable": promotable,
+        "screen_only_eval": screen_only_eval,
         "wildcard": wildcard,
         "champion_edge_before": champion_edge,
         "prompt_path": str(prompt_path),
         "candidate_path": str(candidate_path),
         "result_path": str(result_path),
     }
+    if validation_warnings:
+        entry["validation_warnings"] = validation_warnings
+    if evaluation_summary:
+        entry["evaluation"] = evaluation_summary
     if llm_artifacts:
         entry.update(llm_artifacts)
     append_jsonl(log_path, entry)
@@ -1966,7 +2307,7 @@ def build_parser() -> argparse.ArgumentParser:
         run_parser.add_argument("--rollback-cumulative-loss", type=float, default=DEFAULT_ROLLBACK_CUMULATIVE_LOSS)
         run_parser.add_argument("--rollback-window", type=int, default=DEFAULT_ROLLBACK_WINDOW)
         run_parser.add_argument("--auto-rollback", action="store_true")
-        run_parser.add_argument("--python-exe", default="python3")
+        run_parser.add_argument("--python-exe", default="auto")
         run_parser.add_argument("--screen-sims", type=int, default=100)
         run_parser.add_argument("--dry-run", action="store_true")
         run_parser.add_argument("--candidate-file")
@@ -1976,6 +2317,8 @@ def build_parser() -> argparse.ArgumentParser:
         run_parser.add_argument("--llm-max-output-tokens", type=int, default=DEFAULT_LLM_MAX_OUTPUT_TOKENS)
         run_parser.add_argument("--llm-disable-shell-tool", action="store_true")
         run_parser.add_argument("--policy-evolution-frequency", type=int, default=DEFAULT_POLICY_EVOLUTION_FREQUENCY)
+        run_parser.add_argument("--seed-offsets", default=DEFAULT_SEED_OFFSETS)
+        run_parser.add_argument("--promotion-std-penalty", type=float, default=DEFAULT_PROMOTION_STD_PENALTY)
 
     run_once = sub.add_parser("run-once", help="Run one simplified loop iteration")
     add_common(run_once)
@@ -2009,12 +2352,35 @@ def build_parser() -> argparse.ArgumentParser:
     rollback_parser.add_argument("--archive-only", action="store_true")
     rollback_parser.set_defaults(func=force_rollback)
 
+    bootstrap = sub.add_parser("bootstrap", help="Evaluate candidate backbones and install winner")
+    bootstrap.add_argument("--state-dir", default=".ralph-amm/phase7/state")
+    bootstrap.add_argument(
+        "--definitions",
+        default=".ralph-amm/phase7/config/mechanism_definitions.json",
+    )
+    bootstrap.add_argument(
+        "--install-definitions",
+        default=".ralph-amm/phase7/config/mechanism_definitions_bandshield.json",
+    )
+    bootstrap.add_argument("--from", dest="from_paths", action="append")
+    bootstrap.add_argument("--python-exe", default="auto")
+    bootstrap.add_argument("--screen-sims", type=int, default=200)
+    bootstrap.add_argument("--seed-offsets", default=DEFAULT_BOOTSTRAP_SEED_OFFSETS)
+    bootstrap.add_argument("--promotion-std-penalty", type=float, default=DEFAULT_PROMOTION_STD_PENALTY)
+    bootstrap.add_argument("--exploration-c", type=float, default=DEFAULT_EXPLORATION_C)
+    bootstrap.add_argument("--improvement-threshold", type=float, default=DEFAULT_IMPROVEMENT_THRESHOLD)
+    bootstrap.add_argument("--max-retries-on-invalid", type=int, default=DEFAULT_MAX_RETRIES_ON_INVALID)
+    bootstrap.add_argument("--wildcard-frequency", type=int, default=DEFAULT_WILDCARD_FREQUENCY)
+    bootstrap.set_defaults(func=bootstrap_champion)
+
     return parser
 
 
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
+    if hasattr(args, "python_exe"):
+        args.python_exe = resolve_python_executable(str(args.python_exe))
     return int(args.func(args))
 
 

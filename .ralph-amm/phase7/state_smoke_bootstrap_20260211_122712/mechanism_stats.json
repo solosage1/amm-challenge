@@ -4,7 +4,7 @@
     "name": "BandShield_ghost",
     "edge": 516.54,
     "baseline_edge": 516.54,
-    "promoted_at": "2026-02-11T17:26:35.511321+00:00"
+    "promoted_at": "2026-02-11T17:27:12.464415+00:00"
   },
   "mechanisms": {
     "fair_price_and_arb": {
@@ -17,13 +17,13 @@
       "best_delta": null
     },
     "regime_estimators": {
-      "tries": 0,
+      "tries": 1,
       "successes": 0,
-      "total_uplift": 0.0,
+      "total_uplift": -0.21000000000003638,
       "invalid_count": 0,
       "compile_fail_count": 0,
-      "last_tried": null,
-      "best_delta": null
+      "last_tried": "2026-02-11T17:27:12.468944+00:00",
+      "best_delta": -0.21000000000003638
     },
     "toxicity_and_activity": {
       "tries": 0,
@@ -54,7 +54,7 @@
     }
   },
   "global": {
-    "total_iterations": 0,
+    "total_iterations": 1,
     "total_champion_updates": 0,
     "exploration_constant": 0.5,
     "improvement_threshold": 0.02,

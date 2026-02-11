@@ -1,0 +1,93 @@
+{
+  "success": true,
+  "strategy_path": ".ralph-amm/research/forks/MacroWang001/strategies/yq-v2_523.sol",
+  "timestamp": "2026-02-11T12:22:03.315805",
+  "config": {
+    "screen_sims": 200,
+    "screen_min_edge": 375.0,
+    "predicted_drop": -8.2,
+    "predicted_min_edge": 500.0,
+    "robust_free_spread": 50.0,
+    "robust_penalty_per_point": 0.02
+  },
+  "validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "compilation": {
+    "success": true,
+    "errors": [],
+    "warnings": []
+  },
+  "testing": {
+    "edge_10": 554.8817419523667,
+    "edge_100": 532.5700142951467,
+    "edge_screen": 532.5700142951467,
+    "screen_sims": 200,
+    "predicted_edge_1000": 524.3700142951467,
+    "gate": {
+      "screen_sims": 200,
+      "screen_min_edge": 375.0,
+      "predicted_drop": -8.2,
+      "predicted_min_edge": 500.0,
+      "screen_pass": true,
+      "predicted_pass": true,
+      "run_1000": true
+    },
+    "edge_1000": 524.6271226633063,
+    "metrics_1000": {
+      "submission_edge": 524.6271226633063,
+      "normalizer_edge": 364.41921387609233,
+      "edge_advantage": 160.20790878721397,
+      "submission_retail_volume": 75701.3709687621,
+      "normalizer_retail_volume": 84230.42289095909,
+      "retail_volume_advantage": -8529.051922196988,
+      "submission_arb_volume": 22374.72930662595,
+      "normalizer_arb_volume": 44462.20483368901,
+      "arb_volume_advantage": -22087.475527063056,
+      "submission_avg_bid_fee": 0.003843769957160372,
+      "submission_avg_ask_fee": 0.0037119961745628966,
+      "fee_asymmetry": -0.00013177378259747574,
+      "edge_percentiles": {
+        "p05": 385.80800177603487,
+        "p50": 523.5207774010573,
+        "p95": 674.4946861659892
+      },
+      "wins": 1000,
+      "losses": 0,
+      "draws": 0
+    },
+    "regime_tests": {
+      "high_vol": 519.5287574336896,
+      "low_vol": 521.4720974681309,
+      "high_retail": 709.1483506460304,
+      "low_retail": 362.26917460765156,
+      "spread": 346.87917603837883,
+      "weakest_regime": "low_retail",
+      "weakest_edge": 362.26917460765156,
+      "strongest_edge": 709.1483506460304,
+      "spread_warning": true
+    },
+    "robustness": {
+      "base_edge_1000": 524.6271226633063,
+      "spread": 346.87917603837883,
+      "free_spread": 50.0,
+      "penalty_per_point": 0.02,
+      "penalty": 5.937583520767577,
+      "final_score": 518.6895391425387
+    }
+  },
+  "runtime": {
+    "smoke_10_seconds": 0.7033557891845703,
+    "screen_seconds": 7.567725896835327,
+    "baseline_1000_seconds": 62.940514087677,
+    "regime_tests_seconds": 15.20994782447815,
+    "total_seconds": 87.594557762146
+  },
+  "strategy_name": "yq-v2-MacroWang",
+  "final_edge": 524.6271226633063,
+  "final_score": 518.6895391425387,
+  "git_sha": "f3cce4d",
+  "git_dirty": true
+}

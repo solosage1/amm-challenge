@@ -1,147 +1,165 @@
 {
   "schema_version": "1.0",
   "champion_file": ".best_strategy.sol",
-  "champion_edge": 509.23,
+  "champion_edge": 0.0,
   "mechanisms": {
-    "fair_price_estimation": {
-      "current_implementation": "Per-timestamp gamma-anchored fair-price candidate with jump clamp and 80/20 EWMA update.",
-      "code_location": "afterSwap lines 49-70",
+    "fair_price_and_arb": {
+      "current_implementation": "First-in-step fair estimation from fee-adjusted implied price, with arb-aware and retail-aware update gating.",
+      "code_location": "afterSwap fair/arb inference region",
       "allowed_overlap_with": [
-        "flow_memory"
+        "regime_estimators",
+        "toxicity_and_activity"
       ],
       "anchors": [
         {
-          "start": "if (trade.timestamp != lastTs) {",
-          "end": "slots[3] = fair;"
+          "start": "re:uint256\\s+feeUsed\\s*=\\s*trade\\.isBuy\\s*\\?\\s*prevBidFee\\s*:\\s*prevAskFee\\s*;",
+          "end": "re:uint256\\s+tradeRatio\\s*=\\s*trade\\.reserveY\\s*>\\s*0\\s*\\?\\s*wdiv\\(trade\\.amountY,\\s*trade\\.reserveY\\)\\s*:\\s*0\\s*;"
         }
       ],
       "parameters": {
-        "EWMA_OLD_WEIGHT_PCT": 80,
-        "EWMA_NEW_WEIGHT_PCT": 20,
-        "MAX_JUMP_BPS": 400
+        "PHAT_ALPHA_ARB_OR_MAIN": "strategy-specific",
+        "PHAT_ALPHA_RETAIL": "strategy-specific",
+        "PHAT_SHOCK_GATE_OR_ADAPTIVE": "strategy-specific",
+        "ARB_MAX_RATIO_OR_ADAPTIVE_CAP": "strategy-specific"
       },
       "modification_directions": [
-        "Use regime-conditional EWMA weights",
-        "Add confidence-weighted anchor blending",
-        "Use asymmetric jump clamps by direction",
-        "Add volatility-aware adaptation speed"
+        "Tune arb-vs-retail update aggression without destabilizing pHat",
+        "Use sigma-adaptive shock gate with floor/ceiling guardrails",
+        "Adjust arb classification width using ratio and sigma context",
+        "Improve implied-price robustness under extreme feeUsed values"
       ]
     },
-    "flow_memory": {
-      "current_implementation": "Flow-memory hook points are available at slot metadata/comments, initialization setup, tight-band read path, and end-of-swap state update path.",
-      "code_location": "contract lines 12-16, afterInitialize lines 24-31, afterSwap lines 81-83, 114-117",
+    "regime_estimators": {
+      "current_implementation": "Step-boundary decay and estimator updates for sigma/lambda/size/activity/step counters.",
+      "code_location": "afterSwap step boundary and estimator maintenance",
       "allowed_overlap_with": [
-        "fair_price_estimation",
-        "tight_band_pricing"
+        "fair_price_and_arb",
+        "toxicity_and_activity"
       ],
       "anchors": [
         {
-          "start": "// slots:",
-          "end": "// 3 fairPrice (WAD, Y per X)"
+          "start": "re:bool\\s+isNewStep\\s*=\\s*trade\\.timestamp\\s*>\\s*lastTs\\s*;",
+          "end": "re:stepTradeCount\\s*=\\s*0\\s*;"
         },
         {
-          "start": "slots[0] = type(uint256).max;",
-          "end": "slots[2] = askFee;"
-        },
-        {
-          "start": "uint256 mis = wdiv(absDiff(spot, fair), fair);",
-          "end": "uint256 tightBand = bpsToWad(25);"
-        },
-        {
-          "start": "bidFee = clampFee(bidFee);",
-          "end": "slots[2] = askFee;"
+          "start": "re:stepTradeCount\\s*=\\s*stepTradeCount\\s*\\+\\s*1\\s*;",
+          "end": "re:if\\s*\\(stepTradeCount\\s*>\\s*STEP_COUNT_CAP\\)"
         }
       ],
       "parameters": {
-        "FLOW_SLOT_INDEX": 4,
-        "BASE_TIGHT_BAND_BPS": 25
+        "ELAPSED_CAP": "strategy-specific",
+        "DIR_DECAY": "strategy-specific",
+        "ACT_DECAY": "strategy-specific",
+        "SIZE_DECAY": "strategy-specific",
+        "TOX_DECAY": "strategy-specific",
+        "SIGMA_DECAY": "strategy-specific",
+        "LAMBDA_DECAY": "strategy-specific"
       },
       "modification_directions": [
-        "Introduce persistent decaying flow memory in slots",
-        "Initialize/reset flow state in afterInitialize",
-        "Condition tight-band by flow-memory state",
-        "Update flow state each swap with bounded decay"
+        "Tune decay constants for faster regime reaction without noise amplification",
+        "Improve lambda estimation under sparse or bursty step patterns",
+        "Refine stepTradeCount handling for boundary stability",
+        "Adjust blended estimator weights to reduce oscillation"
       ]
     },
-    "arbitrage_response": {
-      "current_implementation": "Protective side sets required fee from gamma requirement plus buffer when spot deviates from fair.",
-      "code_location": "afterSwap lines 91-97, 103-107",
-      "allowed_overlap_with": [],
+    "toxicity_and_activity": {
+      "current_implementation": "Signal extraction for toxicity/activity and symmetric fee widening from tox/activity/flow components.",
+      "code_location": "afterSwap toxicity/activity updates and mid-fee composition",
+      "allowed_overlap_with": [
+        "fair_price_and_arb",
+        "regime_estimators",
+        "directional_skew_and_stale_protection"
+      ],
       "anchors": [
         {
-          "start": "uint256 gammaReq = wdiv(fair, spot);",
-          "end": "bidFee = clampFee(req + buffer);"
+          "start": "re:if\\s*\\(tradeRatio\\s*>\\s*SIGNAL_THRESHOLD\\)\\s*\\{",
+          "end": "re:if\\s*\\(sizeHat\\s*>\\s*WAD\\)\\s*sizeHat\\s*=\\s*WAD\\s*;"
         },
         {
-          "start": "uint256 gammaReq = wdiv(spot, fair);",
-          "end": "askFee = clampFee(req + buffer);"
+          "start": "re:uint256\\s+tox\\s*=\\s*pHat\\s*>\\s*0\\s*\\?\\s*wdiv\\(absDiff\\(spot,\\s*pHat\\),\\s*pHat\\)\\s*:\\s*0\\s*;",
+          "end": "re:uint256\\s+fMid\\s*=\\s*fBase\\s*\\+\\s*wmul\\(TOX_COEF,\\s*toxSignal\\)"
         }
       ],
       "parameters": {
-        "BUFFER_BPS": 4
+        "TOX_COEF": "strategy-specific",
+        "TOX_QUAD_COEF": "strategy-specific",
+        "TOX_CUBIC_COEF": "optional",
+        "ACT_COEF": "strategy-specific",
+        "FLOW_SIZE_COEF": "strategy-specific"
       },
       "modification_directions": [
-        "Use asymmetric protective buffers by side",
-        "Scale protection with mispricing magnitude",
-        "Add smoother recovery after large deviations",
-        "Use side-specific clamp behavior"
+        "Tune convex toxicity response (quadratic/cubic) to balance protection and routing share",
+        "Improve activity widening while limiting over-penalization in calm periods",
+        "Add or tune sigma-tox interaction terms when present",
+        "Constrain tox caps/decays to reduce stale overreaction"
       ]
     },
-    "tight_band_pricing": {
-      "current_implementation": "Within tight band, both bid and ask are pinned to 30 bps to avoid unnecessary undercutting.",
-      "code_location": "afterSwap lines 84-88",
+    "directional_skew_and_stale_protection": {
+      "current_implementation": "Directional skew from dirState and stale-sign overlays to defend vulnerable side while attracting safe flow.",
+      "code_location": "afterSwap skew assignment and stale-direction protection blocks",
       "allowed_overlap_with": [
-        "outer_regime_pricing"
+        "toxicity_and_activity",
+        "tail_compression"
       ],
       "anchors": [
         {
-          "start": "re:if\\s*\\(\\s*(?:mis|wdiv\\(absDiff\\(spot,\\s*fair\\),\\s*fair\\))\\s*<=\\s*(?:tightBand|_tightBandFromFlowMemory\\(\\))\\s*\\)\\s*\\{",
-          "end": "askFee = bpsToWad(30);"
+          "start": "re:uint256\\s+dirDev\\s*;",
+          "end": "re:uint256\\s+skew\\s*=\\s*wmul\\(DIR_COEF,\\s*dirDev\\)"
         },
         {
-          "start": "bidFee = bpsToWad(30);",
-          "end": "askFee = bpsToWad(30);"
+          "start": "re://\\s*(?:Additional\\s+)?Directional protection using stale-price sign",
+          "end": "re:bidFee\\s*=\\s*bidFee\\s*>\\s*(?:staleShift|attractShift)\\s*\\?\\s*bidFee\\s*-\\s*(?:staleShift|attractShift)\\s*:\\s*0\\s*;"
+        },
+        {
+          "start": "re://\\s*Trade-aligned toxicity boost",
+          "end": "re:askFee\\s*=\\s*askFee\\s*\\+\\s*tradeBoost\\s*;"
         }
       ],
       "parameters": {
-        "MATCHED_FEE_BPS": 30
+        "DIR_COEF": "strategy-specific",
+        "DIR_TOX_COEF": "strategy-specific",
+        "STALE_DIR_COEF": "strategy-specific",
+        "STALE_ATTRACT_FRAC": "optional",
+        "TRADE_TOX_BOOST": "optional"
       },
       "modification_directions": [
-        "Use adaptive tight-band width",
-        "Introduce mild directional skew near fair",
-        "Condition near-fair fee on volatility estimate",
-        "Use soft transition instead of hard regime boundary"
+        "Tune directional skew magnitude and tox coupling",
+        "Calibrate stale-sign protection asymmetry for safer vulnerable-side defense",
+        "Add or tune trade-aligned boost with strict bounded impact",
+        "Reduce pathological over-skew under noisy directional bursts"
       ]
     },
-    "outer_regime_pricing": {
-      "current_implementation": "Competitive side uses gamma-squared matching against normalizer weakness in the out-of-band regime.",
-      "code_location": "afterSwap lines 89-90, 99-101, 108-110",
+    "tail_compression": {
+      "current_implementation": "Tail compression to prevent routing starvation at extreme fees, with optional asymmetric slopes.",
+      "code_location": "afterSwap fee compression calls and tail helper functions",
       "allowed_overlap_with": [
-        "tight_band_pricing"
+        "directional_skew_and_stale_protection"
       ],
       "anchors": [
         {
-          "start": "uint256 gammaBase = WAD - bpsToWad(30);",
-          "end": "uint256 buffer = bpsToWad(4);"
+          "start": "re:bidFee\\s*=\\s*clampFee\\(_compressTail\\(",
+          "end": "re:askFee\\s*=\\s*clampFee\\(_compressTail\\("
         },
         {
-          "start": "uint256 gammaMatch = wdiv(wmul(spot, gammaBaseSq), fair);",
-          "end": "askFee = gammaMatch >= WAD ? 0 : (WAD - gammaMatch);"
+          "start": "re://\\s*Asymmetric tail compression",
+          "end": "re:bidFee\\s*=\\s*clampFee\\(_compressTailWithSlope\\(bidFee,\\s*TAIL_SLOPE_ATTRACT\\)\\)\\s*;"
         },
         {
-          "start": "uint256 gammaMatch = wdiv(wmul(fair, gammaBaseSq), spot);",
-          "end": "bidFee = gammaMatch >= WAD ? 0 : (WAD - gammaMatch);"
+          "start": "re:function\\s+_compressTail(?:WithSlope)?\\(",
+          "end": "re:return\\s+TAIL_KNEE\\s*\\+\\s*wmul\\(fee\\s*-\\s*TAIL_KNEE,\\s*(?:TAIL_SLOPE|slope)\\)\\s*;"
         }
       ],
       "parameters": {
-        "BASE_MATCH_FEE_BPS": 30,
-        "COMPETITOR_MODEL": "gamma_squared"
+        "TAIL_KNEE": "strategy-specific",
+        "TAIL_SLOPE": "strategy-specific",
+        "TAIL_SLOPE_PROTECT": "optional",
+        "TAIL_SLOPE_ATTRACT": "optional"
       },
       "modification_directions": [
-        "Try gamma-power variants beyond square",
-        "Use mispricing-proportional matching aggressiveness",
-        "Blend competitor models by regime confidence",
-        "Add side-specific competitive offsets"
+        "Tune knee placement to protect edge while preserving routing share",
+        "Use asymmetric protect/attract slopes when beneficial",
+        "Stabilize compression transitions to avoid abrupt behavior",
+        "Constrain maximum effective fees in extreme tox regimes"
       ]
     }
   }

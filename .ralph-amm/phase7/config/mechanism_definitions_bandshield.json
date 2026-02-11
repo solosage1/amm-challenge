@@ -107,7 +107,7 @@
           "end": "re:uint256\\s+skew\\s*=\\s*wmul\\(DIR_COEF,\\s*dirDev\\)"
         },
         {
-          "start": "re://\\s*(?:Additional\\s+)?Directional protection using stale-price sign",
+          "start": "re://\\s*(?:Additional\\s+)?[Dd]irectional protection using stale-price sign",
           "end": "re:bidFee\\s*=\\s*bidFee\\s*>\\s*(?:staleShift|attractShift)\\s*\\?\\s*bidFee\\s*-\\s*(?:staleShift|attractShift)\\s*:\\s*0\\s*;"
         },
         {
