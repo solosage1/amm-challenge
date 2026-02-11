@@ -1703,6 +1703,7 @@ done
 require_file "$VENV_PY" "create/activate venv_fresh first"
 require_file "$AMM_MATCH" "ensure venv_fresh has project installed"
 require_cmd codex
+require_file "scripts/run-parallel-sims.sh" "missing bounded parallel simulation helper"
 if [[ "${AUTO_OPP_ENGINE_ENABLED}" == "1" ]]; then
     require_file "scripts/amm-phase7-opportunity-engine.py" "missing opportunity engine script"
 fi

@@ -24,6 +24,10 @@ from typing import Any, Dict, List, Tuple
 
 EDGE_RE = re.compile(r"([A-Za-z0-9_]+)\s+Edge:\s*([+-]?[0-9]+(?:\.[0-9]+)?)")
 SIMS_RE = re.compile(r"--simulations?\s+([0-9]+)")
+PAR_SIM_RESULT_RE = re.compile(
+    r"^PAR_SIM_RESULT\t([^\t]+)\t([^\t]+)\t([0-9]+)\t([0-9]+)$",
+    re.MULTILINE,
+)
 
 
 def utc_now_iso() -> str:
@@ -118,29 +122,61 @@ def ensure_iteration_record(
     return iterations[key]
 
 
-def extract_edge_item(item: Dict[str, Any], min_sims: int) -> Dict[str, Any] | None:
+def extract_edge_items(item: Dict[str, Any], min_sims: int) -> List[Dict[str, Any]]:
     if item.get("type") != "command_execution" or item.get("status") != "completed":
-        return None
+        return []
     command = str(item.get("command") or "")
-    if "amm-match run" not in command:
-        return None
-    sims_match = SIMS_RE.search(command)
-    sims = int(sims_match.group(1)) if sims_match else 10
-    if sims < min_sims:
-        return None
     output = str(item.get("aggregated_output") or "")
-    matches = EDGE_RE.findall(output)
-    if not matches:
-        return None
-    strategy, edge_raw = matches[-1]
-    edge = float(edge_raw)
-    return {
-        "timestamp": utc_now_iso(),
-        "strategy": strategy,
-        "edge": edge,
-        "simulations": sims,
-        "command": command[:240],
-    }
+    results: List[Dict[str, Any]] = []
+
+    # Primary path: direct amm-match invocations.
+    if "amm-match run" in command:
+        sims_match = SIMS_RE.search(command)
+        sims = int(sims_match.group(1)) if sims_match else 10
+        if sims < min_sims:
+            return []
+        matches = EDGE_RE.findall(output)
+        if not matches:
+            return []
+        strategy, edge_raw = matches[-1]
+        edge = float(edge_raw)
+        results.append(
+            {
+                "timestamp": utc_now_iso(),
+                "strategy": strategy,
+                "edge": edge,
+                "simulations": sims,
+                "command": command[:240],
+            }
+        )
+        return results
+
+    # Helper path: run-parallel-sims emits machine-readable PAR_SIM_RESULT lines.
+    if "run-parallel-sims.sh" in command:
+        for strategy, edge_raw, sims_raw, status_raw in PAR_SIM_RESULT_RE.findall(output):
+            try:
+                sims = int(sims_raw)
+                status = int(status_raw)
+            except Exception:
+                continue
+            if sims < min_sims or status != 0:
+                continue
+            try:
+                edge = float(edge_raw)
+            except Exception:
+                continue
+            results.append(
+                {
+                    "timestamp": utc_now_iso(),
+                    "strategy": strategy,
+                    "edge": edge,
+                    "simulations": sims,
+                    "command": command[:240],
+                }
+            )
+        return results
+
+    return []
 
 
 def update_batch_fields(it_record: Dict[str, Any], champion_baseline: float, batch_fail_delta: float) -> None:
@@ -260,11 +296,11 @@ def main() -> int:
             item_id = str(item.get("id") or "")
             if not item_id or item_id in seen_ids:
                 continue
-            edge_item = extract_edge_item(item, args.min_sims)
-            if edge_item is None:
+            edge_items = extract_edge_items(item, args.min_sims)
+            if not edge_items:
                 continue
             seen_ids.add(item_id)
-            observed.append(edge_item)
+            observed.extend(edge_items)
             changed = True
 
         if changed:

@@ -36,6 +36,11 @@ Generate a Solidity AMM fee strategy to maximize Edge against a 30bps fixed-fee 
 amm-match run your_strategy.sol --simulations 1000
 ```
 
+For multi-variant sweeps, use the bounded worker helper (avoid ad-hoc `xargs`/job-control):
+```bash
+bash scripts/run-parallel-sims.sh variant_a.sol variant_b.sol variant_c.sol --workers 4 --sims 1000
+```
+
 ## Contract Template
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -331,7 +336,7 @@ def format_auto_plan_section(plan: dict) -> str:
         lines.append(f"- Variants: {run_budget.get('variants', 'N/A')}")
         lines.append(f"- Parallel Workers: {run_budget.get('parallel_workers', 'N/A')}")
         lines.append(f"- Authoritative Sims: {run_budget.get('authoritative_sims', 1000)}")
-        lines.append("- Execute variants in parallel where possible.")
+        lines.append("- Execute variants with `bash scripts/run-parallel-sims.sh ... --workers <N> --sims 1000`.")
         lines.append("- Early-kill weak variants per criteria below.")
 
     promotion = search_plan.get("promotion_criteria") or {}
@@ -353,6 +358,7 @@ def format_auto_plan_section(plan: dict) -> str:
     lines.append("- Produce a concise batch plan and execute it immediately.")
     lines.append("- Prefer action over verbose planning.")
     lines.append("- Keep changes explainable and measurable against 1000-sim edge.")
+    lines.append("- Use `scripts/run-parallel-sims.sh` for parallel sweeps to avoid shell orchestration errors.")
     return "\n".join(lines)
 
 
