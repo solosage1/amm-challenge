@@ -19,359 +19,62 @@ sys.path.insert(0, str(Path(__file__).parent))
 # PROMPT TEMPLATE
 # ============================================================================
 
-PROMPT_TEMPLATE = """# AMM Strategy Generation Task
+PROMPT_TEMPLATE = """# AMM Strategy Generation
 
-You are an expert Solidity developer creating high-performance AMM fee strategies for a competitive simulation environment.
+Generate a Solidity AMM fee strategy to maximize Edge against a 30bps fixed-fee competitor.
 
-## Objective
+**Target**: Edge > {current_target} | **Best**: {best_edge} | **Iter**: {iteration} | **Time**: {hours}h {minutes}m
 
-Generate a novel AMM strategy that maximizes **Edge** (profitability metric) against a 30 bps fixed-fee normalizer.
-
-**Target**: Edge > {current_target}
-**Current Best**: {best_edge}
-**Iteration**: {iteration}
-**Time Remaining**: {hours}h {minutes}m
-
----
-
-## Environment Context
-
-### Simulation Mechanics
-
-- **AMM Type**: Constant product (x*y=k), fee-on-input
-- **Competition**: Head-to-head vs 30 bps normalizer
-- **Duration**: 10,000 steps per simulation
-- **Price Process**: GBM with varying volatility (σ ~ U[0.088%, 0.101%])
-- **Retail Flow**: Poisson arrival (λ ~ U[0.6, 1.0]), lognormal sizes
-- **Arbitrage**: Closed-form optimal sizing, executes before retail each step
-
-### Edge Definition
-
-```
-Edge = Σ (amountX × fairPrice - amountY)  [when AMM sells X]
-     + Σ (amountY - amountX × fairPrice)  [when AMM buys X]
-```
-
-- Retail trades → Positive edge (you profit from spread)
-- Arbitrage trades → Negative edge (you lose to informed flow)
-
-**Goal**: Maximize retail edge while minimizing arb losses.
-
----
-
-## Critical Simulation Mechanics (EXPLOIT THESE)
-
-These are the exact formulas used by the simulation engine. Understanding them is key to beating 527 edge.
-
-### 1. Router Split Formula
-
-The router splits retail orders to equalize marginal prices across AMMs. For a trader buying X (spending Y):
-
-```
-γ_i = 1 - fee_i           (gamma = 1 minus fee)
-A_i = sqrt(x_i * γ_i * y_i)   (liquidity coefficient)
-r = A_1 / A_2              (split ratio)
-
-Optimal split: Δy_1 = (r*(y_2 + γ_2*Y) - y_1) / (γ_1 + r*γ_2)
-```
-
-**Key insight**: Lower fees → higher γ → higher A → you get MORE of the order (but less per unit).
-The relationship is nonlinear (square root), so small fee changes can shift large volume fractions.
-
-### 2. Fair Price Inversion from Arbitrage
-
-After an arbitrage trade, you can EXACTLY infer the fair price that motivated it:
-
-```
-When AMM sells X (buy arb):
-  p_fair = k / (γ * x_post²)    where k = x_pre * y_pre, γ = 1 - ask_fee
-
-When AMM buys X (sell arb):
-  p_fair = k * γ / x_post²      where γ = 1 - bid_fee
-```
-
-**Key insight**: Post-arb, you KNOW fair price exactly (not estimated). Use this for protective fees.
-
-**Failure modes**:
-- Arb capped at 99% of reserves → biased estimate (check if amountX ≈ 0.99 * pre_reserveX)
-- Retail trades first in a step (no arb when vol is low) → no signal
-
-### 3. Fee Update Timing
-
-```
-Within each step:
-  1. Fair price moves (GBM)
-  2. Arbitrageur executes using CURRENT fees → afterSwap called → fees UPDATE
-  3. Retail orders execute using NEW fees → afterSwap called → fees UPDATE
-  4. Next step begins with fees from last trade
-```
-
-**Key insight**: After arb, you can set fees for retail in the SAME step. Two-phase quoting:
-- Phase 1 (after arb): Set competitive fees to attract retail
-- Phase 2 (after retail): Set protective fees for next step's arb
-
-### 4. Multi-Trade Sequencing
-
-Multiple trades can occur per step (arb + 0-N retail orders).
-
-**Detection via timestamp**:
+## Contract Template
 ```solidity
-if (trade.timestamp != lastTimestamp) {{
-    // First trade of new step (usually arb)
-    lastTimestamp = trade.timestamp;
-}} else {{
-    // Same-step follow-on trade (usually retail)
-}}
-```
-
-**Key insight**: First trade often sets fair price anchor; subsequent trades can use it.
-
-### 5. The 99% Reserve Cap
-
-Arb trades are capped: `amount = min(optimal, reserve * 0.99)`
-
-When the cap is hit, fair price inversion is BIASED. Detect via:
-- `amountX > 0.95 * (reserveX + amountX)` for buy arb
-- Spot still far from inferred fair after trade
-
----
-
-## Hard Constraints (CRITICAL - Violations = Immediate Failure)
-
-### 1. Storage Constraint
-```solidity
-// ✓ VALID: Use slots[0..31] for all state
-slots[0] = bpsToWad(30);
-slots[1] = trade.timestamp;
-
-// ✗ INVALID: No state variables outside slots
-uint256 myFee;                    // BLOCKED
-mapping(uint => uint) feeMap;     // BLOCKED
-```
-
-### 2. Security Constraints
-```solidity
-// ✗ BLOCKED PATTERNS (will cause validation failure):
-.call()                    // External calls
-.delegatecall()           // Proxy calls
-assembly {{ ... }}          // Inline assembly
-new Contract()            // Contract creation
-selfdestruct()           // Dangerous ops
-.transfer() / .send()    // Transfer ops
-```
-
-### 3. Contract Structure
-```solidity
-// ✓ REQUIRED STRUCTURE:
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
-
 import {{AMMStrategyBase}} from "./AMMStrategyBase.sol";
 import {{IAMMStrategy, TradeInfo}} from "./IAMMStrategy.sol";
 
 contract Strategy is AMMStrategyBase {{
-    function afterInitialize(uint256 initialX, uint256 initialY)
-        external override returns (uint256 bidFee, uint256 askFee) {{
-        // Initialize state in slots[0..31]
-        // Return opening fees (WAD format)
+    function afterInitialize(uint256 initialX, uint256 initialY) external override returns (uint256 bidFee, uint256 askFee) {{
+        // Init slots[0..31], return opening fees in WAD
     }}
-
-    function afterSwap(TradeInfo calldata trade)
-        external override returns (uint256 bidFee, uint256 askFee) {{
-        // Read/update state in slots[0..31]
-        // Return updated fees (WAD format)
+    function afterSwap(TradeInfo calldata trade) external override returns (uint256 bidFee, uint256 askFee) {{
+        // Update slots, return fees in WAD
     }}
-
-    function getName() external pure override returns (string memory) {{
-        return "YourStrategyName";
-    }}
+    function getName() external pure override returns (string memory) {{ return "YourName"; }}
 }}
 ```
 
-### 4. Available Helpers (from AMMStrategyBase)
+## TradeInfo & Helpers
 ```solidity
-WAD = 1e18                          // 100% in WAD
-BPS = 1e14                          // 1 basis point in WAD
-MAX_FEE = 1000 * BPS                // 10% max fee
-
-clampFee(uint256)                   // Clamp to [0, MAX_FEE]
-bpsToWad(uint256)                   // Convert bps to WAD
-wmul(uint256, uint256)              // Multiply two WAD values
-wdiv(uint256, uint256)              // Divide two WAD values
-sqrt(uint256)                       // Square root (WAD)
+struct TradeInfo {{ bool isBuy; uint256 amountX; uint256 amountY; uint256 timestamp; uint256 reserveX; uint256 reserveY; }}
+// Helpers: WAD=1e18, BPS=1e14, MAX_FEE=1000*BPS, clampFee(), bpsToWad(), wmul(), wdiv(), sqrt()
 ```
 
-### 5. TradeInfo Fields
-```solidity
-struct TradeInfo {{
-    bool isBuy;          // true if AMM bought X (trader sold X to AMM)
-    uint256 amountX;     // X tokens traded (WAD)
-    uint256 amountY;     // Y tokens traded (WAD)
-    uint256 timestamp;   // Step number
-    uint256 reserveX;    // Post-trade X reserve (WAD)
-    uint256 reserveY;    // Post-trade Y reserve (WAD)
-}}
-```
+## Constraints
+- Storage: ONLY slots[0..31] (no state variables)
+- Blocked: .call(), delegatecall(), assembly, new, selfdestruct, transfer, send
 
----
-
-## Current State
+## Key Mechanics
+- Constant product AMM (x*y=k), fee-on-input
+- Arb executes before retail each step; infer fair price post-arb: p = k/(gamma*x^2)
+- Lower fees attract more retail volume (nonlinear split)
 
 {recent_champions}
 
----
-
-## Hypothesis Gaps to Explore
-
-**Priority Targets** (least explored → most potential):
-
-{prioritized_hypotheses}
-
-**Recommended Focus for This Iteration**:
-{primary_gap_target}
-
----
-
-## Known Ceilings (What's Been Tried)
-
-Treat “ceilings” as provisional. Use the **AI-Generated Insights** section (if present) as the source of truth for current best-known results.
-
-Historically, simple “infer fair then protect mispriced side / undercut other side” strategies tended to plateau well below target. Recent variants that use **exact arb inversion** + **dual-regime quoting** can reach ~500 edge (1000 sims) but still miss 527 — suggesting the remaining gap is about **classification + timing + regime selection**, not just fee-level tuning.
-
-Your job: propose a mechanism that can plausibly move the current ceiling meaningfully upward without collapsing routing/volume.
-
----
-
-## Generation Workflow (REQUIRED STRUCTURE)
-
-Follow this exact 5-step workflow in your response:
-
-### STEP 1: DRAFT_STRATEGY_IDEA
-
-Briefly describe your strategy concept:
-- **Hypothesis Target**: Which gaps does this address?
-- **Core Mechanism**: What's the novel insight?
-- **Edge Balance**: How do you balance retail capture vs arb protection?
-- **State Usage**: Which slots will you use and why?
-
-**Output Format**:
+## Output Format
+Provide your strategy with these sections:
 ```
----DRAFT_STRATEGY_IDEA---
-<Your strategy description here>
----END_DRAFT_STRATEGY_IDEA---
+---STRATEGY_IDEA---
+Brief description of approach
+---END_STRATEGY_IDEA---
+
+---IMPLEMENTATION---
+<complete Solidity code>
+---END_IMPLEMENTATION---
+
+---METADATA---
+{{"name": "StrategyName", "key_innovation": "one line"}}
+---END_METADATA---
 ```
-
-### STEP 1.5: ASSUMPTION_AUDIT (RED TEAM YOUR IDEA)
-
-Before implementation, stress-test your assumptions:
-
-- **Information Limits**: What can you NOT observe? (fair price is hidden, other AMM state unknown, future prices unpredictable)
-- **Inference Validity**: If inferring fair price from arb trades, when does this fail?
-  - Retail trades first (no arb opportunity when vol is low)
-  - Fair price drifts between trades
-  - EWMA smoothing introduces lag
-- **Prior Art Analysis**: Existing strategies already use fair inference (e.g., `arb_infer_*`, `arb_oracle_*`). What ceiling do they hit in this repo’s latest results, and why?
-- **Theoretical Bound**: What's the MAXIMUM edge improvement your mechanism can provide? Show rough math.
-- **Failure Modes**: Under what market conditions does your strategy perform WORSE than 45 bps fixed fee?
-
-**Output Format**:
-```
----ASSUMPTION_AUDIT---
-Key assumptions and failure conditions:
-1. <assumption> → Fails when: <specific condition>
-2. <assumption> → Fails when: <specific condition>
-
-Why existing fair-price strategies plateau below target:
-<your analysis of what limits them>
-
-Theoretical edge bound for this approach:
-<rough calculation or reasoning>
-
-Worst-case scenarios where this underperforms:
-- <scenario>: Expected impact
----END_ASSUMPTION_AUDIT---
-```
-
-### STEP 2: DESIGN_REVIEW
-
-Critically review your draft:
-- **Constraint Violations**: Any security or storage issues?
-- **Edge Cases**: How do you handle zero reserves, max fees, etc.?
-- **Numerical Stability**: Any division by zero or overflow risks?
-- **Gas Efficiency**: Any expensive operations in hot path?
-- **Optimizations**: What can be improved?
-
-**Output Format**:
-```
----DESIGN_REVIEW---
-<Critical analysis>
-
-Revisions to apply:
-- <Concrete change 1>
-- <Concrete change 2>
-- <Concrete change 3>
----END_DESIGN_REVIEW---
-```
-
-### STEP 3: REVISED_IMPLEMENTATION
-
-Implement the strategy incorporating ALL review feedback.
-
-**Output Format**:
-```
----REVISED_IMPLEMENTATION---
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
-
-import {{AMMStrategyBase}} from "./AMMStrategyBase.sol";
-import {{IAMMStrategy, TradeInfo}} from "./IAMMStrategy.sol";
-
-contract Strategy is AMMStrategyBase {{
-    // Your implementation here
-}}
-```
----END_REVISED_IMPLEMENTATION---
-```
-
-### STEP 4: STRATEGY_METADATA
-
-Provide structured metadata:
-
-**Output Format**:
-```
----STRATEGY_METADATA---
-{{
-  "name": "DescriptiveStrategyName",
-  "hypothesis_ids": ["H-001", "H-003"],
-  "slots_used": 5,
-  "key_innovation": "One-sentence description of novel mechanism",
-  "expected_edge_range": [380, 420]
-}}
----END_STRATEGY_METADATA---
-```
-
----
-
-## Your Task
-
-Generate a novel AMM strategy following the 4-step workflow above.
-
-**Focus Area**: {primary_gap_target}
-
-**Constraints Reminder**:
-- Use ONLY slots[0..31] for state
-- NO external calls, assembly, or dangerous ops
-- Return fees in WAD format (e.g., 30 * BPS = 30 bps)
-- Keep afterSwap gas-efficient (<100k target)
-
-**Creativity Encouraged**:
-- Combine multiple hypotheses if beneficial
-- Introduce novel state tracking mechanisms
-- Experiment with asymmetric bid/ask logic
-- Consider timestamp-based patterns
-
-Begin your response with `---DRAFT_STRATEGY_IDEA---` and follow the workflow structure exactly.
 """
 
 # ============================================================================
@@ -824,9 +527,8 @@ def build_prompt(
     target_edge: float,
     max_runtime_seconds: int,
 ):
-    """Build complete prompt for Codex"""
+    """Build minimal prompt for Codex (under 3KB to avoid API stalls)"""
     state = load_state(state_dir)
-    gaps = select_hypothesis_gaps(state)
 
     # Calculate time remaining
     elapsed = int(time.time()) - state['start_time']
@@ -834,90 +536,28 @@ def build_prompt(
     hours = remaining // 3600
     minutes = (remaining % 3600) // 60
 
-    # Load AI-generated insights (from forensics, synthesis, auditor)
-    insights = load_insights(state_dir)
-    insights_section = format_insights_section(insights)
+    # Format recent results (keep brief)
+    recent_str = format_recent_results(state)
+    # Truncate if too long
+    if len(recent_str) > 500:
+        recent_str = recent_str[:500] + "\n..."
 
-    # Build prompt from template
+    # Build minimal prompt from template
     prompt = PROMPT_TEMPLATE.format(
         current_target=target_edge,
         best_edge=state['best_edge'],
         iteration=iteration,
         hours=hours,
         minutes=minutes,
-        recent_champions=format_recent_results(state),
-        prioritized_hypotheses=format_hypothesis_gaps(gaps[:5]),
-        primary_gap_target=gaps[0][1] if gaps else "Explore novel fee strategies"
+        recent_champions=recent_str,
     )
-
-    # Inject insights section after "Hypothesis Gaps" section
-    if insights_section:
-        # Find the "Known Ceilings" section and insert before it
-        known_ceilings_marker = "## Known Ceilings"
-        if known_ceilings_marker in prompt:
-            prompt = prompt.replace(
-                known_ceilings_marker,
-                insights_section + "\n" + known_ceilings_marker
-            )
-        else:
-            # Fallback: append before the workflow section
-            workflow_marker = "## Generation Workflow"
-            if workflow_marker in prompt:
-                prompt = prompt.replace(
-                    workflow_marker,
-                    insights_section + "\n" + workflow_marker
-                )
-
-    # Inject knowledge context section (from session harvester)
-    knowledge_section = format_knowledge_section(state.get('knowledge_context', {}))
-    if knowledge_section:
-        # Insert after "Known Ceilings" if present, otherwise before "Generation Workflow"
-        known_ceilings_marker = "## Known Ceilings"
-        workflow_marker = "## Generation Workflow"
-
-        if known_ceilings_marker in prompt:
-            # Find where Known Ceilings section ends (next ## header or workflow)
-            idx = prompt.find(known_ceilings_marker)
-            rest = prompt[idx + len(known_ceilings_marker):]
-            next_section = rest.find("\n## ")
-            if next_section != -1:
-                insert_point = idx + len(known_ceilings_marker) + next_section
-                prompt = prompt[:insert_point] + "\n\n" + knowledge_section + prompt[insert_point:]
-            elif workflow_marker in prompt:
-                prompt = prompt.replace(workflow_marker, knowledge_section + "\n" + workflow_marker)
-        elif workflow_marker in prompt:
-            prompt = prompt.replace(workflow_marker, knowledge_section + "\n" + workflow_marker)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(prompt)
-    print(f"Prompt built: {output_path}")
-    if insights_section:
-        print(f"  (includes AI-generated insights from forensics/synthesis/audit)")
-    if knowledge_section:
-        try:
-            tested = state.get("knowledge_context", {}).get("all_tested_strategies", [])
-            if isinstance(tested, list) and tested:
-                sims_vals = []
-                for row in tested:
-                    try:
-                        sims_vals.append(int(row.get("sims", 0)))
-                    except (TypeError, ValueError):
-                        sims_vals.append(0)
-                max_sims = max(sims_vals) if sims_vals else 0
-                best_edge = 0.0
-                for row in tested:
-                    try:
-                        sims = int(row.get("sims", 0))
-                        edge = float(row.get("edge", 0))
-                    except (TypeError, ValueError):
-                        continue
-                    if sims == max_sims and edge > best_edge:
-                        best_edge = edge
-                print(f"  (includes harvested knowledge: best {best_edge:.2f} @ {max_sims} sims)")
-            else:
-                print("  (includes harvested knowledge)")
-        except Exception:
-            print("  (includes harvested knowledge)")
+
+    # Check size
+    size_bytes = len(prompt.encode('utf-8'))
+    print(f"Prompt built: {output_path} ({size_bytes} bytes, {len(prompt.splitlines())} lines)")
 
 # ============================================================================
 # MAIN

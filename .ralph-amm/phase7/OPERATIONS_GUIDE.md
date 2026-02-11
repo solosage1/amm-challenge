@@ -529,6 +529,7 @@ echo "[]" > .ralph-amm/phase7/state/.strategies_log.json
 export CODEX_MODEL="claude-sonnet-4-5"  # or "" for default
 export CODEX_MAX_OUTPUT_TOKENS=8000
 export CODEX_TIMEOUT_MINUTES=20  # Timeout per iteration (default: 20min)
+export CODEX_DISABLE_SHELL_TOOL=0  # Recommended: avoid stalls where stream stops after {turn.started}
 ```
 
 **CRITICAL SANDBOX SETTING**:

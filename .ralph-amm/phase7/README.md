@@ -113,6 +113,10 @@ This ensures AI considers constraints, edge cases, and optimizations before impl
    ```
 
 3. **Codex authentication/provider configured** (whatever your `codex` install uses)
+   - If Codex streams `thread.started` / `turn.started` but then emits **zero tokens**, ensure shell tools are enabled:
+     ```bash
+     export CODEX_DISABLE_SHELL_TOOL=0
+     ```
 
 4. **Existing Infrastructure**: Phase 1-6 components operational
    - amm-test-pipeline.py

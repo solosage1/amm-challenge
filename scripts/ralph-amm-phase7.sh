@@ -34,7 +34,7 @@ AMM_MATCH="${AMM_MATCH:-venv_fresh/bin/amm-match}"
 CODEX_MODEL="${CODEX_MODEL:-}"
 CODEX_MAX_OUTPUT_TOKENS="${CODEX_MAX_OUTPUT_TOKENS:-8000}"
 CODEX_TIMEOUT_MINUTES="${CODEX_TIMEOUT_MINUTES:-50}"  # Max time per Codex invocation (increased for full write+test cycles)
-CODEX_DISABLE_SHELL_TOOL="${CODEX_DISABLE_SHELL_TOOL:-1}"  # 1=disable agent shell commands (faster, less stalling)
+CODEX_DISABLE_SHELL_TOOL="${CODEX_DISABLE_SHELL_TOOL:-0}"  # 0=enable shell tools (recommended; avoids "turn.started" stalls)
 
 # Performance targets
 COMPETITIVE_EDGE=527
@@ -307,8 +307,8 @@ invoke_codex_generator() {
     local codex_ok=1
     local timeout_minutes="${CODEX_TIMEOUT_MINUTES:-40}"  # 40 minute default (down from 50 for graceful termination)
 
-    # Default to no shell tool so Codex produces the required final message (no long-running local searches).
-    # Set CODEX_DISABLE_SHELL_TOOL=0 to allow shell usage.
+    # Shell tool is enabled by default. Set CODEX_DISABLE_SHELL_TOOL=1 (or pass --disable-shell-tool)
+    # to prevent Codex from running local commands.
     local codex_disable_args=()
     if [[ "${CODEX_DISABLE_SHELL_TOOL}" == "1" ]]; then
         codex_disable_args+=(--disable shell_tool)
@@ -319,7 +319,7 @@ invoke_codex_generator() {
             --json \
             --config "max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS" \
             --output-last-message "$codex_last_msg_path" \
-            "${codex_disable_args[@]}" \
+            ${codex_disable_args[@]+"${codex_disable_args[@]}"} \
             --model "$CODEX_MODEL" \
             - < "$prompt_path" > "$codex_jsonl_path" 2> "$codex_stderr_path" && codex_ok=0 || codex_ok=$?
     else
@@ -327,7 +327,7 @@ invoke_codex_generator() {
             --json \
             --config "max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS" \
             --output-last-message "$codex_last_msg_path" \
-            "${codex_disable_args[@]}" \
+            ${codex_disable_args[@]+"${codex_disable_args[@]}"} \
             - < "$prompt_path" > "$codex_jsonl_path" 2> "$codex_stderr_path" && codex_ok=0 || codex_ok=$?
     fi
 
@@ -950,6 +950,8 @@ Options:
     --max-iterations N      Maximum iterations (default: unlimited)
     --max-runtime N         Maximum runtime in seconds (default: 36000 = 10 hours)
     --target-edge N         Target edge to achieve (default: 527)
+    --enable-shell-tool     Allow Codex to run local commands (default)
+    --disable-shell-tool    Prevent Codex from running local commands (may cause stalls in some setups)
     --help                  Show this help message
 
 Examples:
@@ -979,6 +981,14 @@ while [[ $# -gt 0 ]]; do
             COMPETITIVE_EDGE="$2"
             shift 2
             ;;
+        --enable-shell-tool)
+            CODEX_DISABLE_SHELL_TOOL="0"
+            shift 1
+            ;;
+        --disable-shell-tool)
+            CODEX_DISABLE_SHELL_TOOL="1"
+            shift 1
+            ;;
         --help)
             print_usage
             exit 0
@@ -998,6 +1008,11 @@ done
 require_file "$VENV_PY" "create/activate venv_fresh first"
 require_file "$AMM_MATCH" "ensure venv_fresh has project installed"
 require_cmd codex
+
+log "INFO" "Codex config: model=${CODEX_MODEL:-<default>} max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS timeout_minutes=$CODEX_TIMEOUT_MINUTES CODEX_DISABLE_SHELL_TOOL=$CODEX_DISABLE_SHELL_TOOL"
+if [[ "${CODEX_DISABLE_SHELL_TOOL}" == "1" ]]; then
+    log "WARN" "Shell tool is disabled. If Codex stalls after {turn.started} with no tokens, re-run with --enable-shell-tool or set CODEX_DISABLE_SHELL_TOOL=0."
+fi
 
 init_phase7_state
 main_loop
