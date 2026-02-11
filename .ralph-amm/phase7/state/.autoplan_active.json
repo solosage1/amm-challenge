@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-02-11T13:15:38.429973Z",
-  "iteration": 48,
+  "generated_at": "2026-02-11T13:24:07.052831Z",
+  "iteration": 49,
   "mode": "canary",
   "execute_this_iteration": true,
   "non_regression_ok": true,
@@ -9,7 +9,7 @@
   "rollout_state": {
     "started_iteration": 3,
     "shadow_completed": 3,
-    "canary_executed": 45,
+    "canary_executed": 46,
     "rollback_triggered": false,
     "rollback_reason": null
   },
@@ -20,19 +20,19 @@
   "selected_opportunity": {
     "id": "undercut_band_joint_search",
     "family_class": "undercut_sweep",
-    "subfamily": "adaptive_grid",
+    "subfamily": "coarse_grid",
     "subfamily_reason": "policy_select:untried|score=4.001",
-    "rationale": "Jointly tuning undercut and tight-band thresholds can expose non-linear routing/arb tradeoffs. [untried family bonus applied]",
-    "expected_uplift": 4.6,
-    "confidence": 5.7,
-    "novelty": 3.1,
-    "breakthrough_likelihood": 3.6,
-    "untried_family": true,
-    "base_weighted_score": 57.45,
-    "score_bonus": 7.865,
-    "ewma_delta": null,
+    "rationale": "Jointly tuning undercut and tight-band thresholds can expose non-linear routing/arb tradeoffs.",
+    "expected_uplift": 5.35,
+    "confidence": 6.45,
+    "novelty": 2.5,
+    "breakthrough_likelihood": 3.2,
+    "untried_family": false,
+    "base_weighted_score": 61.95,
+    "score_bonus": 3.295,
+    "ewma_delta": 0.34,
     "ewma_penalty": 0.0,
-    "weighted_score": 65.315
+    "weighted_score": 65.245
   },
   "policy": {
     "promotion_requires_repeats": 3,
@@ -76,27 +76,27 @@
     {
       "id": "undercut_band_joint_search",
       "family_class": "undercut_sweep",
-      "recommended_subfamily": "adaptive_grid",
+      "recommended_subfamily": "coarse_grid",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
-      "rationale": "Jointly tuning undercut and tight-band thresholds can expose non-linear routing/arb tradeoffs. [untried family bonus applied]",
-      "expected_uplift": 4.6,
-      "confidence": 5.7,
+      "rationale": "Jointly tuning undercut and tight-band thresholds can expose non-linear routing/arb tradeoffs.",
+      "expected_uplift": 5.35,
+      "confidence": 6.45,
       "time_to_signal": 8.0,
       "complexity": 3.6,
       "overfit_risk": 4.2,
-      "novelty": 3.1,
-      "breakthrough_likelihood": 3.6,
-      "untried_family": true,
-      "base_weighted_score": 57.45,
-      "score_bonus": 7.865,
-      "ewma_delta": null,
+      "novelty": 2.5,
+      "breakthrough_likelihood": 3.2,
+      "untried_family": false,
+      "base_weighted_score": 61.95,
+      "score_bonus": 3.295,
+      "ewma_delta": 0.34,
       "ewma_penalty": 0.0,
-      "weighted_score": 65.315
+      "weighted_score": 65.245
     },
     {
       "id": "arb_implied_price_inference_search",
       "family_class": "state_estimation",
-      "recommended_subfamily": "p_ewma",
+      "recommended_subfamily": "arb_implied_p",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Infer fair price from arbitrage-like trades and use it to tighten quotes post-arb and reduce stale pricing. [untried family bonus applied]",
       "expected_uplift": 6.2,
@@ -136,7 +136,7 @@
     {
       "id": "meta_learning_fee_schedule_search",
       "family_class": "online_learning",
-      "recommended_subfamily": "regret_minimization",
+      "recommended_subfamily": "meta_alpha",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Meta-adapt update step sizes/thresholds to reduce brittleness while retaining responsiveness. [untried family bonus applied]",
       "expected_uplift": 5.5,
@@ -156,7 +156,7 @@
     {
       "id": "distribution_shift_robustness_search",
       "family_class": "adversarial_robustness",
-      "recommended_subfamily": "fallback_policy",
+      "recommended_subfamily": "robust_clamps",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Add guardrails and fallbacks to stay stable across distribution shifts (sigma/retail rate) without collapsing retail share. [untried family bonus applied]",
       "expected_uplift": 5.4,
@@ -176,7 +176,7 @@
     {
       "id": "inventory_skew_asymmetry_search",
       "family_class": "asymmetric",
-      "recommended_subfamily": "nonlinear_skew",
+      "recommended_subfamily": "target_inventory",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Inventory-skewed bid/ask fees can bias toward the 'good' side of retail flow while limiting adverse arb exposure. [untried family bonus applied]",
       "expected_uplift": 4.6,
@@ -196,7 +196,7 @@
     {
       "id": "latent_regime_filter_search",
       "family_class": "state_estimation",
-      "recommended_subfamily": "hmm_2state",
+      "recommended_subfamily": "quantized_belief",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Use a simple latent-state filter (e.g., 2-state HMM) to gate between retail-capture and defense modes. [untried family bonus applied]",
       "expected_uplift": 5.8,
@@ -216,7 +216,7 @@
     {
       "id": "order_flow_imbalance_search",
       "family_class": "microstructure",
-      "recommended_subfamily": "impact_proxy",
+      "recommended_subfamily": "trade_count_imbalance",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Order-flow imbalance features (signed volume/streaks) can predict near-term routing and adverse selection risk. [untried family bonus applied]",
       "expected_uplift": 5.5,
@@ -236,7 +236,7 @@
     {
       "id": "volatility_scaled_fee_search",
       "family_class": "volatility_targeting",
-      "recommended_subfamily": "vol_ema",
+      "recommended_subfamily": "vol_clamped",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Scale base fees with a volatility proxy to trade off retail capture against increased adverse selection in fast markets. [untried family bonus applied]",
       "expected_uplift": 5.2,
@@ -256,7 +256,7 @@
     {
       "id": "uncertainty_aware_band_search",
       "family_class": "volatility_targeting",
-      "recommended_subfamily": "uncertainty_penalty",
+      "recommended_subfamily": "bandwidth_control",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Control tight-band width using confidence/uncertainty to avoid being too aggressive when inference is noisy. [untried family bonus applied]",
       "expected_uplift": 5.0,
@@ -336,8 +336,8 @@
     {
       "id": "protective_buffer_undercut_search",
       "family_class": "undercut_sweep",
-      "recommended_subfamily": "buffer_dynamic",
-      "recommended_subfamily_reason": "policy_select:untried|score=4.000",
+      "recommended_subfamily": "buffer_asym",
+      "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Protective-side buffer and undercut interact; a small buffer may reduce arb leakage without losing retail share. [untried family bonus applied]",
       "expected_uplift": 4.3,
       "confidence": 5.2,
@@ -377,7 +377,7 @@
       "id": "gamma_formula_search",
       "family_class": "gamma_formula",
       "recommended_subfamily": "gamma_transform",
-      "recommended_subfamily_reason": "policy_select:untried|score=4.001",
+      "recommended_subfamily_reason": "policy_select:untried|score=4.000",
       "rationale": "Local sweep stagnation suggests changing competitive/protective gamma math itself. [untried family bonus applied]",
       "expected_uplift": 4.2,
       "confidence": 4.6,
@@ -396,7 +396,7 @@
     {
       "id": "gamma_exponent_sweep_search",
       "family_class": "gamma_formula",
-      "recommended_subfamily": "gamma_k_piecewise",
+      "recommended_subfamily": "gamma_k_global",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Explore gamma^k anchors and piecewise exponents to re-shape the no-arb band without huge code changes. [untried family bonus applied]",
       "expected_uplift": 4.4,
@@ -416,8 +416,8 @@
     {
       "id": "gamma_anchor_blend_search",
       "family_class": "gamma_formula",
-      "recommended_subfamily": "anchor_blend",
-      "recommended_subfamily_reason": "policy_select:untried|score=4.000",
+      "recommended_subfamily": "anchor_clip",
+      "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Blend multiple competitive anchors (e.g., gamma^2 + undercut) to reduce brittleness across regimes. [untried family bonus applied]",
       "expected_uplift": 4.1,
       "confidence": 4.0,
@@ -477,7 +477,7 @@
       "id": "adaptive_undercut_search",
       "family_class": "undercut_sweep",
       "recommended_subfamily": "step_aware_undercut",
-      "recommended_subfamily_reason": "policy_select:probe_confirm|score=1.600",
+      "recommended_subfamily_reason": "policy_select:probe_confirm|score=1.601",
       "rationale": "Undercut signal is strong; prefer lightweight regime-aware undercut before heavy state-machine logic.",
       "expected_uplift": 4.05,
       "confidence": 5.25,
@@ -496,7 +496,7 @@
     {
       "id": "cooldown_gate_search",
       "family_class": "gating_adaptive",
-      "recommended_subfamily": "trade_count_cooldown",
+      "recommended_subfamily": "decay_cooldown",
       "recommended_subfamily_reason": "policy_select:untried|score=4.000",
       "rationale": "Cooldown/decay gates can prevent overreacting to noisy retail while still reacting to shocks. [untried family bonus applied]",
       "expected_uplift": 4.7,
@@ -516,7 +516,7 @@
     {
       "id": "contextual_bandit_policy_search",
       "family_class": "online_learning",
-      "recommended_subfamily": "exp3_adversarial_bandit",
+      "recommended_subfamily": "ucb_quote_arms",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Use contextual bandits to choose quote aggressiveness online by flow state instead of static parameter families.",
       "expected_uplift": 5.35,
@@ -536,7 +536,7 @@
     {
       "id": "robust_smoothing_filters_search",
       "family_class": "ema_smoothing",
-      "recommended_subfamily": "adaptive_alpha",
+      "recommended_subfamily": "median_filter",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Robust filters (median/trimmed mean) can stabilize estimates under heavy-tailed retail sizes. [untried family bonus applied]",
       "expected_uplift": 3.7,
@@ -596,7 +596,7 @@
     {
       "id": "inventory_hjb_control_search",
       "family_class": "optimal_control",
-      "recommended_subfamily": "avellaneda_stoikov_like",
+      "recommended_subfamily": "risk_aversion_schedule",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Introduce inventory-aware optimal control (HJB/Avellaneda-Stoikov style) so spread/undercut adapts to risk state, not just mispricing.",
       "expected_uplift": 5.85,
@@ -616,7 +616,7 @@
     {
       "id": "queue_microprice_impact_search",
       "family_class": "microstructure",
-      "recommended_subfamily": "queue_reactive_spread",
+      "recommended_subfamily": "impact_decay",
       "recommended_subfamily_reason": "policy_select:untried|score=4.001",
       "rationale": "Quote off queue/microprice and short-horizon impact estimates to capture microstructure alpha orthogonal to undercut tuning.",
       "expected_uplift": 5.25,
@@ -636,8 +636,8 @@
     {
       "id": "bayesian_optimization_meta_search",
       "family_class": "bayesian_optimization",
-      "recommended_subfamily": "multi_fidelity_bayesopt",
-      "recommended_subfamily_reason": "policy_select:untried|score=4.001",
+      "recommended_subfamily": "turbo_trust_region",
+      "recommended_subfamily_reason": "policy_select:untried|score=4.000",
       "rationale": "Use surrogate-driven search (GP/TuRBO/multi-fidelity) to jump across non-local strategy manifolds instead of linear sweeps.",
       "expected_uplift": 5.05,
       "confidence": 3.35,
@@ -677,7 +677,7 @@
       "id": "ema_smoothing_search",
       "family_class": "ema_smoothing",
       "recommended_subfamily": "ema_smoothing",
-      "recommended_subfamily_reason": "policy_select:probe_confirm|score=-0.750",
+      "recommended_subfamily_reason": "policy_select:probe_confirm|score=-0.749",
       "rationale": "Fair-value smoothing/jump-limiter dynamics are likely under-tuned near the local optimum.",
       "expected_uplift": 3.3,
       "confidence": 4.3,
@@ -696,8 +696,8 @@
     {
       "id": "regime_state_transition_search",
       "family_class": "gating_adaptive",
-      "recommended_subfamily": "heavy_state_machine",
-      "recommended_subfamily_reason": "policy_select:untried|score=4.001",
+      "recommended_subfamily": "light_state_machine",
+      "recommended_subfamily_reason": "policy_select:untried|score=4.000",
       "rationale": "Plateau/brittleness suggest structure-level transition logic is under-optimized.",
       "expected_uplift": 4.75,
       "confidence": 4.25,
@@ -764,7 +764,7 @@
       "action": "retain_champion",
       "strategy_edge": 508.8
     },
-    "subfamily_focus": "adaptive_grid",
+    "subfamily_focus": "coarse_grid",
     "subfamily_focus_reason": "policy_select:untried|score=4.001"
   }
 }

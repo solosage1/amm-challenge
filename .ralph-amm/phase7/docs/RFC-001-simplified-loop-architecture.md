@@ -15,7 +15,7 @@ This RFC proposes a fundamental simplification of the Phase 7 autonomous loop, r
 - Replace 13 abstract opportunity families with 5-6 concrete champion mechanism components
 - Remove subfamily tracking and conformance weighting (addressing 44% mismatch rate)
 - Simplify selection from weighted multi-factor scoring to UCB1 bandit
-- Reduce configuration parameters from 15+ to 4
+- Reduce configuration parameters from 24 to 4
 - Provide concrete modification prompts instead of abstract opportunity descriptions
 
 **Expected outcomes:**
@@ -251,12 +251,15 @@ def select_mechanism(stats: Dict[str, MechanismStats]) -> str:
     if total_tries == 0:
         return random.choice(list(stats.keys()))
 
+    # Collect untried mechanisms and randomize to avoid dict-order bias
+    untried = [name for name, s in stats.items() if s.tries == 0]
+    if untried:
+        return random.choice(untried)
+
     best_score = float('-inf')
     best_mechanism = None
 
     for name, s in stats.items():
-        if s.tries == 0:
-            return name  # Always try untried mechanisms first
 
         exploitation = s.total_uplift / s.tries
         exploration = EXPLORATION_C * math.sqrt(math.log(total_tries) / s.tries)
@@ -308,8 +311,9 @@ Modify the **{mechanism_name}** mechanism to improve expected edge.
 2. Keep all other mechanisms (listed below) unchanged:
 {other_mechanisms}
 3. Output a complete, compilable Solidity contract
-4. Name the contract: `{mechanism_name}_mod_v{version}.sol`
-5. The contract must implement the same interface (afterInitialize, afterSwap, getName)
+4. The contract must be named `contract Strategy` (same as champion)
+5. The `getName()` function must return `"{mechanism_name}_mod_v{version}"` for variant tracking
+6. The contract must implement the same interface (afterInitialize, afterSwap, getName)
 
 ## OUTPUT FORMAT
 Return ONLY the complete Solidity code. No explanations before or after.
@@ -340,7 +344,7 @@ def validate_modification(
     Returns (is_valid, reason)
     """
     mechanisms = CHAMPION_MECHANISMS
-    target_lines = mechanisms[target_mechanism]["code_lines"]
+    target_location = mechanisms[target_mechanism]["code_location"]
 
     # Parse both files, extract mechanism regions
     original_regions = extract_mechanism_regions(original_code)
@@ -366,7 +370,7 @@ def validate_modification(
 
 ### 2.6 State Management
 
-Replace 6+ state files with 2:
+Replace 6+ opportunity-system state files with 2 new loop-specific files (shared files like `knowledge_store.json` remain):
 
 #### `mechanism_stats.json`
 ```json
@@ -382,6 +386,7 @@ Replace 6+ state files with 2:
       "tries": 5,
       "successes": 1,
       "total_uplift": 0.15,
+      "invalid_count": 0,
       "last_tried": "2026-02-11T10:00:00Z",
       "best_delta": 0.13
     },
@@ -389,6 +394,7 @@ Replace 6+ state files with 2:
       "tries": 3,
       "successes": 0,
       "total_uplift": -0.08,
+      "invalid_count": 1,
       "last_tried": "2026-02-11T09:00:00Z",
       "best_delta": 0.0
     },
@@ -396,6 +402,7 @@ Replace 6+ state files with 2:
       "tries": 4,
       "successes": 1,
       "total_uplift": 0.22,
+      "invalid_count": 0,
       "last_tried": "2026-02-11T11:00:00Z",
       "best_delta": 0.13
     },
@@ -403,6 +410,7 @@ Replace 6+ state files with 2:
       "tries": 2,
       "successes": 0,
       "total_uplift": 0.0,
+      "invalid_count": 0,
       "last_tried": "2026-02-11T08:00:00Z",
       "best_delta": 0.0
     },
@@ -410,6 +418,7 @@ Replace 6+ state files with 2:
       "tries": 0,
       "successes": 0,
       "total_uplift": 0.0,
+      "invalid_count": 0,
       "last_tried": null,
       "best_delta": null
     }
@@ -535,16 +544,16 @@ Given the current system's conformance issues and plateau state, we prioritize s
 
 ### Why Rollback Is Trivial
 
-The old system runs in parallel throughout, writing to:
-- `.opportunity_priors.json` (continues updating)
-- `.opportunity_history.json` (continues appending)
-- `opportunity_rankings_iter{N}.json` (continues generating)
+Old system state is **frozen at cutover**:
+- `.opportunity_priors.json` (snapshot, unchanged)
+- `.opportunity_history.json` (snapshot, unchanged)
+- `opportunity_rankings_iter{N}.json` (last pre-migration ranking preserved)
 
 The new system writes to separate files:
 - `mechanism_stats.json`
 - `iteration_log.jsonl`
 
-**No shared state.** Switching back requires only changing which script runs.
+**No shared state.** Rollback restores the exact pre-migration state.
 
 ### Rollback Triggers (Automatic)
 
@@ -613,51 +622,51 @@ def on_rollback(reason: str):
 
 ## 7. Parallel Operation Details
 
-### Both Systems Run Simultaneously
+### Shadow Log (What Old System Would Have Done)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     PARALLEL EXECUTION                          │
+│                     OPERATION MODEL                              │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  NEW SYSTEM (Primary)           OLD SYSTEM (Background)         │
-│  ─────────────────────          ──────────────────────          │
-│  simplified_loop.py             opportunity_engine.py           │
-│  mechanism_stats.json           .opportunity_priors.json        │
-│  iteration_log.jsonl            .opportunity_history.json       │
+│  NEW SYSTEM (Primary)           OLD SYSTEM (Shadow Log)         │
+│  ─────────────────────          ───────────────────────         │
+│  simplified_loop.py             shadow_selector.py              │
+│  mechanism_stats.json           shadow_selections.jsonl         │
+│  iteration_log.jsonl            (state frozen at cutover)       │
 │                                                                 │
-│  EXECUTES strategies            ONLY PLANS (no execution)       │
-│  Updates champion               Tracks what it WOULD do         │
+│  EXECUTES strategies            LOGS what it WOULD select       │
+│  Updates champion               No state updates                │
 │                                                                 │
 │  ↓                              ↓                               │
-│  Simulation runs                Shadow rankings generated       │
-│  Results recorded               Hypothetical priors updated     │
+│  Simulation runs                Selection logged only           │
+│  Results recorded               (for post-hoc comparison)       │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Shadow Mode for Old System
+### Shadow Selector (Read-Only)
 
-During new system operation, old system runs in "shadow" mode:
+A lightweight script logs what the old system **would** select, without modifying state:
 
 ```python
-# In opportunity_engine.py, add flag:
-SHADOW_MODE = True
+# shadow_selector.py - read-only shadow mode
+def log_shadow_selection(iteration: int):
+    """Log what old system would select, without modifying any state."""
+    # Load frozen state (read-only)
+    priors = load_json(".opportunity_priors.json")  # frozen snapshot
 
-def run_iteration():
-    if SHADOW_MODE:
-        # Generate plan and rankings as usual
-        plan = generate_plan()
-        save_rankings(plan)
-        update_priors_hypothetically(plan)
+    # Compute rankings using old algorithm
+    rankings = compute_opportunity_rankings(priors, iteration)
+    top_pick = rankings[0]
 
-        # BUT: Do not execute
-        # Do not call LLM
-        # Do not run simulations
-        log_shadow_selection(plan)
-        return
-
-    # Normal execution...
+    # Append to shadow log (new file, doesn't touch old state)
+    append_jsonl("shadow_selections.jsonl", {
+        "iter": iteration,
+        "would_select": top_pick["id"],
+        "would_subfamily": top_pick["recommended_subfamily"],
+        "score": top_pick["weighted_score"]
+    })
 ```
 
 This lets us compare: "What would the old system have tried?" vs "What did the new system try?"
@@ -735,7 +744,7 @@ If old system's shadow selections look more promising, that's evidence for rollb
 
 ## 10. Implementation Sketch
 
-### 8.1 Core Loop (`simplified_loop.py`)
+### 10.1 Core Loop (`simplified_loop.py`)
 
 ```python
 #!/usr/bin/env python3
@@ -774,6 +783,7 @@ class MechanismStats:
     tries: int = 0
     successes: int = 0
     total_uplift: float = 0.0
+    invalid_count: int = 0  # Track validation/compile failures per mechanism
     best_delta: Optional[float] = None
 
 
@@ -800,11 +810,14 @@ def select_mechanism(stats: dict) -> str:
     if total == 0:
         return random.choice(list(mechanisms.keys()))
 
+    # Randomize among untried to avoid dict-order bias
+    untried = [name for name, m in mechanisms.items() if m["tries"] == 0]
+    if untried:
+        return random.choice(untried)
+
     best_score, best_mech = float("-inf"), None
 
     for name, m in mechanisms.items():
-        if m["tries"] == 0:
-            return name
 
         exploit = m["total_uplift"] / m["tries"]
         explore = EXPLORATION_C * math.sqrt(math.log(total) / m["tries"])
@@ -860,6 +873,9 @@ def run_iteration(iteration: int) -> dict:
                 break
 
     if not valid:
+        # Track invalid attempts per mechanism
+        stats["mechanisms"][mechanism]["invalid_count"] += 1
+        save_stats(stats)
         append_log({"iter": iteration, "mechanism": mechanism, "valid": False, "reason": reason})
         return {"status": "invalid", "mechanism": mechanism, "reason": reason}
 
@@ -927,7 +943,7 @@ if __name__ == "__main__":
     main()
 ```
 
-### 8.2 Mechanism Definitions (`mechanism_definitions.yaml`)
+### 10.2 Mechanism Definitions (`mechanism_definitions.yaml`)
 
 ```yaml
 # Champion mechanism decomposition
@@ -1033,21 +1049,26 @@ mechanisms:
 
 ## 11. Open Questions
 
-1. **Should mechanism boundaries be enforced syntactically or semantically?**
+1. **UCB1 reward scaling for unbounded deltas?**
+   - Delta ranges widely (e.g., +0.02 to -2.08) which can dominate the exploration term
+   - Options: bounded transform (tanh), Bernoulli reward (success/fail only), reset stats on champion promotion
+   - Recommendation: Start with raw delta; add bounded transform if one mechanism accumulates outsized negative total
+
+2. **Should mechanism boundaries be enforced syntactically or semantically?**
    - Syntactic: line numbers, function names
    - Semantic: AST analysis of what code does
    - Recommendation: Start syntactic, add semantic validation if needed
 
-2. **How to handle champion replacement?**
+3. **How to handle champion replacement?**
    - Option A: Re-extract mechanisms from new champion
    - Option B: Keep mechanism definitions stable, update parameters only
    - Recommendation: Option A with manual review
 
-3. **Should wildcard successes feed back into mechanism stats?**
+4. **Should wildcard successes feed back into mechanism stats?**
    - If wildcard produces +0.5 bps via novel approach, how to attribute?
    - Recommendation: Log as "wildcard" mechanism, don't pollute other stats
 
-4. **Multi-mechanism modifications?**
+5. **Multi-mechanism modifications?**
    - Some improvements may require coordinated changes (e.g., flow_memory + tight_band_pricing)
    - Recommendation: Phase 2 feature - start with single-mechanism only
 
@@ -1075,15 +1096,15 @@ mechanisms:
 This RFC requests approval for **immediate implementation and deployment**:
 
 1. **Today:** Implement simplified loop and deploy as primary system
-2. **Parallel:** Old system continues in shadow mode (planning only, no execution)
+2. **Shadow log:** Old system state frozen; lightweight script logs what it *would* select
 3. **Day 2:** Evaluate at iteration 10 against success criteria
-4. **Rollback:** Automatic triggers + manual checkpoints ensure fast reversal
+4. **Rollback:** Automatic triggers + manual checkpoints ensure fast reversal (<5 min)
 
 ### Why Aggressive Rollout Is Low-Risk
 
 | Concern | Mitigation |
 |---------|------------|
-| Lose progress | Old system maintains full state in parallel |
+| Lose progress | Old system state frozen at cutover; instant restore |
 | Bad champion | Rollback restores pre-migration champion |
 | Wasted iterations | At most 10 iterations before first checkpoint |
 | Learning lost | Rollback procedure captures insights |
@@ -1092,7 +1113,7 @@ This RFC requests approval for **immediate implementation and deployment**:
 
 - [ ] Mechanism decomposition reviewed (5 mechanisms identified correctly)
 - [ ] Rollback triggers agreed (3 consecutive invalid, -0.5 severe, -1.0 cumulative)
-- [ ] Shadow mode for old system understood
+- [ ] Shadow log approach understood (state frozen, read-only selection logging)
 - [ ] **GO decision for Day 1 implementation**
 
 ---

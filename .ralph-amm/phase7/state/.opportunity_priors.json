@@ -336,5 +336,40 @@
       }
     },
     "last_selected_subfamily": "stress_regime_mixture"
+  },
+  "undercut_band_joint_search": {
+    "attempts": 1,
+    "successes": 1,
+    "failures": 0,
+    "neutral": 0,
+    "severe_failures": 0,
+    "cooldown_until_iteration": 0,
+    "cooldown_reason": null,
+    "non_uplift_streak": 0,
+    "no_uplift_outcomes": 0,
+    "last_uplift_iteration": 48,
+    "ewma_delta": 0.339999999999975,
+    "ewma_count": 1,
+    "subfamilies": {
+      "adaptive_grid": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0,
+        "neutral": 0,
+        "severe_failures": 0,
+        "cooldown_until_iteration": 0,
+        "cooldown_reason": null,
+        "non_uplift_streak": 0,
+        "no_uplift_outcomes": 0,
+        "last_uplift_iteration": 48,
+        "last_attempt_iteration": 48,
+        "breakthrough_probe_hits": 1,
+        "ewma_delta": 0.339999999999975,
+        "ewma_count": 1,
+        "status": "ACTIVE"
+      }
+    },
+    "last_selected_subfamily": "adaptive_grid",
+    "status": "ACTIVE"
   }
 }
