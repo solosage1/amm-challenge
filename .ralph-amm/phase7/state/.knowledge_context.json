@@ -1,0 +1,223 @@
+{
+  "true_best_edge": 516.16,
+  "true_best_strategy": "Unknown",
+  "all_tested_strategies": [
+    {
+      "name": "ArbOracleDualRegimeExact",
+      "edge": 510.98,
+      "sims": 200,
+      "iteration": 8,
+      "file": "arb_oracle_dualregime_exact.sol"
+    },
+    {
+      "name": "ArbOracleDualRegime",
+      "edge": 510.72,
+      "sims": 200,
+      "iteration": 8,
+      "file": "arb_oracle_dualregime.sol"
+    },
+    {
+      "name": "ArbOracleDualRegimeExact",
+      "edge": 508.74,
+      "sims": 300,
+      "iteration": 9,
+      "file": "arb_oracle_dualregime_exact.sol"
+    },
+    {
+      "name": "Candidate",
+      "edge": 508.46,
+      "sims": 300,
+      "iteration": 9,
+      "file": "candidate_best25.sol"
+    },
+    {
+      "name": "ArbOracleDualRegime",
+      "edge": 508.45,
+      "sims": 300,
+      "iteration": 9,
+      "file": "arb_oracle_dualregime.sol"
+    },
+    {
+      "name": "Tmp",
+      "edge": 507.18,
+      "sims": 300,
+      "iteration": 9,
+      "file": "tmp_variant.sol"
+    },
+    {
+      "name": "ArbOracleGapAwareDualRegime",
+      "edge": 507.06,
+      "sims": 300,
+      "iteration": 9,
+      "file": "arb_oracle_gapaware_dualregime.sol"
+    },
+    {
+      "name": "ArbOracleDualRegimeExact_Tight18",
+      "edge": 506.32,
+      "sims": 200,
+      "iteration": 9,
+      "file": "arb_oracle_dualregime_exact_tight18.sol"
+    },
+    {
+      "name": "ArbOracleBandMatch2",
+      "edge": 505.75,
+      "sims": 200,
+      "iteration": 8,
+      "file": "arb_oracle_bandmatch2.sol"
+    },
+    {
+      "name": "ArbOracleBandMatch2",
+      "edge": 503.57,
+      "sims": 300,
+      "iteration": 9,
+      "file": "arb_oracle_bandmatch2.sol"
+    },
+    {
+      "name": "ArbBandProtect",
+      "edge": 499.32,
+      "sims": 200,
+      "iteration": 8,
+      "file": "arb_infer_bandprotect.sol"
+    },
+    {
+      "name": "ArbBandProtect_Buf20",
+      "edge": 498.21,
+      "sims": 200,
+      "iteration": 8,
+      "file": "arb_infer_bandprotect_buf20.sol"
+    },
+    {
+      "name": "ArbBandProtect_Base0",
+      "edge": 497.24,
+      "sims": 200,
+      "iteration": 8,
+      "file": "arb_infer_bandprotect_base0.sol"
+    },
+    {
+      "name": "ArbBandProtect",
+      "edge": 497.04,
+      "sims": 300,
+      "iteration": 9,
+      "file": "arb_infer_bandprotect.sol"
+    },
+    {
+      "name": "ArbBandProtect",
+      "edge": 491.1,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "arb_infer_bandprotect.sol"
+    },
+    {
+      "name": "ArbInferredProtect",
+      "edge": 457.85,
+      "sims": 100,
+      "iteration": 2,
+      "file": "arb_infer_protect.sol"
+    },
+    {
+      "name": "ArbInferredProtect",
+      "edge": 452.63,
+      "sims": 200,
+      "iteration": 8,
+      "file": "arb_infer_protect.sol"
+    },
+    {
+      "name": "ArbPulseTwoPhase",
+      "edge": 445.01,
+      "sims": 100,
+      "iteration": 9,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "ArbPulseTwoPhase",
+      "edge": 440.65,
+      "sims": 200,
+      "iteration": 8,
+      "file": "arb_pulse_twophase.sol"
+    },
+    {
+      "name": "DualRegimePulseCandidate",
+      "edge": 417.92,
+      "sims": 200,
+      "iteration": 9,
+      "file": "dualregime_pulse_candidate.sol"
+    }
+  ],
+  "lessons_learned": [
+    "after each arbitrage trade, I can update fees before retail trading occurs to encourage participation. But I need to balance high fees, which can enha",
+    "I can set fees but need clarity on how afterSwap returns updates for future trades, not just the executed ones",
+    "can reduce retail flow. The retail trade edge formula highlights this intricacy. When a trader sells X to the AMM, the edge calculation factors in the",
+    "this could reduce gamma, but it seems to increase the upper edge when the spot is greater than fair value. If that\u2019s the case, raising the bidFee make",
+    "squared scaling didn't work as well, so I'll go ahead with the square root discount scaling instead. I think I'll adjust the maxDiscount, keeping the",
+    "we didn\u2019t set the `timeout_ms`. The wrapper tool function has a default that might be 10,000 milliseconds, but I need to set it longer, like 600,000 m",
+    "for a buy, the trader inputs X and the AMM outputs Y, clarifying that amountY is indeed an output",
+    "arbitrage executes before retail on each AMM. If our fees are lower than normalizer's when arbitrage occurs, that could lead to more trades against us",
+    "by adjusting the fee, I can widen the no-arbitrage band. This seems important because a wider band might provide more flexibility in pricing while mai",
+    "the no-arbitrage conditions result in asymmetric bands depending on whether traders are buying or selling \u2014 which adds layers to how I configure fees",
+    "there's a single fair price, but each AMM's price can deviate. Arbitrageurs operate individually on each AMM to bring its spot price closer to the fai",
+    "the AMM receives net_y in reserves and collects fees separately, making my profit calculation positive if the trader pays more than the fair price. Ho",
+    "we can still run tests and evaluate strategies. While I can't write new files, I might work around this by using a temporary file in /tmp",
+    "potential losses hinge on mispricing and associated fees. The key to optimizing is to attract sufficient retail volume while managing those losses by",
+    "while we can maintain attractive price configurations, arbitrage tends to equalize prices between AMMs. I think our best strategy may involve slightly"
+  ],
+  "regressions": [
+    {
+      "from": "ArbBandProtect",
+      "from_edge": 491.1,
+      "to": "ArbInferredSkew",
+      "to_edge": 327.93,
+      "iteration": 2
+    },
+    {
+      "from": "ArbBandProtect",
+      "from_edge": 491.1,
+      "to": "Const_200bps",
+      "to_edge": 313.75,
+      "iteration": 2
+    },
+    {
+      "from": "ArbBandProtect",
+      "from_edge": 491.1,
+      "to": "Const_20bps",
+      "to_edge": 289.01,
+      "iteration": 2
+    },
+    {
+      "from": "ArbBandProtect",
+      "from_edge": 491.1,
+      "to": "Const_10bps",
+      "to_edge": 163.0,
+      "iteration": 2
+    },
+    {
+      "from": "ArbOracleDualRegimeExact",
+      "from_edge": 510.98,
+      "to": "ArbInferredSkew",
+      "to_edge": 319.31,
+      "iteration": 8
+    },
+    {
+      "from": "ArbOracleDualRegimeExact",
+      "from_edge": 510.98,
+      "to": "ArbOracleBandMatch",
+      "to_edge": 180.26,
+      "iteration": 8
+    },
+    {
+      "from": "ArbOracleDualRegimeExact",
+      "from_edge": 508.74,
+      "to": "Const_30bps",
+      "to_edge": 346.57,
+      "iteration": 9
+    },
+    {
+      "from": "ArbOracleDualRegimeExact",
+      "from_edge": 508.74,
+      "to": "Const_10bps",
+      "to_edge": 163.68,
+      "iteration": 9
+    }
+  ],
+  "harvested_at": "2026-02-10T23:59:50.142543Z",
+  "total_results_harvested": 104
+}

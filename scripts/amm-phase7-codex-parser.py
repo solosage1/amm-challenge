@@ -111,8 +111,11 @@ def extract_best_strategy(events: List[Dict]) -> Optional[Dict]:
     }
 
 
-def extract_reasoning_summary(events: List[Dict], max_items: int = 5) -> List[str]:
-    """Extract key reasoning points from the session."""
+def extract_reasoning_summary(events: List[Dict], max_items: int = 10) -> List[Dict]:
+    """Extract key reasoning points from the session.
+
+    Returns list of dicts with 'summary' (truncated for display) and 'full_text'.
+    """
     reasoning_items = []
 
     for event in events:
@@ -130,12 +133,106 @@ def extract_reasoning_summary(events: List[Dict], max_items: int = 5) -> List[st
                 else:
                     text = str(s)
                 if text and len(text) > 20:
-                    reasoning_items.append(text[:200])
+                    reasoning_items.append({
+                        'summary': text[:1000],  # Increased from 200 to preserve more context
+                        'full_text': text,
+                    })
         elif isinstance(summary, str) and len(summary) > 20:
-            reasoning_items.append(summary[:200])
+            reasoning_items.append({
+                'summary': summary[:1000],
+                'full_text': summary,
+            })
 
     # Return most recent reasoning items
     return reasoning_items[-max_items:] if reasoning_items else []
+
+
+def extract_parameter_discoveries(events: List[Dict]) -> Dict[str, List[Dict]]:
+    """Extract parameter search patterns from reasoning and experiments.
+
+    Looks for:
+    - Buffer/threshold values tested
+    - EWMA alpha values
+    - Dual-regime thresholds
+    - Fee values tested
+    """
+    discoveries = {
+        'buffer_values': [],
+        'ewma_alpha_values': [],
+        'fee_values': [],
+        'threshold_values': [],
+        'edge_by_params': [],
+    }
+
+    # Patterns for parameter extraction
+    patterns = {
+        'buffer': re.compile(r'buffer[=:\s]+(\d+\.?\d*)', re.IGNORECASE),
+        'ewma_alpha': re.compile(r'(?:ewma|alpha)[=:\s]+(\d+\.?\d*)', re.IGNORECASE),
+        'fee': re.compile(r'(?:fee|ask_?fee|bid_?fee)[=:\s]+(\d+\.?\d*)', re.IGNORECASE),
+        'threshold': re.compile(r'(?:threshold|thresh)[=:\s]+(\d+\.?\d*)', re.IGNORECASE),
+    }
+
+    # Extract from reasoning items
+    for event in events:
+        if event.get('type') != 'item.completed':
+            continue
+        item = event.get('item', {})
+
+        text = ''
+        if item.get('type') == 'reasoning':
+            summary = item.get('summary', [])
+            if isinstance(summary, list):
+                text = ' '.join(str(s.get('text', s) if isinstance(s, dict) else s) for s in summary)
+            else:
+                text = str(summary)
+        elif item.get('type') == 'message':
+            content = item.get('content', [])
+            if isinstance(content, list):
+                text = ' '.join(str(c.get('text', c) if isinstance(c, dict) else c) for c in content)
+
+        if not text:
+            continue
+
+        # Look for parameter mentions
+        for param_type, pattern in patterns.items():
+            matches = pattern.findall(text)
+            for match in matches:
+                try:
+                    value = float(match)
+                    key = f'{param_type}_values'
+                    if key in discoveries:
+                        if value not in [d['value'] for d in discoveries[key]]:
+                            discoveries[key].append({
+                                'value': value,
+                                'context': text[:200],
+                            })
+                except ValueError:
+                    pass
+
+    # Extract from command outputs to correlate params with edges
+    experiments = extract_edge_experiments(events)
+    for exp in experiments:
+        cmd = exp.get('command', '')
+        edge = exp.get('edge', 0)
+
+        # Look for param values in command or strategy name
+        params = {}
+        for param_type, pattern in patterns.items():
+            match = pattern.search(cmd)
+            if match:
+                try:
+                    params[param_type] = float(match.group(1))
+                except ValueError:
+                    pass
+
+        if params:
+            discoveries['edge_by_params'].append({
+                'params': params,
+                'edge': edge,
+                'strategy': exp.get('strategy', 'unknown'),
+            })
+
+    return discoveries
 
 
 def parse_codex_jsonl(jsonl_path: str) -> Dict[str, Any]:
@@ -167,12 +264,14 @@ def parse_codex_jsonl(jsonl_path: str) -> Dict[str, Any]:
     files = extract_file_changes(events)
     best = extract_best_strategy(events)
     reasoning = extract_reasoning_summary(events)
+    parameters = extract_parameter_discoveries(events)
 
     return {
         'edge_experiments': experiments,
         'files_created': [f['path'] for f in files],
         'best_strategy': best,
         'reasoning_summary': reasoning,
+        'parameter_discoveries': parameters,
         'n_events': len(events),
         'n_experiments': len(experiments),
         'n_files': len(files)
@@ -207,6 +306,33 @@ def format_discoveries(result: Dict) -> str:
         lines.append("### Files Created")
         for f in result['files_created']:
             lines.append(f"- {f}")
+        lines.append("")
+
+    # Add parameter discoveries section
+    params = result.get('parameter_discoveries', {})
+    if params.get('edge_by_params'):
+        lines.append("### Parameter Search Results")
+        lines.append("| Strategy | Edge | Parameters |")
+        lines.append("|----------|------|------------|")
+        sorted_by_edge = sorted(params['edge_by_params'],
+                               key=lambda x: x['edge'], reverse=True)
+        for item in sorted_by_edge[:10]:
+            param_str = ', '.join(f"{k}={v}" for k, v in item['params'].items())
+            lines.append(f"| {item['strategy']} | {item['edge']:.2f} | {param_str} |")
+        lines.append("")
+
+    # Add reasoning summary (now with full context)
+    if result.get('reasoning_summary'):
+        lines.append("### Key Reasoning")
+        for item in result['reasoning_summary'][:5]:
+            if isinstance(item, dict):
+                text = item.get('summary', '')
+            else:
+                text = str(item)
+            # Truncate for display but preserve more context
+            if len(text) > 300:
+                text = text[:297] + "..."
+            lines.append(f"- {text}")
         lines.append("")
 
     return "\n".join(lines)

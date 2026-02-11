@@ -60,5 +60,1461 @@
       "stage": "codex",
       "message": "codex failed"
     }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104215Z",
+    "final_edge": 289.01,
+    "strategy_name": "Const_20bps",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "const20.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const20.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104366Z",
+    "final_edge": 163.0,
+    "strategy_name": "Const_10bps",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "const10.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const10.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104378Z",
+    "final_edge": 379.81,
+    "strategy_name": "Const_50bps",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "const50.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const50.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104388Z",
+    "final_edge": 386.45,
+    "strategy_name": "Const_100bps",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "const100.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const100.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104400Z",
+    "final_edge": 313.75,
+    "strategy_name": "Const_200bps",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "const200.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const200.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104409Z",
+    "final_edge": 391.73,
+    "strategy_name": "Const_80bps",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "const80.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const80.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104418Z",
+    "final_edge": 390.91,
+    "strategy_name": "Const_70bps",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "const70.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const70.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104426Z",
+    "final_edge": 351.97,
+    "strategy_name": "Const_30bps",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "const30.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const30.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104440Z",
+    "final_edge": 327.93,
+    "strategy_name": "ArbInferredSkew",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_skew.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_skew.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104454Z",
+    "final_edge": 397.74,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104552Z",
+    "final_edge": 392.71,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104567Z",
+    "final_edge": 411.31,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104577Z",
+    "final_edge": 420.18,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104587Z",
+    "final_edge": 423.18,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104597Z",
+    "final_edge": 422.9,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104607Z",
+    "final_edge": 383.02,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104617Z",
+    "final_edge": 423.18,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104627Z",
+    "final_edge": 428.64,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104648Z",
+    "final_edge": 433.87,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104666Z",
+    "final_edge": 438.27,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104677Z",
+    "final_edge": 441.68,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104687Z",
+    "final_edge": 444.14,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104697Z",
+    "final_edge": 445.35,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104707Z",
+    "final_edge": 443.28,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104717Z",
+    "final_edge": 443.29,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104727Z",
+    "final_edge": 444.75,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104737Z",
+    "final_edge": 446.72,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104746Z",
+    "final_edge": 449.57,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104756Z",
+    "final_edge": 450.98,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104766Z",
+    "final_edge": 451.29,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104776Z",
+    "final_edge": 450.99,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104785Z",
+    "final_edge": 451.36,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104797Z",
+    "final_edge": 449.41,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104810Z",
+    "final_edge": 451.79,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104821Z",
+    "final_edge": 451.64,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104831Z",
+    "final_edge": 451.53,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104841Z",
+    "final_edge": 426.85,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104853Z",
+    "final_edge": 447.17,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104865Z",
+    "final_edge": 454.13,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104877Z",
+    "final_edge": 454.58,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104889Z",
+    "final_edge": 453.47,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104901Z",
+    "final_edge": 442.03,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104913Z",
+    "final_edge": 456.18,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104925Z",
+    "final_edge": 452.85,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104935Z",
+    "final_edge": 455.45,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104945Z",
+    "final_edge": 456.74,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104954Z",
+    "final_edge": 457.37,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104964Z",
+    "final_edge": 457.32,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104974Z",
+    "final_edge": 457.3,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104983Z",
+    "final_edge": 457.15,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.104998Z",
+    "final_edge": 457.85,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105008Z",
+    "final_edge": 435.33,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105017Z",
+    "final_edge": 456.87,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105027Z",
+    "final_edge": 453.48,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105038Z",
+    "final_edge": 453.33,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105050Z",
+    "final_edge": 439.46,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105063Z",
+    "final_edge": 451.34,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 500,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105073Z",
+    "final_edge": 449.85,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 500,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105083Z",
+    "final_edge": 482.05,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 500,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105093Z",
+    "final_edge": 475.61,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105105Z",
+    "final_edge": 480.63,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105113Z",
+    "final_edge": 489.29,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105127Z",
+    "final_edge": 490.55,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105136Z",
+    "final_edge": 491.02,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105145Z",
+    "final_edge": 490.79,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105154Z",
+    "final_edge": 491.1,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 2,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.105163Z",
+    "final_edge": 490.96,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131001Z",
+    "final_edge": 319.31,
+    "strategy_name": "ArbInferredSkew",
+    "source": "codex_session",
+    "n_simulations": 50,
+    "strategy_file": "arb_infer_skew.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_skew.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131016Z",
+    "final_edge": 493.19,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 50,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131025Z",
+    "final_edge": 499.32,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131034Z",
+    "final_edge": 452.63,
+    "strategy_name": "ArbInferredProtect",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_infer_protect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_protect.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131044Z",
+    "final_edge": 180.26,
+    "strategy_name": "ArbOracleBandMatch",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_bandmatch.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_bandmatch.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131057Z",
+    "final_edge": 497.24,
+    "strategy_name": "ArbBandProtect_Base0",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_infer_bandprotect_base0.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect_base0.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131067Z",
+    "final_edge": 490.96,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131077Z",
+    "final_edge": 488.85,
+    "strategy_name": "ArbBandProtect_Base0",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_infer_bandprotect_base0.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect_base0.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131087Z",
+    "final_edge": 505.75,
+    "strategy_name": "ArbOracleBandMatch2",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_bandmatch2.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_bandmatch2.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131096Z",
+    "final_edge": 497.57,
+    "strategy_name": "ArbOracleBandMatch2",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_bandmatch2.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_bandmatch2.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131107Z",
+    "final_edge": 440.65,
+    "strategy_name": "ArbPulseTwoPhase",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_pulse_twophase.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_pulse_twophase.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131117Z",
+    "final_edge": 498.21,
+    "strategy_name": "ArbBandProtect_Buf20",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_infer_bandprotect_buf20.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect_buf20.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131126Z",
+    "final_edge": 489.96,
+    "strategy_name": "ArbBandProtect_Buf20",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_infer_bandprotect_buf20.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect_buf20.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131138Z",
+    "final_edge": 510.72,
+    "strategy_name": "ArbOracleDualRegime",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131147Z",
+    "final_edge": 502.27,
+    "strategy_name": "ArbOracleDualRegime",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131158Z",
+    "final_edge": 510.98,
+    "strategy_name": "ArbOracleDualRegimeExact",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_exact.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact.sol"
+    }
+  },
+  {
+    "iteration": 8,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.131168Z",
+    "final_edge": 502.58,
+    "strategy_name": "ArbOracleDualRegimeExact",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime_exact.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137637Z",
+    "final_edge": 346.57,
+    "strategy_name": "Const_30bps",
+    "source": "codex_session",
+    "n_simulations": 50,
+    "strategy_file": "const30.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const30.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137642Z",
+    "final_edge": 163.68,
+    "strategy_name": "Const_10bps",
+    "source": "codex_session",
+    "n_simulations": 30,
+    "strategy_file": "unknown.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "unknown.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137651Z",
+    "final_edge": 385.79,
+    "strategy_name": "Const_70bps",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "const70.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "const70.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137655Z",
+    "final_edge": 391.73,
+    "strategy_name": "Const_80bps",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "unknown.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "unknown.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137668Z",
+    "final_edge": 440.65,
+    "strategy_name": "ArbPulseTwoPhase",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_pulse_twophase.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_pulse_twophase.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137673Z",
+    "final_edge": 445.01,
+    "strategy_name": "ArbPulseTwoPhase",
+    "source": "codex_session",
+    "n_simulations": 100,
+    "strategy_file": "unknown.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "unknown.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137684Z",
+    "final_edge": 508.74,
+    "strategy_name": "ArbOracleDualRegimeExact",
+    "source": "codex_session",
+    "n_simulations": 300,
+    "strategy_file": "arb_oracle_dualregime_exact.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137693Z",
+    "final_edge": 508.45,
+    "strategy_name": "ArbOracleDualRegime",
+    "source": "codex_session",
+    "n_simulations": 300,
+    "strategy_file": "arb_oracle_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137701Z",
+    "final_edge": 497.04,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 300,
+    "strategy_file": "arb_infer_bandprotect.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_infer_bandprotect.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137711Z",
+    "final_edge": 503.57,
+    "strategy_name": "ArbOracleBandMatch2",
+    "source": "codex_session",
+    "n_simulations": 300,
+    "strategy_file": "arb_oracle_bandmatch2.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_bandmatch2.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137722Z",
+    "final_edge": 417.92,
+    "strategy_name": "DualRegimePulseCandidate",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "dualregime_pulse_candidate.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "dualregime_pulse_candidate.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137736Z",
+    "final_edge": 506.32,
+    "strategy_name": "ArbOracleDualRegimeExact_Tight18",
+    "source": "codex_session",
+    "n_simulations": 200,
+    "strategy_file": "arb_oracle_dualregime_exact_tight18.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact_tight18.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137744Z",
+    "final_edge": 507.18,
+    "strategy_name": "Tmp",
+    "source": "codex_session",
+    "n_simulations": 300,
+    "strategy_file": "tmp_variant.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "tmp_variant.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137749Z",
+    "final_edge": 497.04,
+    "strategy_name": "ArbBandProtect",
+    "source": "codex_session",
+    "n_simulations": 300,
+    "strategy_file": "unknown.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "unknown.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137759Z",
+    "final_edge": 502.27,
+    "strategy_name": "ArbOracleDualRegime",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137769Z",
+    "final_edge": 502.58,
+    "strategy_name": "ArbOracleDualRegimeExact",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_dualregime_exact.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_dualregime_exact.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137796Z",
+    "final_edge": 502.58,
+    "strategy_name": "Candidate",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "candidate_best25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "candidate_best25.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137804Z",
+    "final_edge": 508.46,
+    "strategy_name": "Candidate",
+    "source": "codex_session",
+    "n_simulations": 300,
+    "strategy_file": "candidate_best25.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "candidate_best25.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137816Z",
+    "final_edge": 507.06,
+    "strategy_name": "ArbOracleGapAwareDualRegime",
+    "source": "codex_session",
+    "n_simulations": 300,
+    "strategy_file": "arb_oracle_gapaware_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_gapaware_dualregime.sol"
+    }
+  },
+  {
+    "iteration": 9,
+    "status": "harvested",
+    "timestamp": "2026-02-10T23:59:50.137826Z",
+    "final_edge": 500.91,
+    "strategy_name": "ArbOracleGapAwareDualRegime",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "arb_oracle_gapaware_dualregime.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "arb_oracle_gapaware_dualregime.sol"
+    }
   }
 ]

@@ -29,6 +29,7 @@ from amm_competition.competition.config import (
     baseline_nominal_sigma,
     resolve_n_workers,
 )
+from amm_competition.competition.match import HyperparameterVariance
 from amm_competition.competition.match import MatchRunner
 from amm_competition.evm.adapter import EVMStrategyAdapter
 from amm_competition.evm.baseline import load_vanilla_strategy
@@ -221,6 +222,153 @@ def run_simulations(strategy: EVMStrategyAdapter, n_sims: int, store_results: bo
         return avg_edge
 
 
+def run_regime_simulations(
+    strategy: EVMStrategyAdapter,
+    n_sims: int,
+    gbm_sigma: float = None,
+    retail_rate: float = None,
+    retail_size: float = None,
+    seed_offset: int = 0,
+) -> float:
+    """
+    Run simulations with specific regime parameters (no variance).
+
+    Args:
+        strategy: EVMStrategyAdapter instance
+        n_sims: Number of simulations to run
+        gbm_sigma: Override GBM sigma (volatility)
+        retail_rate: Override retail arrival rate
+        retail_size: Override retail mean size
+        seed_offset: Seed offset for reproducibility
+
+    Returns:
+        Average edge score
+    """
+    # Use provided values or fall back to nominal
+    sigma = gbm_sigma if gbm_sigma is not None else baseline_nominal_sigma()
+    rate = retail_rate if retail_rate is not None else baseline_nominal_retail_rate()
+    size = retail_size if retail_size is not None else baseline_nominal_retail_size()
+
+    config = amm_sim_rs.SimulationConfig(
+        n_steps=BASELINE_SETTINGS.n_steps,
+        initial_price=BASELINE_SETTINGS.initial_price,
+        initial_x=BASELINE_SETTINGS.initial_x,
+        initial_y=BASELINE_SETTINGS.initial_y,
+        gbm_mu=BASELINE_SETTINGS.gbm_mu,
+        gbm_sigma=sigma,
+        gbm_dt=BASELINE_SETTINGS.gbm_dt,
+        retail_arrival_rate=rate,
+        retail_mean_size=size,
+        retail_size_sigma=BASELINE_SETTINGS.retail_size_sigma,
+        retail_buy_prob=BASELINE_SETTINGS.retail_buy_prob,
+        seed=None,
+    )
+
+    # No variance - test at exact regime point
+    no_variance = HyperparameterVariance(
+        retail_mean_size_min=size,
+        retail_mean_size_max=size,
+        vary_retail_mean_size=False,
+        retail_arrival_rate_min=rate,
+        retail_arrival_rate_max=rate,
+        vary_retail_arrival_rate=False,
+        gbm_sigma_min=sigma,
+        gbm_sigma_max=sigma,
+        vary_gbm_sigma=False,
+    )
+
+    normalizer = load_vanilla_strategy()
+    runner = MatchRunner(
+        n_simulations=n_sims,
+        config=config,
+        n_workers=resolve_n_workers(),
+        variance=no_variance,
+        seed_offset=seed_offset,
+    )
+
+    result = runner.run_match(strategy, normalizer, store_results=False)
+    return float(result.total_edge_a / n_sims)
+
+
+def run_regime_tests(strategy: EVMStrategyAdapter, n_sims: int = 100) -> dict:
+    """
+    Test strategy at 4 extreme regime corners to find weaknesses.
+
+    Regimes tested:
+    - high_vol: Maximum volatility (gbm_sigma = 0.001008)
+    - low_vol: Minimum volatility (gbm_sigma = 0.000882)
+    - high_retail: Maximum retail activity (rate=1.0, size=21)
+    - low_retail: Minimum retail activity (rate=0.6, size=19)
+
+    Args:
+        strategy: EVMStrategyAdapter instance
+        n_sims: Number of simulations per regime (default: 100)
+
+    Returns:
+        Dict with edge at each regime, spread, and weakness flags
+    """
+    # Extract regime bounds from config
+    sigma_min = BASELINE_VARIANCE.gbm_sigma_min  # 0.000882
+    sigma_max = BASELINE_VARIANCE.gbm_sigma_max  # 0.001008
+    rate_min = BASELINE_VARIANCE.retail_arrival_rate_min  # 0.6
+    rate_max = BASELINE_VARIANCE.retail_arrival_rate_max  # 1.0
+    size_min = BASELINE_VARIANCE.retail_mean_size_min  # 19.0
+    size_max = BASELINE_VARIANCE.retail_mean_size_max  # 21.0
+
+    log("  Running regime tests at 4 extreme corners...")
+
+    # High volatility
+    log("    → Testing high volatility regime...")
+    edge_high_vol = run_regime_simulations(
+        strategy, n_sims, gbm_sigma=sigma_max
+    )
+
+    # Low volatility
+    log("    → Testing low volatility regime...")
+    edge_low_vol = run_regime_simulations(
+        strategy, n_sims, gbm_sigma=sigma_min
+    )
+
+    # High retail activity
+    log("    → Testing high retail regime...")
+    edge_high_retail = run_regime_simulations(
+        strategy, n_sims, retail_rate=rate_max, retail_size=size_max
+    )
+
+    # Low retail activity
+    log("    → Testing low retail regime...")
+    edge_low_retail = run_regime_simulations(
+        strategy, n_sims, retail_rate=rate_min, retail_size=size_min
+    )
+
+    # Calculate spread and identify weaknesses
+    edges = [edge_high_vol, edge_low_vol, edge_high_retail, edge_low_retail]
+    edge_min = min(edges)
+    edge_max = max(edges)
+    spread = edge_max - edge_min
+
+    # Identify which regime is weakest
+    regime_names = ["high_vol", "low_vol", "high_retail", "low_retail"]
+    weakest_idx = edges.index(edge_min)
+    weakest_regime = regime_names[weakest_idx]
+
+    result = {
+        "high_vol": edge_high_vol,
+        "low_vol": edge_low_vol,
+        "high_retail": edge_high_retail,
+        "low_retail": edge_low_retail,
+        "spread": spread,
+        "weakest_regime": weakest_regime,
+        "weakest_edge": edge_min,
+        "strongest_edge": edge_max,
+        "spread_warning": spread > 50,  # Flag if spread is concerning
+    }
+
+    log(f"    ✓ Regime spread: {spread:.1f} (weakest: {weakest_regime} @ {edge_min:.1f})")
+
+    return result
+
+
 def run_pipeline(strategy_path: str, output_path: str, seed_offset: int = 0) -> int:
     """
     Run complete testing pipeline.
@@ -375,6 +523,22 @@ def run_pipeline(strategy_path: str, output_path: str, seed_offset: int = 0) -> 
             if detailed_metrics:
                 result["testing"]["metrics_1000"] = detailed_metrics
                 log(f"  ✓ Detailed metrics extracted (advantage: {detailed_metrics.get('edge_advantage', 0):.2f})")
+
+            # Step 7: Regime tests (100 sims at each extreme)
+            log("Step 7: Running regime tests (4 extreme corners)...")
+            try:
+                regime_start = time.time()
+                regime_results = run_regime_tests(strategy, n_sims=100)
+                regime_duration = time.time() - regime_start
+
+                result["testing"]["regime_tests"] = regime_results
+                result["runtime"]["regime_tests_seconds"] = regime_duration
+
+                if regime_results["spread_warning"]:
+                    log(f"  ⚠ Regime spread {regime_results['spread']:.1f} > 50 - consider regime-specific tuning", "WARN")
+            except Exception as e:
+                log(f"  ⚠ Regime tests failed (non-fatal): {e}", "WARN")
+                result["testing"]["regime_tests_error"] = str(e)
 
         except Exception as e:
             log(f"  ✗ Baseline test failed: {e}", "ERROR")

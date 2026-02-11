@@ -6,9 +6,13 @@ Constructs context-aware prompts for Codex that enforce Draft→Review→Revise 
 
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Tuple
+
+# Add scripts directory to path for local imports
+sys.path.insert(0, str(Path(__file__).parent))
 
 # ============================================================================
 # PROMPT TEMPLATE
@@ -122,12 +126,12 @@ Multiple trades can occur per step (arb + 0-N retail orders).
 
 **Detection via timestamp**:
 ```solidity
-if (trade.timestamp != lastTimestamp) {
+if (trade.timestamp != lastTimestamp) {{
     // First trade of new step (usually arb)
     lastTimestamp = trade.timestamp;
-} else {
+}} else {{
     // Same-step follow-on trade (usually retail)
-}
+}}
 ```
 
 **Key insight**: First trade often sets fair price anchor; subsequent trades can use it.
@@ -384,13 +388,25 @@ Begin your response with `---DRAFT_STRATEGY_IDEA---` and follow the workflow str
 # STATE LOADING
 # ============================================================================
 
+def load_knowledge_context(state_dir: Path) -> dict:
+    """Load harvested knowledge context if available."""
+    knowledge_path = state_dir / '.knowledge_context.json'
+    if knowledge_path.exists():
+        try:
+            return json.loads(knowledge_path.read_text())
+        except json.JSONDecodeError:
+            pass
+    return {}
+
+
 def load_state(state_dir: Path) -> Dict:
     """Load current Phase 7 state"""
     state = {
         'best_edge': float((state_dir / '.best_edge.txt').read_text().strip()),
         'iteration': int((state_dir / '.iteration_count.txt').read_text().strip()),
         'start_time': int((state_dir / '.start_timestamp.txt').read_text().strip()),
-        'strategies_log': []
+        'strategies_log': [],
+        'knowledge_context': {}
     }
 
     # Load strategies log if it exists and is valid
@@ -400,6 +416,15 @@ def load_state(state_dir: Path) -> Dict:
             state['strategies_log'] = json.loads(strategies_file.read_text())
         except json.JSONDecodeError:
             pass
+
+    # Load knowledge context from session harvester
+    knowledge = load_knowledge_context(state_dir)
+    if knowledge:
+        state['knowledge_context'] = knowledge
+        # Override best_edge if knowledge shows higher
+        true_best = knowledge.get('true_best_edge', 0)
+        if true_best > state['best_edge']:
+            state['best_edge'] = true_best
 
     return state
 
@@ -446,6 +471,70 @@ def format_hypothesis_gaps(gaps: List[Tuple[str, str]]) -> str:
     return '\n'.join(lines)
 
 # ============================================================================
+# KNOWLEDGE CONTEXT FORMATTING
+# ============================================================================
+
+def format_knowledge_section(knowledge: dict) -> str:
+    """Format harvested knowledge context for prompt inclusion."""
+    if not knowledge:
+        return ""
+
+    sections = []
+
+    # True best edge header
+    true_best = knowledge.get('true_best_edge', 0)
+    best_strategy = knowledge.get('true_best_strategy', 'Unknown')
+    if true_best > 0:
+        sections.append(f"**True Best Edge**: {true_best:.2f} ({best_strategy})")
+        sections.append("")
+
+    # Lessons learned
+    lessons = knowledge.get('lessons_learned', [])
+    if lessons:
+        sections.append("### Lessons Learned")
+        for lesson in lessons[:7]:  # Limit to 7
+            # Truncate long lessons
+            if len(lesson) > 100:
+                lesson = lesson[:97] + "..."
+            sections.append(f"- {lesson}")
+        sections.append("")
+
+    # Strategies tested table
+    all_tested = knowledge.get('all_tested_strategies', [])
+    if all_tested:
+        sections.append("### Strategies Tested (Harvested from Sessions)")
+        sections.append("")
+        sections.append("| Strategy | Edge | Sims | Iter |")
+        sections.append("|----------|------|------|------|")
+        for s in all_tested[:12]:  # Limit to top 12
+            name = s.get('name', 'Unknown')[:25]
+            edge = s.get('edge', 0)
+            sims = s.get('sims', 0)
+            iteration = s.get('iteration', 0)
+            sections.append(f"| {name} | {edge:.2f} | {sims} | {iteration} |")
+        sections.append("")
+
+    # Regressions to avoid
+    regressions = knowledge.get('regressions', [])
+    if regressions:
+        sections.append("### Regressions to Avoid")
+        sections.append("These modifications made performance worse:")
+        for reg in regressions[:5]:  # Limit to 5
+            from_s = reg.get('from', 'Unknown')
+            from_e = reg.get('from_edge', 0)
+            to_s = reg.get('to', 'Unknown')
+            to_e = reg.get('to_edge', 0)
+            delta = to_e - from_e
+            sections.append(f"- **{from_s}** ({from_e:.1f}) -> **{to_s}** ({to_e:.1f}) [{delta:+.1f}]")
+        sections.append("")
+
+    if not sections:
+        return ""
+
+    return "## Accumulated Knowledge from Sessions\n\n" + "\n".join(sections)
+
+
+# ============================================================================
 # RECENT RESULTS FORMATTING
 # ============================================================================
 
@@ -483,12 +572,13 @@ def load_iteration_discoveries(state_dir: Path) -> str:
 
 
 def load_insights(state_dir: Path) -> Dict:
-    """Load insights from forensics, synthesis, and auditor engines."""
+    """Load insights from forensics, synthesis, auditor engines, and knowledge store."""
     insights = {
         'forensics': None,
         'synthesis': None,
         'audit': None,
         'discoveries': None,
+        'knowledge_store': None,
     }
 
     # Load forensics insights
@@ -522,6 +612,18 @@ def load_insights(state_dir: Path) -> Dict:
     discoveries = load_iteration_discoveries(state_dir)
     if discoveries:
         insights['discoveries'] = discoveries
+
+    # Load from knowledge store
+    try:
+        from amm_phase7_knowledge_store import KnowledgeStore
+        ks = KnowledgeStore(str(state_dir))
+        knowledge_output = ks.format_for_prompt()
+        if knowledge_output:
+            insights['knowledge_store'] = knowledge_output
+    except ImportError:
+        pass
+    except Exception:
+        pass
 
     return insights
 
@@ -613,6 +715,10 @@ def format_insights_section(insights: Dict) -> str:
     # Discoveries from previous iterations
     if insights.get('discoveries'):
         sections.insert(0, insights['discoveries'])
+
+    # Knowledge store (parameter optima, mechanism ceilings, etc.)
+    if insights.get('knowledge_store'):
+        sections.append("### Persistent Knowledge Store\n" + insights['knowledge_store'])
 
     if not sections:
         return ""
@@ -718,11 +824,34 @@ def build_prompt(
                     insights_section + "\n" + workflow_marker
                 )
 
+    # Inject knowledge context section (from session harvester)
+    knowledge_section = format_knowledge_section(state.get('knowledge_context', {}))
+    if knowledge_section:
+        # Insert after "Known Ceilings" if present, otherwise before "Generation Workflow"
+        known_ceilings_marker = "## Known Ceilings"
+        workflow_marker = "## Generation Workflow"
+
+        if known_ceilings_marker in prompt:
+            # Find where Known Ceilings section ends (next ## header or workflow)
+            idx = prompt.find(known_ceilings_marker)
+            rest = prompt[idx + len(known_ceilings_marker):]
+            next_section = rest.find("\n## ")
+            if next_section != -1:
+                insert_point = idx + len(known_ceilings_marker) + next_section
+                prompt = prompt[:insert_point] + "\n\n" + knowledge_section + prompt[insert_point:]
+            elif workflow_marker in prompt:
+                prompt = prompt.replace(workflow_marker, knowledge_section + "\n" + workflow_marker)
+        elif workflow_marker in prompt:
+            prompt = prompt.replace(workflow_marker, knowledge_section + "\n" + workflow_marker)
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(prompt)
     print(f"Prompt built: {output_path}")
     if insights_section:
         print(f"  (includes AI-generated insights from forensics/synthesis/audit)")
+    if knowledge_section:
+        true_best = state.get('knowledge_context', {}).get('true_best_edge', 0)
+        print(f"  (includes harvested knowledge: true best edge = {true_best:.2f})")
 
 # ============================================================================
 # MAIN

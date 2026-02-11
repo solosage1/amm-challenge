@@ -185,6 +185,11 @@ ensure_int_file(state_start_time, int(time.time()))
 PY
 
     log "INFO" "State initialized."
+
+    # Harvest any existing session data on startup
+    log "INFO" "Harvesting existing session data..."
+    "$VENV_PY" scripts/amm-phase7-session-harvester.py \
+        --all --state-dir "$PHASE7_STATE_DIR" 2>/dev/null || true
 }
 
 # ============================================================================
@@ -650,6 +655,14 @@ main_loop() {
         local final_edge=""
         local is_new_champion="0"
 
+        # === STEP 0: Harvest results from previous Codex session ===
+        if [[ $iteration -gt 1 ]]; then
+            log "INFO" "Harvesting results from iteration $((iteration - 1))..."
+            "$VENV_PY" scripts/amm-phase7-session-harvester.py \
+                --iteration $((iteration - 1)) \
+                --state-dir "$PHASE7_STATE_DIR" 2>/dev/null || true
+        fi
+
         # === STEP 1: Generate prompt context ===
         log "INFO" "Building prompt..."
         if ! "$VENV_PY" scripts/amm-phase7-prompt-builder.py \
@@ -789,6 +802,47 @@ PY
                 log "INFO" "  Forensics insights generated"
             else
                 log "WARN" "  Forensics analysis failed (non-fatal)"
+            fi
+        fi
+
+        # === STEP 10: Run regime tests on new champions ===
+        if [[ "$is_new_champion" == "1" ]]; then
+            log "INFO" "  📊 Running regime tests on new champion..."
+            local regime_output="$PHASE7_STATE_DIR/regime_tests_iter${iteration}.json"
+            if "$VENV_PY" scripts/amm-phase7-regime-tester.py \
+                "$strategy_path" \
+                --sims 100 \
+                --json "$regime_output" 2>/dev/null; then
+                # Extract and log key findings
+                local regime_spread weakest_regime
+                regime_spread="$("$VENV_PY" - "$regime_output" <<'PY'
+import json, sys
+from pathlib import Path
+p=Path(sys.argv[1])
+data=json.loads(p.read_text())
+print(f"{data['summary']['corner_spread']:.1f}")
+PY
+)"
+                weakest_regime="$("$VENV_PY" - "$regime_output" <<'PY'
+import json, sys
+from pathlib import Path
+p=Path(sys.argv[1])
+data=json.loads(p.read_text())
+print(data['summary']['weakest_regime'])
+PY
+)"
+                log "INFO" "  Regime tests complete: spread=$regime_spread, weakest=$weakest_regime"
+
+                # Warn if spread is large
+                if "$VENV_PY" - "$regime_spread" <<'PY'
+import sys
+raise SystemExit(0 if float(sys.argv[1]) > 50 else 1)
+PY
+                then
+                    log "WARN" "  ⚠ Large regime spread ($regime_spread) - consider regime-specific tuning"
+                fi
+            else
+                log "WARN" "  Regime tests failed (non-fatal)"
             fi
         fi
 

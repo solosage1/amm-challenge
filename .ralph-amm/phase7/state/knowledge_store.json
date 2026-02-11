@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "created": "2026-02-11T00:01:56.483893+00:00",
+  "edge_results": [
+    {
+      "timestamp": "2026-02-11T00:01:56.484043+00:00",
+      "strategy": "TestStrategy",
+      "edge": 502.5,
+      "mechanisms": [
+        "fair_inference",
+        "dual_regime"
+      ],
+      "parameters": {
+        "ewma_alpha": 0.2
+      },
+      "iteration": null
+    }
+  ],
+  "parameter_optima": {
+    "ewma_alpha": {
+      "best_value": 0.2,
+      "best_edge": 502.5,
+      "all_tested": [
+        {
+          "0.2": 502.5
+        }
+      ]
+    }
+  },
+  "mechanism_ceilings": {
+    "fair_inference": {
+      "ceiling": 502.5,
+      "ceiling_strategy": "TestStrategy",
+      "appearances": 1
+    },
+    "dual_regime": {
+      "ceiling": 502.5,
+      "ceiling_strategy": "TestStrategy",
+      "appearances": 1
+    }
+  },
+  "failed_approaches": [],
+  "insights": [],
+  "regime_weaknesses": [],
+  "updated": "2026-02-11T00:01:56.484049+00:00"
+}
