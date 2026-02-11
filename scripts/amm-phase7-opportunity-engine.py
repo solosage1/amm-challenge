@@ -32,11 +32,27 @@ DEFAULT_NOVELTY_LOOKBACK = 6
 DEFAULT_NOVELTY_PENALTY = 1.0
 DEFAULT_EXPLORE_LOOKBACK = 4
 DEFAULT_EXPLORE_REPEAT_CLASSES = {"undercut_sweep", "gating_adaptive"}
-DEFAULT_EXPLORE_TARGET_CLASSES = {"gamma_formula", "asymmetric", "ema_smoothing"}
+DEFAULT_EXPLORE_TARGET_CLASSES = {
+    "gamma_formula",
+    "asymmetric",
+    "online_learning",
+    "optimal_control",
+    "bayesian_optimization",
+    "microstructure",
+    "adversarial_robustness",
+}
+DEFAULT_EXPLORE_MIN_NO_UPLIFT = 3
+DEFAULT_EXPLORE_MIN_REPEAT_SHARE = 0.60
+DEFAULT_EXPLORE_STALL_LOOKBACK = 10
+DEFAULT_EXPLORE_STALL_MIN_NO_UPLIFT = 7
+DEFAULT_EXPLORE_UNTRIED_FLOOR_ENABLED = True
 DEFAULT_BREAKTHROUGH_TIE_EPSILON = 0.10
 DEFAULT_SEVERE_SUBFAMILY_FAILURE_THRESHOLD = 2
 DEFAULT_GATES_FALLBACK_POLLS = 8
 DEFAULT_GATES_FALLBACK_POLL_SECONDS = 0.25
+DEFAULT_SCORE_NOVELTY_WEIGHT = 0.55
+DEFAULT_SCORE_BREAKTHROUGH_WEIGHT = 0.60
+DEFAULT_SCORE_UNTRIED_BONUS = 4.0
 
 FAMILY_CLASS_BY_ID = {
     "adaptive_undercut_search": "undercut_sweep",
@@ -46,6 +62,12 @@ FAMILY_CLASS_BY_ID = {
     "gamma_formula_search": "gamma_formula",
     "ema_smoothing_search": "ema_smoothing",
     "asymmetric_bid_ask_search": "asymmetric",
+    "contextual_bandit_policy_search": "online_learning",
+    "distributionally_robust_control_search": "adversarial_robustness",
+    "bayesian_optimization_meta_search": "bayesian_optimization",
+    "inventory_hjb_control_search": "optimal_control",
+    "queue_microprice_impact_search": "microstructure",
+    "adversarial_regime_sim_search": "adversarial_robustness",
 }
 
 SUBFAMILY_CATALOG_BY_ID = {
@@ -64,6 +86,62 @@ SUBFAMILY_CATALOG_BY_ID = {
     "gamma_formula_search": ["gamma_transform"],
     "ema_smoothing_search": ["ema_smoothing"],
     "asymmetric_bid_ask_search": ["bid_ask_asymmetry"],
+    "contextual_bandit_policy_search": [
+        "thompson_quote_arms",
+        "ucb_quote_arms",
+        "exp3_adversarial_bandit",
+    ],
+    "distributionally_robust_control_search": [
+        "cvar_objective",
+        "worst_case_regime_mix",
+        "ambiguity_set_penalty",
+    ],
+    "bayesian_optimization_meta_search": [
+        "gp_expected_improvement",
+        "turbo_trust_region",
+        "multi_fidelity_bayesopt",
+    ],
+    "inventory_hjb_control_search": [
+        "avellaneda_stoikov_like",
+        "hjb_discrete_inventory",
+        "risk_aversion_schedule",
+    ],
+    "queue_microprice_impact_search": [
+        "microprice_imbalance",
+        "queue_reactive_spread",
+        "impact_decay",
+    ],
+    "adversarial_regime_sim_search": [
+        "stress_regime_mixture",
+        "adversarial_replay",
+        "change_point_guard",
+    ],
+}
+
+NOVELTY_PRIOR_BY_FAMILY_CLASS = {
+    "undercut_sweep": 2.5,
+    "gating_adaptive": 3.0,
+    "ema_smoothing": 4.0,
+    "gamma_formula": 7.0,
+    "asymmetric": 7.8,
+    "online_learning": 8.9,
+    "adversarial_robustness": 8.4,
+    "bayesian_optimization": 8.0,
+    "optimal_control": 8.7,
+    "microstructure": 8.2,
+}
+
+BREAKTHROUGH_PRIOR_BY_FAMILY_CLASS = {
+    "undercut_sweep": 3.2,
+    "gating_adaptive": 3.8,
+    "ema_smoothing": 4.8,
+    "gamma_formula": 7.4,
+    "asymmetric": 7.1,
+    "online_learning": 7.9,
+    "adversarial_robustness": 7.6,
+    "bayesian_optimization": 7.2,
+    "optimal_control": 8.0,
+    "microstructure": 7.5,
 }
 
 
@@ -169,6 +247,42 @@ def parse_subfamily_from_strategy_name(opportunity_id: str, strategy_name: str) 
         return "parameter_beam"
     elif opportunity_id == "robustness_repair_search":
         return "spread_stabilizer"
+    elif opportunity_id == "contextual_bandit_policy_search":
+        if any(tok in stem for tok in ("exp3", "adversarial")):
+            return "exp3_adversarial_bandit"
+        if "ucb" in stem:
+            return "ucb_quote_arms"
+        return "thompson_quote_arms"
+    elif opportunity_id == "distributionally_robust_control_search":
+        if "cvar" in stem:
+            return "cvar_objective"
+        if any(tok in stem for tok in ("worst", "mix")):
+            return "worst_case_regime_mix"
+        return "ambiguity_set_penalty"
+    elif opportunity_id == "bayesian_optimization_meta_search":
+        if any(tok in stem for tok in ("turbo", "trust")):
+            return "turbo_trust_region"
+        if any(tok in stem for tok in ("mf", "fidelity")):
+            return "multi_fidelity_bayesopt"
+        return "gp_expected_improvement"
+    elif opportunity_id == "inventory_hjb_control_search":
+        if any(tok in stem for tok in ("hjb", "inventory")):
+            return "hjb_discrete_inventory"
+        if any(tok in stem for tok in ("risk", "aversion")):
+            return "risk_aversion_schedule"
+        return "avellaneda_stoikov_like"
+    elif opportunity_id == "queue_microprice_impact_search":
+        if any(tok in stem for tok in ("queue", "spread")):
+            return "queue_reactive_spread"
+        if any(tok in stem for tok in ("impact", "decay")):
+            return "impact_decay"
+        return "microprice_imbalance"
+    elif opportunity_id == "adversarial_regime_sim_search":
+        if "replay" in stem:
+            return "adversarial_replay"
+        if any(tok in stem for tok in ("cpd", "change")):
+            return "change_point_guard"
+        return "stress_regime_mixture"
 
     return None
 
@@ -422,6 +536,11 @@ class Candidate:
     complexity: float
     overfit_risk: float
     weighted_score: float
+    novelty: float = 5.0
+    breakthrough_likelihood: float = 5.0
+    base_weighted_score: float = 0.0
+    score_bonus: float = 0.0
+    untried_family: bool = False
 
 
 def weighted_score(uplift: float, confidence: float, time_to_signal: float, complexity: float, overfit_risk: float) -> float:
@@ -483,25 +602,98 @@ def summarize_history_by_opportunity(
     return summary
 
 
+def opportunity_total_attempts(
+    priors: Dict[str, Any],
+    history: List[Dict[str, Any]],
+    opportunity_id: str,
+) -> int:
+    prior = priors.get(opportunity_id)
+    if isinstance(prior, dict):
+        attempts = int(prior.get("attempts", 0) or 0)
+        if attempts > 0:
+            return attempts
+        succ = int(prior.get("successes", 0) or 0)
+        fail = int(prior.get("failures", 0) or 0)
+        neutral = int(prior.get("neutral", 0) or 0)
+        if (succ + fail + neutral) > 0:
+            return succ + fail + neutral
+        sub_map = prior.get("subfamilies")
+        if isinstance(sub_map, dict):
+            sub_attempts = 0
+            for sb in sub_map.values():
+                if not isinstance(sb, dict):
+                    continue
+                sub_attempts += int(sb.get("attempts", 0) or 0)
+            if sub_attempts > 0:
+                return sub_attempts
+
+    attempts_from_history = 0
+    for entry in history:
+        if not isinstance(entry, dict):
+            continue
+        if not bool(entry.get("execute_this_iteration", False)):
+            continue
+        if str(entry.get("selected_opportunity") or "") != opportunity_id:
+            continue
+        attempts_from_history += 1
+    return attempts_from_history
+
+
+def compute_exploration_pressure(
+    *,
+    history: List[Dict[str, Any]],
+    lookback: int,
+    no_uplift_epsilon: float,
+    repeat_classes: set[str],
+) -> Dict[str, float]:
+    recent = recent_executed_history(history, lookback)
+    repeat_count = 0
+    repeat_no_uplift = 0
+    overall_no_uplift = 0
+
+    for entry in recent:
+        opp = str(entry.get("selected_opportunity") or "")
+        cls = family_class(opp)
+        flag = delta_is_no_uplift(entry, no_uplift_epsilon)
+        if flag is True:
+            overall_no_uplift += 1
+        if cls in repeat_classes:
+            repeat_count += 1
+            if flag is True:
+                repeat_no_uplift += 1
+
+    recent_count = len(recent)
+    repeat_share = (float(repeat_count) / float(recent_count)) if recent_count > 0 else 0.0
+    return {
+        "recent_count": float(recent_count),
+        "repeat_count": float(repeat_count),
+        "repeat_no_uplift": float(repeat_no_uplift),
+        "overall_no_uplift": float(overall_no_uplift),
+        "repeat_share": float(repeat_share),
+    }
+
+
 def should_force_orthogonal(
     history: List[Dict[str, Any]],
     lookback: int,
     no_uplift_epsilon: float,
     repeat_classes: set[str],
+    min_no_uplift: int,
+    min_repeat_share: float,
 ) -> bool:
-    recent = recent_executed_history(history, lookback)
-    if len(recent) < max(1, int(lookback)):
+    pressure = compute_exploration_pressure(
+        history=history,
+        lookback=lookback,
+        no_uplift_epsilon=no_uplift_epsilon,
+        repeat_classes=repeat_classes,
+    )
+    recent_count = int(pressure["recent_count"])
+    if recent_count < max(1, int(lookback)):
         return False
-    for entry in recent:
-        opp = entry.get("selected_opportunity")
-        if not isinstance(opp, str) or not opp:
-            return False
-        if family_class(opp) not in repeat_classes:
-            return False
-        flag = delta_is_no_uplift(entry, no_uplift_epsilon)
-        if flag is not True:
-            return False
-    return True
+    return (
+        int(pressure["repeat_no_uplift"]) >= int(min_no_uplift)
+        and float(pressure["repeat_share"]) >= float(min_repeat_share)
+    )
 
 
 def build_candidates(
@@ -513,6 +705,9 @@ def build_candidates(
     novelty_lookback: int,
     novelty_penalty: float,
     no_uplift_epsilon: float,
+    score_novelty_weight: float,
+    score_breakthrough_weight: float,
+    score_untried_bonus: float,
 ) -> List[Candidate]:
     p = safe_float(signals.get("plateau_strength")) or 0.0
     b = safe_float(signals.get("brittleness_strength")) or 0.0
@@ -533,6 +728,12 @@ def build_candidates(
         "gamma_formula_search",
         "ema_smoothing_search",
         "asymmetric_bid_ask_search",
+        "contextual_bandit_policy_search",
+        "distributionally_robust_control_search",
+        "bayesian_optimization_meta_search",
+        "inventory_hjb_control_search",
+        "queue_microprice_impact_search",
+        "adversarial_regime_sim_search",
     ):
         prior = priors.get(key, {})
         succ = int(prior.get("successes", 0) or 0)
@@ -632,9 +833,119 @@ def build_candidates(
             weighted_score=0.0,
         )
     )
+    cands.append(
+        Candidate(
+            id="contextual_bandit_policy_search",
+            family_class=family_class("contextual_bandit_policy_search"),
+            rationale=(
+                "Use contextual bandits to choose quote aggressiveness online by flow state "
+                "instead of static parameter families."
+            ),
+            expected_uplift=clamp(6.1 + 0.25 * p + 0.20 * s + prior_adj["contextual_bandit_policy_search"]),
+            confidence=clamp(4.2 + 0.20 * p + prior_adj["contextual_bandit_policy_search"]),
+            time_to_signal=6.5,
+            complexity=7.2,
+            overfit_risk=4.5,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="distributionally_robust_control_search",
+            family_class=family_class("distributionally_robust_control_search"),
+            rationale=(
+                "Optimize against worst-case regime mixtures (CVaR/ambiguity sets) to avoid "
+                "collapse under adversarial flow."
+            ),
+            expected_uplift=clamp(
+                6.3 + 0.25 * b + 0.15 * p + prior_adj["distributionally_robust_control_search"]
+            ),
+            confidence=clamp(4.0 + 0.25 * b + prior_adj["distributionally_robust_control_search"]),
+            time_to_signal=5.5,
+            complexity=7.8,
+            overfit_risk=3.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="bayesian_optimization_meta_search",
+            family_class=family_class("bayesian_optimization_meta_search"),
+            rationale=(
+                "Use surrogate-driven search (GP/TuRBO/multi-fidelity) to jump across non-local "
+                "strategy manifolds instead of linear sweeps."
+            ),
+            expected_uplift=clamp(
+                5.8 + 0.20 * p + 0.25 * s + prior_adj["bayesian_optimization_meta_search"]
+            ),
+            confidence=clamp(4.1 + 0.20 * s + prior_adj["bayesian_optimization_meta_search"]),
+            time_to_signal=6.0,
+            complexity=7.4,
+            overfit_risk=3.8,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="inventory_hjb_control_search",
+            family_class=family_class("inventory_hjb_control_search"),
+            rationale=(
+                "Introduce inventory-aware optimal control (HJB/Avellaneda-Stoikov style) so "
+                "spread/undercut adapts to risk state, not just mispricing."
+            ),
+            expected_uplift=clamp(6.6 + 0.20 * p + 0.20 * b + prior_adj["inventory_hjb_control_search"]),
+            confidence=clamp(3.9 + 0.20 * p + prior_adj["inventory_hjb_control_search"]),
+            time_to_signal=5.5,
+            complexity=8.0,
+            overfit_risk=4.2,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="queue_microprice_impact_search",
+            family_class=family_class("queue_microprice_impact_search"),
+            rationale=(
+                "Quote off queue/microprice and short-horizon impact estimates to capture "
+                "microstructure alpha orthogonal to undercut tuning."
+            ),
+            expected_uplift=clamp(6.0 + 0.20 * s + 0.15 * b + prior_adj["queue_microprice_impact_search"]),
+            confidence=clamp(4.1 + 0.20 * s + prior_adj["queue_microprice_impact_search"]),
+            time_to_signal=6.0,
+            complexity=7.3,
+            overfit_risk=4.1,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="adversarial_regime_sim_search",
+            family_class=family_class("adversarial_regime_sim_search"),
+            rationale=(
+                "Stress-test with adversarial regime replay/change-point detectors to learn "
+                "policies that survive worst-case transitions."
+            ),
+            expected_uplift=clamp(5.9 + 0.25 * b + 0.15 * p + prior_adj["adversarial_regime_sim_search"]),
+            confidence=clamp(3.8 + 0.25 * b + prior_adj["adversarial_regime_sim_search"]),
+            time_to_signal=5.0,
+            complexity=7.9,
+            overfit_risk=2.8,
+            weighted_score=0.0,
+        )
+    )
 
     for c in cands:
         prior = priors.get(c.id, {}) if isinstance(priors.get(c.id), dict) else {}
+        total_attempts = opportunity_total_attempts(priors, history, c.id)
+        c.untried_family = bool(total_attempts <= 0)
+        c.novelty = clamp(
+            NOVELTY_PRIOR_BY_FAMILY_CLASS.get(c.family_class, 5.0)
+            + (0.6 if c.untried_family else 0.0)
+        )
+        c.breakthrough_likelihood = clamp(
+            BREAKTHROUGH_PRIOR_BY_FAMILY_CLASS.get(c.family_class, 5.0)
+            + (0.4 if c.untried_family else 0.0)
+        )
         cooldown_until = int(prior.get("cooldown_until_iteration", 0) or 0)
         if cooldown_until >= int(iteration):
             remaining = cooldown_until - int(iteration) + 1
@@ -663,9 +974,17 @@ def build_candidates(
                     f"{no_uplift}/{attempts} recent attempts had no uplift]"
                 )
 
-        c.weighted_score = weighted_score(
+        c.base_weighted_score = weighted_score(
             c.expected_uplift, c.confidence, c.time_to_signal, c.complexity, c.overfit_risk
         )
+        c.score_bonus = (
+            float(score_novelty_weight) * c.novelty
+            + float(score_breakthrough_weight) * c.breakthrough_likelihood
+        )
+        if c.untried_family:
+            c.score_bonus += float(score_untried_bonus)
+            c.rationale = f"{c.rationale} [untried family bonus applied]"
+        c.weighted_score = round(c.base_weighted_score + c.score_bonus, 3)
 
     cands.sort(key=lambda x: (-x.weighted_score, x.id))
     return cands
@@ -800,6 +1119,163 @@ def default_plan_template(opportunity_id: str, target_edge: float, reference_bes
                 "abort_family_if_batch_best_below_reference_by": 0.5,
                 "first_run_delta_below": -1.0,
             },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "contextual_bandit_policy_search":
+        return {
+            "frozen_core": [
+                "canonical 1000-sim validation",
+                "existing champion safety clamps",
+                "effective-score fallback guardrails",
+            ],
+            "mutation_dimensions": [
+                "arm definitions for quote aggressiveness regimes",
+                "context features from mispricing/flow burst/inventory proxy",
+                "policy update rule (Thompson, UCB, EXP3)",
+                "exploration temperature and regret cap",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "falsification_test": "If regret-aware policy variants do not beat static control after 10 variants, reject online policy hypothesis.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "distributionally_robust_control_search":
+        return {
+            "frozen_core": [
+                "champion quote path at low stress",
+                "canonical edge metric and robust-score checks",
+            ],
+            "mutation_dimensions": [
+                "CVaR alpha and tail-loss penalty",
+                "worst-case regime-mixture ambiguity set",
+                "stress-triggered spread widening policy",
+                "adversarial replay weight",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 52.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "falsification_test": "If robust variants reduce tail spread but cannot improve canonical edge, reject robust-control family for current regime mix.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "bayesian_optimization_meta_search":
+        return {
+            "frozen_core": [
+                "all champion guardrails",
+                "bounded parallel execution and gate monitor",
+            ],
+            "mutation_dimensions": [
+                "surrogate model choice (GP/TuRBO)",
+                "acquisition function (EI/TS/UCB)",
+                "coarse-to-fine trust region schedule",
+                "multi-fidelity allocation ratio",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "falsification_test": "If surrogate-guided candidates underperform random orthogonal controls in same budget, reject BO meta-search for this phase.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "inventory_hjb_control_search":
+        return {
+            "frozen_core": [
+                "fair-value and jump logic from champion",
+                "strict protection-side constraints",
+            ],
+            "mutation_dimensions": [
+                "inventory-risk aversion coefficient schedule",
+                "reservation price skew by inventory bucket",
+                "spread widening by inventory stress",
+                "inventory decay horizon",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.1,
+            },
+            "falsification_test": "If inventory-aware controls do not beat inventory-neutral controls after 8 variants, reject HJB family and cooldown.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "queue_microprice_impact_search":
+        return {
+            "frozen_core": [
+                "champion timing and baseline undercut clamp",
+                "canonical 1000-sim metrics only",
+            ],
+            "mutation_dimensions": [
+                "microprice/imbalance estimator variant",
+                "queue-reactive spread response",
+                "impact decay half-life and cap",
+                "flow-cluster based quote hysteresis",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "falsification_test": "If queue/microprice-informed variants tie or lose to static control across 10 variants, reject microstructure family for this simulator.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "adversarial_regime_sim_search":
+        return {
+            "frozen_core": [
+                "champion core quote engine",
+                "existing gate and rollback safety rules",
+            ],
+            "mutation_dimensions": [
+                "adversarial replay weighting",
+                "change-point detector sensitivity",
+                "stress-mode spread/undercut clamps",
+                "recovery hysteresis after stress events",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 52.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "falsification_test": "If adversarially-trained variants do not improve canonical edge and spread resilience, reject regime-adversarial branch.",
             "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
         }
     if opportunity_id == "robustness_repair_search":
@@ -975,6 +1451,9 @@ def evaluate(args: argparse.Namespace) -> int:
         novelty_lookback=int(args.novelty_lookback),
         novelty_penalty=float(args.novelty_penalty),
         no_uplift_epsilon=float(args.no_uplift_epsilon),
+        score_novelty_weight=float(args.score_novelty_weight),
+        score_breakthrough_weight=float(args.score_breakthrough_weight),
+        score_untried_bonus=float(args.score_untried_bonus),
     )
     top = candidates[0]
     selection_reason = "top_weighted_score"
@@ -983,13 +1462,22 @@ def evaluate(args: argparse.Namespace) -> int:
 
     repeat_classes = parse_csv_set(args.explore_repeat_classes) or set(DEFAULT_EXPLORE_REPEAT_CLASSES)
     target_classes = parse_csv_set(args.explore_target_classes) or set(DEFAULT_EXPLORE_TARGET_CLASSES)
+    explore_pressure = compute_exploration_pressure(
+        history=history,
+        lookback=int(args.explore_lookback),
+        no_uplift_epsilon=float(args.no_uplift_epsilon),
+        repeat_classes=repeat_classes,
+    )
+
+    forced = None
     if bool(args.explore_quota_enable) and should_force_orthogonal(
         history=history,
         lookback=int(args.explore_lookback),
         no_uplift_epsilon=float(args.no_uplift_epsilon),
         repeat_classes=repeat_classes,
+        min_no_uplift=int(args.explore_min_no_uplift),
+        min_repeat_share=float(args.explore_min_repeat_share),
     ):
-        forced = None
         for candidate in candidates:
             if candidate.family_class in target_classes:
                 forced = candidate
@@ -1003,9 +1491,38 @@ def evaluate(args: argparse.Namespace) -> int:
             top = forced
             exploration_forced = True
             selection_reason = (
-                f"forced_orthogonal_exploration: recent no-uplift retries in classes "
-                f"{sorted(repeat_classes)}"
+                "forced_orthogonal_exploration: "
+                f"repeat_no_uplift={int(explore_pressure['repeat_no_uplift'])} "
+                f"repeat_share={float(explore_pressure['repeat_share']):.2f}"
             )
+
+    if not exploration_forced and bool(args.explore_untried_floor_enable):
+        stall_pressure = compute_exploration_pressure(
+            history=history,
+            lookback=int(args.explore_stall_lookback),
+            no_uplift_epsilon=float(args.no_uplift_epsilon),
+            repeat_classes=repeat_classes,
+        )
+        if int(stall_pressure["overall_no_uplift"]) >= int(args.explore_stall_min_no_uplift):
+            for candidate in candidates:
+                if not candidate.untried_family:
+                    continue
+                if candidate.family_class in target_classes:
+                    forced = candidate
+                    break
+            if forced is None:
+                for candidate in candidates:
+                    if candidate.untried_family:
+                        forced = candidate
+                        break
+            if forced is not None and forced.id != top.id:
+                top = forced
+                exploration_forced = True
+                selection_reason = (
+                    "forced_untried_floor: "
+                    f"overall_no_uplift={int(stall_pressure['overall_no_uplift'])}/"
+                    f"{int(stall_pressure['recent_count'])} lookback={int(args.explore_stall_lookback)}"
+                )
 
     candidate_subfamilies: Dict[str, Dict[str, str]] = {}
     for c in candidates:
@@ -1057,6 +1574,16 @@ def evaluate(args: argparse.Namespace) -> int:
             "time_to_signal": 0.15,
             "complexity_inverse": 0.10,
             "overfit_risk_inverse": 0.15,
+            "novelty_bonus_weight": float(args.score_novelty_weight),
+            "breakthrough_bonus_weight": float(args.score_breakthrough_weight),
+            "untried_family_bonus": float(args.score_untried_bonus),
+        },
+        "exploration_pressure": {
+            "lookback": int(args.explore_lookback),
+            "repeat_no_uplift": int(explore_pressure["repeat_no_uplift"]),
+            "repeat_share": round(float(explore_pressure["repeat_share"]), 3),
+            "overall_no_uplift": int(explore_pressure["overall_no_uplift"]),
+            "recent_count": int(explore_pressure["recent_count"]),
         },
         "ranked_opportunities": [
             {
@@ -1076,6 +1603,11 @@ def evaluate(args: argparse.Namespace) -> int:
                 "time_to_signal": round(c.time_to_signal, 3),
                 "complexity": round(c.complexity, 3),
                 "overfit_risk": round(c.overfit_risk, 3),
+                "novelty": round(c.novelty, 3),
+                "breakthrough_likelihood": round(c.breakthrough_likelihood, 3),
+                "untried_family": bool(c.untried_family),
+                "base_weighted_score": c.base_weighted_score,
+                "score_bonus": round(c.score_bonus, 3),
                 "weighted_score": c.weighted_score,
             }
             for c in candidates
@@ -1113,6 +1645,11 @@ def evaluate(args: argparse.Namespace) -> int:
             "rationale": top.rationale,
             "expected_uplift": round(top.expected_uplift, 3),
             "confidence": round(top.confidence, 3),
+            "novelty": round(top.novelty, 3),
+            "breakthrough_likelihood": round(top.breakthrough_likelihood, 3),
+            "untried_family": bool(top.untried_family),
+            "base_weighted_score": top.base_weighted_score,
+            "score_bonus": round(top.score_bonus, 3),
             "weighted_score": top.weighted_score,
         },
         "policy": {
@@ -1126,8 +1663,16 @@ def evaluate(args: argparse.Namespace) -> int:
             "novelty_penalty": float(args.novelty_penalty),
             "explore_quota_enabled": bool(args.explore_quota_enable),
             "explore_lookback": int(args.explore_lookback),
+            "explore_min_no_uplift": int(args.explore_min_no_uplift),
+            "explore_min_repeat_share": float(args.explore_min_repeat_share),
             "explore_repeat_classes": sorted(repeat_classes),
             "explore_target_classes": sorted(target_classes),
+            "explore_untried_floor_enabled": bool(args.explore_untried_floor_enable),
+            "explore_stall_lookback": int(args.explore_stall_lookback),
+            "explore_stall_min_no_uplift": int(args.explore_stall_min_no_uplift),
+            "score_novelty_weight": float(args.score_novelty_weight),
+            "score_breakthrough_weight": float(args.score_breakthrough_weight),
+            "score_untried_bonus": float(args.score_untried_bonus),
             "subfamily_override": str(args.subfamily_override or ""),
             "breakthrough_tie_epsilon": float(args.breakthrough_tie_epsilon),
             "severe_subfamily_failure_threshold": int(args.severe_subfamily_failure_threshold),
@@ -1416,6 +1961,7 @@ def record(args: argparse.Namespace) -> int:
         bucket = priors.setdefault(
             opp,
             {
+                "attempts": 0,
                 "successes": 0,
                 "failures": 0,
                 "neutral": 0,
@@ -1428,6 +1974,7 @@ def record(args: argparse.Namespace) -> int:
                 "subfamilies": {},
             },
         )
+        bucket["attempts"] = int(bucket.get("attempts", 0) or 0) + 1
         sub_key = entry.get("final_subfamily") or entry.get("selected_subfamily") or default_subfamily_for_opportunity(opp)
         if not isinstance(sub_key, str) or not sub_key:
             sub_key = default_subfamily_for_opportunity(opp)
@@ -1613,6 +2160,8 @@ def main() -> int:
     p_eval.add_argument("--novelty-lookback", type=int, default=DEFAULT_NOVELTY_LOOKBACK)
     p_eval.add_argument("--novelty-penalty", type=float, default=DEFAULT_NOVELTY_PENALTY)
     p_eval.add_argument("--explore-lookback", type=int, default=DEFAULT_EXPLORE_LOOKBACK)
+    p_eval.add_argument("--explore-min-no-uplift", type=int, default=DEFAULT_EXPLORE_MIN_NO_UPLIFT)
+    p_eval.add_argument("--explore-min-repeat-share", type=float, default=DEFAULT_EXPLORE_MIN_REPEAT_SHARE)
     p_eval.add_argument(
         "--explore-repeat-classes",
         default=",".join(sorted(DEFAULT_EXPLORE_REPEAT_CLASSES)),
@@ -1621,6 +2170,11 @@ def main() -> int:
         "--explore-target-classes",
         default=",".join(sorted(DEFAULT_EXPLORE_TARGET_CLASSES)),
     )
+    p_eval.add_argument("--explore-stall-lookback", type=int, default=DEFAULT_EXPLORE_STALL_LOOKBACK)
+    p_eval.add_argument("--explore-stall-min-no-uplift", type=int, default=DEFAULT_EXPLORE_STALL_MIN_NO_UPLIFT)
+    p_eval.add_argument("--score-novelty-weight", type=float, default=DEFAULT_SCORE_NOVELTY_WEIGHT)
+    p_eval.add_argument("--score-breakthrough-weight", type=float, default=DEFAULT_SCORE_BREAKTHROUGH_WEIGHT)
+    p_eval.add_argument("--score-untried-bonus", type=float, default=DEFAULT_SCORE_UNTRIED_BONUS)
     p_eval.add_argument("--subfamily-override", default="")
     p_eval.add_argument("--breakthrough-tie-epsilon", type=float, default=DEFAULT_BREAKTHROUGH_TIE_EPSILON)
     p_eval.add_argument(
@@ -1631,6 +2185,9 @@ def main() -> int:
     p_eval.set_defaults(explore_quota_enable=True)
     p_eval.add_argument("--explore-quota-enable", dest="explore_quota_enable", action="store_true")
     p_eval.add_argument("--explore-quota-disable", dest="explore_quota_enable", action="store_false")
+    p_eval.set_defaults(explore_untried_floor_enable=DEFAULT_EXPLORE_UNTRIED_FLOOR_ENABLED)
+    p_eval.add_argument("--explore-untried-floor-enable", dest="explore_untried_floor_enable", action="store_true")
+    p_eval.add_argument("--explore-untried-floor-disable", dest="explore_untried_floor_enable", action="store_false")
     p_eval.add_argument("--ranking-out")
     p_eval.add_argument("--plan-out")
 

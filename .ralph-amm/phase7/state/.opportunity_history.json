@@ -903,5 +903,39 @@
     "no_uplift": true,
     "validated": false,
     "severe_failure": false
+  },
+  {
+    "schema_version": "1.0",
+    "recorded_at": "2026-02-11T11:17:44.678793Z",
+    "iteration": 39,
+    "status": "extract_failed",
+    "plan_file": ".ralph-amm/phase7/state/autoplan_iter39.json",
+    "mode": "canary",
+    "execute_this_iteration": true,
+    "selected_opportunity": "parallel_parameter_beam",
+    "selected_family_class": "gating_adaptive",
+    "selected_subfamily": "parameter_beam",
+    "selected_subfamily_reason": "policy_select:probe_confirm|score=-0.150",
+    "final_subfamily": "parameter_beam",
+    "subfamily_confidence": "inferred_match",
+    "expected_uplift": 1.75,
+    "reference_best_edge": 508.67,
+    "final_edge": 508.8,
+    "edge_source": "execution_gates_family_end",
+    "edge_fallback": {
+      "edge": 508.8,
+      "source": "execution_gates_family_end",
+      "run_id": "20260211_061522_84680",
+      "family_status": "completed",
+      "family_completed_count": 3,
+      "family_completed_at": "2026-02-11T11:17:00.025601Z",
+      "best_strategy": "iskewx_v11.sol"
+    },
+    "final_score": null,
+    "strategy_name": "iskewx_v11.sol",
+    "delta_vs_reference": 0.12999999999999545,
+    "no_uplift": false,
+    "validated": false,
+    "severe_failure": false
   }
 ]

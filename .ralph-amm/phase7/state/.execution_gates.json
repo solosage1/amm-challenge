@@ -4904,10 +4904,192 @@
           "edge": 506.98,
           "simulations": 1000,
           "command": "/bin/zsh -lc 'amm-match run canary_mode3_v1.sol --simulations 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643348Z",
+          "strategy": "iskewx_v1.sol",
+          "edge": 508.7,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643743Z",
+          "strategy": "iskewx_v2.sol",
+          "edge": 508.67,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643751Z",
+          "strategy": "iskewx_v3.sol",
+          "edge": 508.53,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643753Z",
+          "strategy": "iskewx_v4.sol",
+          "edge": 508.72,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643755Z",
+          "strategy": "iskewx_v5.sol",
+          "edge": 508.71,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643756Z",
+          "strategy": "iskewx_v6.sol",
+          "edge": 508.6,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643758Z",
+          "strategy": "iskewx_v7.sol",
+          "edge": 508.74,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643759Z",
+          "strategy": "iskewx_v8.sol",
+          "edge": 508.75,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643760Z",
+          "strategy": "iskewx_v9.sol",
+          "edge": 508.67,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643761Z",
+          "strategy": "iskewx_v10.sol",
+          "edge": 508.75,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643762Z",
+          "strategy": "iskewx_v11.sol",
+          "edge": 508.8,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:15:13.643764Z",
+          "strategy": "iskewx_v12.sol",
+          "edge": 508.74,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v1.sol iskewx_v2.sol iskewx_v3.sol iskewx_v4.sol iskewx_v5.sol iskewx_v6.sol iskewx_v7.sol iskewx_v8.sol iskewx_v9.sol iskewx_v10.sol iskewx_v11.sol iskewx_v12.sol --workers 6 --sims 10"
+        },
+        {
+          "timestamp": "2026-02-11T11:17:00.024672Z",
+          "strategy": "iskewx_v11.sol",
+          "edge": 508.8,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v11.sol iskewx_v11.sol iskewx_v11.sol --workers 3 --sims 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T11:17:00.024685Z",
+          "strategy": "iskewx_v11.sol",
+          "edge": 508.8,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v11.sol iskewx_v11.sol iskewx_v11.sol --workers 3 --sims 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T11:17:00.024687Z",
+          "strategy": "iskewx_v11.sol",
+          "edge": 508.8,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh iskewx_v11.sol iskewx_v11.sol iskewx_v11.sol --workers 3 --sims 1000'"
         }
       ],
       "observed_item_ids": [
-        "item_43"
+        "item_43",
+        "item_60",
+        "item_74"
+      ],
+      "early_abort": {
+        "enabled": true,
+        "min_results": 4,
+        "delta_below_champion": 0.8,
+        "triggered": false,
+        "trigger_count": null,
+        "trigger_reason": null,
+        "triggered_at": null,
+        "termination_result": null
+      },
+      "batch": {
+        "fail_delta_below_champion": 0.5,
+        "count": 16,
+        "best_edge": 508.8,
+        "failed": false,
+        "fail_reason": null
+      },
+      "status": "completed",
+      "families": {
+        "20260211_060915_75843": {
+          "run_id": "20260211_060915_75843",
+          "started_at": "2026-02-11T11:15:13.647467Z",
+          "completed_at": "2026-02-11T11:15:13.647467Z",
+          "n_strategies": null,
+          "completed_count": 12,
+          "killed_count": 0,
+          "best_edge": 508.8,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T11:15:13.647467Z"
+        },
+        "20260211_061522_84680": {
+          "run_id": "20260211_061522_84680",
+          "started_at": "2026-02-11T11:17:00.025601Z",
+          "completed_at": "2026-02-11T11:17:00.025601Z",
+          "n_strategies": null,
+          "completed_count": 3,
+          "killed_count": 0,
+          "best_edge": 508.8,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T11:17:00.025601Z"
+        }
+      },
+      "updated_at": "2026-02-11T11:17:44.238351Z"
+    },
+    "40": {
+      "iteration": 40,
+      "created_at": "2026-02-11T11:17:45.095108Z",
+      "champion_baseline": 508.67,
+      "authoritative_simulations": 1000,
+      "observed_edges": [
+        {
+          "timestamp": "2026-02-11T11:20:41.880878Z",
+          "strategy": "mode2_v1",
+          "edge": 508.67,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run mode2_v1.sol --simulations 1000'"
+        }
+      ],
+      "observed_item_ids": [
+        "item_26"
       ],
       "early_abort": {
         "enabled": true,
@@ -4922,14 +5104,14 @@
       "batch": {
         "fail_delta_below_champion": 0.5,
         "count": 1,
-        "best_edge": 506.98,
-        "failed": true,
-        "fail_reason": "batch best 506.98 < champion 508.67 - 0.50"
+        "best_edge": 508.67,
+        "failed": false,
+        "fail_reason": null
       },
       "status": "monitor_running",
       "families": {},
-      "updated_at": "2026-02-11T11:07:59.034749Z"
+      "updated_at": "2026-02-11T11:20:41.884395Z"
     }
   },
-  "last_updated": "2026-02-11T11:07:59.034760Z"
+  "last_updated": "2026-02-11T11:20:41.884407Z"
 }

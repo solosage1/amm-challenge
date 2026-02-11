@@ -60,8 +60,16 @@ AUTO_OPP_NOVELTY_LOOKBACK="${AUTO_OPP_NOVELTY_LOOKBACK:-6}"
 AUTO_OPP_NOVELTY_PENALTY="${AUTO_OPP_NOVELTY_PENALTY:-1.0}"
 AUTO_OPP_EXPLORE_QUOTA_ENABLED="${AUTO_OPP_EXPLORE_QUOTA_ENABLED:-1}"
 AUTO_OPP_EXPLORE_LOOKBACK="${AUTO_OPP_EXPLORE_LOOKBACK:-4}"
+AUTO_OPP_EXPLORE_MIN_NO_UPLIFT="${AUTO_OPP_EXPLORE_MIN_NO_UPLIFT:-3}"
+AUTO_OPP_EXPLORE_MIN_REPEAT_SHARE="${AUTO_OPP_EXPLORE_MIN_REPEAT_SHARE:-0.60}"
 AUTO_OPP_EXPLORE_REPEAT_CLASSES="${AUTO_OPP_EXPLORE_REPEAT_CLASSES:-undercut_sweep,gating_adaptive}"
-AUTO_OPP_EXPLORE_TARGET_CLASSES="${AUTO_OPP_EXPLORE_TARGET_CLASSES:-gamma_formula,asymmetric,ema_smoothing}"
+AUTO_OPP_EXPLORE_TARGET_CLASSES="${AUTO_OPP_EXPLORE_TARGET_CLASSES:-adversarial_robustness,asymmetric,bayesian_optimization,gamma_formula,microstructure,online_learning,optimal_control}"
+AUTO_OPP_EXPLORE_UNTRIED_FLOOR_ENABLED="${AUTO_OPP_EXPLORE_UNTRIED_FLOOR_ENABLED:-1}"
+AUTO_OPP_EXPLORE_STALL_LOOKBACK="${AUTO_OPP_EXPLORE_STALL_LOOKBACK:-10}"
+AUTO_OPP_EXPLORE_STALL_MIN_NO_UPLIFT="${AUTO_OPP_EXPLORE_STALL_MIN_NO_UPLIFT:-7}"
+AUTO_OPP_SCORE_NOVELTY_WEIGHT="${AUTO_OPP_SCORE_NOVELTY_WEIGHT:-0.55}"
+AUTO_OPP_SCORE_BREAKTHROUGH_WEIGHT="${AUTO_OPP_SCORE_BREAKTHROUGH_WEIGHT:-0.60}"
+AUTO_OPP_SCORE_UNTRIED_BONUS="${AUTO_OPP_SCORE_UNTRIED_BONUS:-4.0}"
 AUTO_OPP_RECORD_GATES_FALLBACK="${AUTO_OPP_RECORD_GATES_FALLBACK:-1}"
 AUTO_OPP_SUBFAMILY_OVERRIDE="${AUTO_OPP_SUBFAMILY_OVERRIDE:-}"
 AUTO_OPP_BREAKTHROUGH_TIE_EPSILON="${AUTO_OPP_BREAKTHROUGH_TIE_EPSILON:-0.10}"
@@ -304,6 +312,12 @@ run_opportunity_evaluate() {
     else
         explore_quota_arg+=(--explore-quota-disable)
     fi
+    local explore_untried_floor_arg=()
+    if [[ "${AUTO_OPP_EXPLORE_UNTRIED_FLOOR_ENABLED}" == "1" ]]; then
+        explore_untried_floor_arg+=(--explore-untried-floor-enable)
+    else
+        explore_untried_floor_arg+=(--explore-untried-floor-disable)
+    fi
     local subfamily_override_arg=()
     if [[ -n "${AUTO_OPP_SUBFAMILY_OVERRIDE}" ]]; then
         subfamily_override_arg+=(--subfamily-override "$AUTO_OPP_SUBFAMILY_OVERRIDE")
@@ -322,13 +336,21 @@ run_opportunity_evaluate() {
         --novelty-lookback "$AUTO_OPP_NOVELTY_LOOKBACK" \
         --novelty-penalty "$AUTO_OPP_NOVELTY_PENALTY" \
         --explore-lookback "$AUTO_OPP_EXPLORE_LOOKBACK" \
+        --explore-min-no-uplift "$AUTO_OPP_EXPLORE_MIN_NO_UPLIFT" \
+        --explore-min-repeat-share "$AUTO_OPP_EXPLORE_MIN_REPEAT_SHARE" \
         --explore-repeat-classes "$AUTO_OPP_EXPLORE_REPEAT_CLASSES" \
         --explore-target-classes "$AUTO_OPP_EXPLORE_TARGET_CLASSES" \
+        --explore-stall-lookback "$AUTO_OPP_EXPLORE_STALL_LOOKBACK" \
+        --explore-stall-min-no-uplift "$AUTO_OPP_EXPLORE_STALL_MIN_NO_UPLIFT" \
+        --score-novelty-weight "$AUTO_OPP_SCORE_NOVELTY_WEIGHT" \
+        --score-breakthrough-weight "$AUTO_OPP_SCORE_BREAKTHROUGH_WEIGHT" \
+        --score-untried-bonus "$AUTO_OPP_SCORE_UNTRIED_BONUS" \
         --breakthrough-tie-epsilon "$AUTO_OPP_BREAKTHROUGH_TIE_EPSILON" \
         --severe-subfamily-failure-threshold "$AUTO_OPP_SEVERE_SUBFAMILY_FAILURE_THRESHOLD" \
         --ranking-out "$ranking_path" \
         --plan-out "$plan_path" \
         ${subfamily_override_arg[@]+"${subfamily_override_arg[@]}"} \
+        ${explore_untried_floor_arg[@]+"${explore_untried_floor_arg[@]}"} \
         ${explore_quota_arg[@]+"${explore_quota_arg[@]}"} \
         ${enabled_arg[@]+"${enabled_arg[@]}"}
 }
@@ -1627,8 +1649,17 @@ Options:
     --auto-opp-explore-enable         Enable orthogonal exploration quota (default: enabled)
     --auto-opp-explore-disable        Disable orthogonal exploration quota
     --auto-opp-explore-lookback N     Lookback window for exploration trigger (default: 4)
+    --auto-opp-explore-min-no-uplift N  Min repeat-class no-uplift count to force orthogonal exploration (default: 3)
+    --auto-opp-explore-min-repeat-share N  Min repeat-class share in lookback to force orthogonal exploration (default: 0.60)
     --auto-opp-explore-repeat-classes CSV   Repeat-class set for trigger (default: undercut_sweep,gating_adaptive)
-    --auto-opp-explore-target-classes CSV   Target classes for forced exploration (default: gamma_formula,asymmetric,ema_smoothing)
+    --auto-opp-explore-target-classes CSV   Target classes for forced exploration (default: adversarial_robustness,asymmetric,bayesian_optimization,gamma_formula,microstructure,online_learning,optimal_control)
+    --auto-opp-explore-untried-floor-enable  Force untried family when stalled (default: enabled)
+    --auto-opp-explore-untried-floor-disable Disable forced untried-family floor
+    --auto-opp-explore-stall-lookback N      Lookback for global stall detection (default: 10)
+    --auto-opp-explore-stall-min-no-uplift N Min no-uplift outcomes in stall window to force untried family (default: 7)
+    --auto-opp-score-novelty-weight N        Score weight for family novelty bonus (default: 0.55)
+    --auto-opp-score-breakthrough-weight N   Score weight for breakthrough-likelihood bonus (default: 0.60)
+    --auto-opp-score-untried-bonus N         Additive score bonus for untried families (default: 4.0)
     --auto-opp-subfamily-override SPEC  Optional override (subfamily or opp:subfamily, comma-separated)
     --auto-opp-breakthrough-eps N     Tie epsilon for novel-subfamily breakthrough probes (default: 0.10)
     --auto-opp-severe-subfamily-threshold N  Family-level severe-failure trigger threshold (default: 2)
@@ -1753,12 +1784,48 @@ while [[ $# -gt 0 ]]; do
             AUTO_OPP_EXPLORE_LOOKBACK="$2"
             shift 2
             ;;
+        --auto-opp-explore-min-no-uplift)
+            AUTO_OPP_EXPLORE_MIN_NO_UPLIFT="$2"
+            shift 2
+            ;;
+        --auto-opp-explore-min-repeat-share)
+            AUTO_OPP_EXPLORE_MIN_REPEAT_SHARE="$2"
+            shift 2
+            ;;
         --auto-opp-explore-repeat-classes)
             AUTO_OPP_EXPLORE_REPEAT_CLASSES="$2"
             shift 2
             ;;
         --auto-opp-explore-target-classes)
             AUTO_OPP_EXPLORE_TARGET_CLASSES="$2"
+            shift 2
+            ;;
+        --auto-opp-explore-untried-floor-enable)
+            AUTO_OPP_EXPLORE_UNTRIED_FLOOR_ENABLED="1"
+            shift 1
+            ;;
+        --auto-opp-explore-untried-floor-disable)
+            AUTO_OPP_EXPLORE_UNTRIED_FLOOR_ENABLED="0"
+            shift 1
+            ;;
+        --auto-opp-explore-stall-lookback)
+            AUTO_OPP_EXPLORE_STALL_LOOKBACK="$2"
+            shift 2
+            ;;
+        --auto-opp-explore-stall-min-no-uplift)
+            AUTO_OPP_EXPLORE_STALL_MIN_NO_UPLIFT="$2"
+            shift 2
+            ;;
+        --auto-opp-score-novelty-weight)
+            AUTO_OPP_SCORE_NOVELTY_WEIGHT="$2"
+            shift 2
+            ;;
+        --auto-opp-score-breakthrough-weight)
+            AUTO_OPP_SCORE_BREAKTHROUGH_WEIGHT="$2"
+            shift 2
+            ;;
+        --auto-opp-score-untried-bonus)
+            AUTO_OPP_SCORE_UNTRIED_BONUS="$2"
             shift 2
             ;;
         --auto-opp-subfamily-override)
@@ -1869,7 +1936,8 @@ log "INFO" "Pipeline config: screen_sims=$PIPE_SCREEN_SIMS screen_min_edge=$PIPE
 log "INFO" "Knowledge guardrail config: epsilon=$KNOWLEDGE_GUARDRAIL_EPSILON"
 log "INFO" "Autonomous opportunity config: enabled=$AUTO_OPP_ENGINE_ENABLED shadow_iters=$AUTO_OPP_SHADOW_ITERS canary_pct=$AUTO_OPP_CANARY_PCT window_size=$AUTO_OPP_WINDOW_SIZE"
 log "INFO" "Autonomous opportunity policy: no_uplift_eps=$AUTO_OPP_NO_UPLIFT_EPSILON streak=$AUTO_OPP_NO_UPLIFT_STREAK_THRESHOLD cooldown_iters=$AUTO_OPP_NO_UPLIFT_COOLDOWN_ITERS novelty_lookback=$AUTO_OPP_NOVELTY_LOOKBACK novelty_penalty=$AUTO_OPP_NOVELTY_PENALTY"
-log "INFO" "Autonomous exploration policy: enabled=$AUTO_OPP_EXPLORE_QUOTA_ENABLED lookback=$AUTO_OPP_EXPLORE_LOOKBACK repeat_classes=$AUTO_OPP_EXPLORE_REPEAT_CLASSES target_classes=$AUTO_OPP_EXPLORE_TARGET_CLASSES subfamily_override=${AUTO_OPP_SUBFAMILY_OVERRIDE:-<none>}"
+log "INFO" "Autonomous exploration policy: enabled=$AUTO_OPP_EXPLORE_QUOTA_ENABLED lookback=$AUTO_OPP_EXPLORE_LOOKBACK min_no_uplift=$AUTO_OPP_EXPLORE_MIN_NO_UPLIFT min_repeat_share=$AUTO_OPP_EXPLORE_MIN_REPEAT_SHARE repeat_classes=$AUTO_OPP_EXPLORE_REPEAT_CLASSES target_classes=$AUTO_OPP_EXPLORE_TARGET_CLASSES untried_floor=$AUTO_OPP_EXPLORE_UNTRIED_FLOOR_ENABLED stall_lookback=$AUTO_OPP_EXPLORE_STALL_LOOKBACK stall_min_no_uplift=$AUTO_OPP_EXPLORE_STALL_MIN_NO_UPLIFT"
+log "INFO" "Autonomous scoring boosts: novelty_weight=$AUTO_OPP_SCORE_NOVELTY_WEIGHT breakthrough_weight=$AUTO_OPP_SCORE_BREAKTHROUGH_WEIGHT untried_bonus=$AUTO_OPP_SCORE_UNTRIED_BONUS subfamily_override=${AUTO_OPP_SUBFAMILY_OVERRIDE:-<none>}"
 log "INFO" "Autonomous innovation safeguards: breakthrough_eps=$AUTO_OPP_BREAKTHROUGH_TIE_EPSILON severe_subfamily_threshold=$AUTO_OPP_SEVERE_SUBFAMILY_FAILURE_THRESHOLD gates_fallback=$AUTO_OPP_RECORD_GATES_FALLBACK polls=$AUTO_OPP_GATES_FALLBACK_POLLS poll_seconds=$AUTO_OPP_GATES_FALLBACK_POLL_SECONDS"
 log "INFO" "Execution gate config: enabled=$EXEC_GATES_ENABLED early_enabled=$GATE_EARLY_ABORT_ENABLED early_n=$GATE_EARLY_MIN_RESULTS early_delta=$GATE_EARLY_DELTA batch_delta=$GATE_BATCH_FAIL_DELTA confirmations=$GATE_PROMOTION_CONFIRMATIONS min_sims=$GATE_MIN_SIMS poll_s=$GATE_MONITOR_POLL_SECONDS"
 if [[ "${CODEX_DISABLE_SHELL_TOOL}" == "1" ]]; then

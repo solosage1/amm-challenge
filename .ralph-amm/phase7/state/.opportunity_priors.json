@@ -4,10 +4,10 @@
     "failures": 1,
     "neutral": 2,
     "severe_failures": 1,
-    "cooldown_until_iteration": 40,
+    "cooldown_until_iteration": 43,
     "cooldown_reason": "harvested family failure: heavy/light 3-state regime machine underperformed champion by >0.8",
     "status": "FAILED",
-    "failed_at_iteration": 36
+    "failed_at_iteration": 39
   },
   "adaptive_undercut_search": {
     "successes": 0,
@@ -113,27 +113,27 @@
   },
   "parallel_parameter_beam": {
     "successes": 0,
-    "failures": 2,
+    "failures": 3,
     "neutral": 0,
     "severe_failures": 0,
     "cooldown_until_iteration": 0,
     "cooldown_reason": null,
-    "non_uplift_streak": 1,
+    "non_uplift_streak": 0,
     "no_uplift_outcomes": 1,
     "last_uplift_iteration": null,
     "subfamilies": {
       "parameter_beam": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 0,
-        "failures": 2,
+        "failures": 3,
         "neutral": 0,
         "severe_failures": 0,
         "cooldown_until_iteration": 0,
         "cooldown_reason": null,
-        "non_uplift_streak": 1,
+        "non_uplift_streak": 0,
         "no_uplift_outcomes": 1,
-        "last_uplift_iteration": null,
-        "last_attempt_iteration": 38,
+        "last_uplift_iteration": 39,
+        "last_attempt_iteration": 39,
         "breakthrough_probe_hits": 1
       }
     },

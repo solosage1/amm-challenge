@@ -3,7 +3,7 @@
   "created": "2026-02-11T00:01:56.483893+00:00",
   "edge_results": [
     {
-      "timestamp": "2026-02-11T11:04:29.928180Z",
+      "timestamp": "2026-02-11T11:17:44.806492Z",
       "strategy": "mode2_v1",
       "edge": 508.67,
       "mechanisms": [
@@ -15,7 +15,7 @@
       "strategy_file": "mode2_v1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.929629Z",
+      "timestamp": "2026-02-11T11:17:44.808176Z",
       "strategy": "mode2_v1",
       "edge": 508.67,
       "mechanisms": [
@@ -27,7 +27,7 @@
       "strategy_file": "mode2_v1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.933293Z",
+      "timestamp": "2026-02-11T11:17:44.812813Z",
       "strategy": "esplus_v1",
       "edge": 508.67,
       "mechanisms": [
@@ -39,7 +39,7 @@
       "strategy_file": "esplus_v1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.934926Z",
+      "timestamp": "2026-02-11T11:17:44.814593Z",
       "strategy": "egrd_v1",
       "edge": 508.67,
       "mechanisms": [
@@ -51,7 +51,7 @@
       "strategy_file": "egrd_v1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.915724Z",
+      "timestamp": "2026-02-11T11:17:44.791587Z",
       "strategy": "emax_v4",
       "edge": 508.62,
       "mechanisms": [
@@ -63,7 +63,7 @@
       "strategy_file": "emax_v4.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.918356Z",
+      "timestamp": "2026-02-11T11:17:44.794734Z",
       "strategy": "emax_v4",
       "edge": 508.62,
       "mechanisms": [
@@ -75,7 +75,7 @@
       "strategy_file": "emax_v4.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.919920Z",
+      "timestamp": "2026-02-11T11:17:44.796433Z",
       "strategy": "esmart_v1",
       "edge": 508.62,
       "mechanisms": [
@@ -87,7 +87,7 @@
       "strategy_file": "esmart_v1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.921507Z",
+      "timestamp": "2026-02-11T11:17:44.798100Z",
       "strategy": "ebeam_v1",
       "edge": 508.62,
       "mechanisms": [
@@ -99,7 +99,7 @@
       "strategy_file": "ebeam_v1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.910861Z",
+      "timestamp": "2026-02-11T11:17:44.786240Z",
       "strategy": "aburst_v7",
       "edge": 508.28,
       "mechanisms": [
@@ -111,7 +111,7 @@
       "strategy_file": "aburst_v7.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.914371Z",
+      "timestamp": "2026-02-11T11:17:44.790070Z",
       "strategy": "canary_adu_v1",
       "edge": 508.28,
       "mechanisms": [
@@ -123,7 +123,7 @@
       "strategy_file": "canary_adu_v1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.902234Z",
+      "timestamp": "2026-02-11T11:17:44.778431Z",
       "strategy": "centi1_v1",
       "edge": 508.27,
       "mechanisms": [
@@ -135,7 +135,7 @@
       "strategy_file": "centi1_v1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.912354Z",
+      "timestamp": "2026-02-11T11:17:44.787799Z",
       "strategy": "adu_p1",
       "edge": 508.27,
       "mechanisms": [
@@ -147,7 +147,7 @@
       "strategy_file": "adu_p1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940641Z",
+      "timestamp": "2026-02-11T11:17:44.823895Z",
       "strategy": "Tmp_U11_Band25",
       "edge": 508.25,
       "mechanisms": [
@@ -163,7 +163,7 @@
       "strategy_file": "tmp_u11_band25.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940669Z",
+      "timestamp": "2026-02-11T11:17:44.823924Z",
       "strategy": "Tmp_U11_B25_I20",
       "edge": 508.25,
       "mechanisms": [
@@ -178,7 +178,7 @@
       "strategy_file": "tmp_u11_band25_init20.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940679Z",
+      "timestamp": "2026-02-11T11:17:44.823933Z",
       "strategy": "Tmp_U11_B25_I27",
       "edge": 508.25,
       "mechanisms": [
@@ -193,7 +193,7 @@
       "strategy_file": "tmp_u11_band25_init27.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943203Z",
+      "timestamp": "2026-02-11T11:17:44.826670Z",
       "strategy": "Tmp_U11_Band25",
       "edge": 508.25,
       "mechanisms": [
@@ -209,7 +209,7 @@
       "strategy_file": "tmp_u11_band25.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.945805Z",
+      "timestamp": "2026-02-11T11:17:44.829401Z",
       "strategy": "Tmp_U11_Band25",
       "edge": 508.25,
       "mechanisms": [
@@ -225,7 +225,7 @@
       "strategy_file": "tmp_u11_band25.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.891407Z",
+      "timestamp": "2026-02-11T11:17:44.769598Z",
       "strategy": "bgate_v1",
       "edge": 508.25,
       "mechanisms": [
@@ -237,7 +237,7 @@
       "strategy_file": "bgate_v1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940623Z",
+      "timestamp": "2026-02-11T11:17:44.823877Z",
       "strategy": "Tmp_U10_Band25",
       "edge": 508.23,
       "mechanisms": [
@@ -253,7 +253,7 @@
       "strategy_file": "tmp_u10_band25.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940650Z",
+      "timestamp": "2026-02-11T11:17:44.823904Z",
       "strategy": "Tmp_U12_Band25",
       "edge": 508.23,
       "mechanisms": [
@@ -269,7 +269,7 @@
       "strategy_file": "tmp_u12_band25.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940614Z",
+      "timestamp": "2026-02-11T11:17:44.823867Z",
       "strategy": "Tmp_U10_Band26",
       "edge": 508.22,
       "mechanisms": [
@@ -285,7 +285,7 @@
       "strategy_file": "tmp_u10_band26.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940689Z",
+      "timestamp": "2026-02-11T11:17:44.823943Z",
       "strategy": "Tmp_U11_B25_Buf0",
       "edge": 508.22,
       "mechanisms": [
@@ -301,7 +301,7 @@
       "strategy_file": "tmp_u11_band25_buf0.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940632Z",
+      "timestamp": "2026-02-11T11:17:44.823886Z",
       "strategy": "Tmp_U10_Band24",
       "edge": 508.2,
       "mechanisms": [
@@ -317,7 +317,7 @@
       "strategy_file": "tmp_u10_band24.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940604Z",
+      "timestamp": "2026-02-11T11:17:44.823858Z",
       "strategy": "Tmp_U10_Band27",
       "edge": 508.19,
       "mechanisms": [
@@ -333,7 +333,7 @@
       "strategy_file": "tmp_u10_band27.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.881699Z",
+      "timestamp": "2026-02-11T11:17:44.764223Z",
       "strategy": "gate2r_v10",
       "edge": 508.17,
       "mechanisms": [
@@ -345,7 +345,7 @@
       "strategy_file": "./gate2r_v10.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940698Z",
+      "timestamp": "2026-02-11T11:17:44.823953Z",
       "strategy": "Tmp_U11_B25_Buf2",
       "edge": 508.16,
       "mechanisms": [
@@ -361,7 +361,7 @@
       "strategy_file": "tmp_u11_band25_buf2.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940595Z",
+      "timestamp": "2026-02-11T11:17:44.823848Z",
       "strategy": "Tmp_U10_Band28",
       "edge": 508.13,
       "mechanisms": [
@@ -377,7 +377,7 @@
       "strategy_file": "tmp_u10_band28.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940660Z",
+      "timestamp": "2026-02-11T11:17:44.823914Z",
       "strategy": "Tmp_U11_B25_T29",
       "edge": 508.09,
       "mechanisms": [
@@ -392,7 +392,7 @@
       "strategy_file": "tmp_u11_band25_t29.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940547Z",
+      "timestamp": "2026-02-11T11:17:44.823800Z",
       "strategy": "Tmp_CompUnder10",
       "edge": 508.06,
       "mechanisms": [
@@ -406,7 +406,7 @@
       "strategy_file": "tmp_compundercut10.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940567Z",
+      "timestamp": "2026-02-11T11:17:44.823820Z",
       "strategy": "Tmp_CompUnder11",
       "edge": 508.04,
       "mechanisms": [
@@ -420,7 +420,7 @@
       "strategy_file": "tmp_compundercut11.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940537Z",
+      "timestamp": "2026-02-11T11:17:44.823789Z",
       "strategy": "Tmp_CompUnder9",
       "edge": 508.03,
       "mechanisms": [
@@ -434,7 +434,7 @@
       "strategy_file": "tmp_compundercut9.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940576Z",
+      "timestamp": "2026-02-11T11:17:44.823829Z",
       "strategy": "Tmp_U10_T29",
       "edge": 508.02,
       "mechanisms": [
@@ -449,7 +449,7 @@
       "strategy_file": "tmp_u10_t29.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940527Z",
+      "timestamp": "2026-02-11T11:17:44.823780Z",
       "strategy": "Tmp_CompUnder8",
       "edge": 508.01,
       "mechanisms": [
@@ -463,7 +463,7 @@
       "strategy_file": "tmp_compundercut8.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940557Z",
+      "timestamp": "2026-02-11T11:17:44.823810Z",
       "strategy": "Tmp_CompUnder12",
       "edge": 507.99,
       "mechanisms": [
@@ -477,7 +477,7 @@
       "strategy_file": "tmp_compundercut12.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940518Z",
+      "timestamp": "2026-02-11T11:17:44.823770Z",
       "strategy": "Tmp_CompUnder7",
       "edge": 507.97,
       "mechanisms": [
@@ -491,7 +491,7 @@
       "strategy_file": "tmp_compundercut7.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940508Z",
+      "timestamp": "2026-02-11T11:17:44.823760Z",
       "strategy": "Tmp_CompUnder6",
       "edge": 507.94,
       "mechanisms": [
@@ -505,7 +505,7 @@
       "strategy_file": "tmp_compundercut6.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940498Z",
+      "timestamp": "2026-02-11T11:17:44.823750Z",
       "strategy": "Tmp_CompUnder5",
       "edge": 507.89,
       "mechanisms": [
@@ -519,7 +519,7 @@
       "strategy_file": "tmp_compundercut5.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.881673Z",
+      "timestamp": "2026-02-11T11:17:44.764211Z",
       "strategy": "gate2r_v5",
       "edge": 507.82,
       "mechanisms": [
@@ -531,7 +531,7 @@
       "strategy_file": "./gate2r_v5.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940488Z",
+      "timestamp": "2026-02-11T11:17:44.823740Z",
       "strategy": "Tmp_CompUnder4",
       "edge": 507.81,
       "mechanisms": [
@@ -545,7 +545,7 @@
       "strategy_file": "tmp_compundercut4.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940585Z",
+      "timestamp": "2026-02-11T11:17:44.823838Z",
       "strategy": "Tmp_U10_T27",
       "edge": 507.79,
       "mechanisms": [
@@ -560,7 +560,7 @@
       "strategy_file": "tmp_u10_t27.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940479Z",
+      "timestamp": "2026-02-11T11:17:44.823731Z",
       "strategy": "Tmp_CompUnder3",
       "edge": 507.74,
       "mechanisms": [
@@ -574,7 +574,7 @@
       "strategy_file": "tmp_compundercut3.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940469Z",
+      "timestamp": "2026-02-11T11:17:44.823721Z",
       "strategy": "Tmp_CompUnder2",
       "edge": 507.64,
       "mechanisms": [
@@ -588,7 +588,7 @@
       "strategy_file": "tmp_compundercut2.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.881747Z",
+      "timestamp": "2026-02-11T11:17:44.764232Z",
       "strategy": "gate2r_v7",
       "edge": 507.63,
       "mechanisms": [
@@ -600,7 +600,7 @@
       "strategy_file": "./gate2r_v7.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940459Z",
+      "timestamp": "2026-02-11T11:17:44.823711Z",
       "strategy": "Tmp_CompUnder1",
       "edge": 507.56,
       "mechanisms": [
@@ -614,7 +614,7 @@
       "strategy_file": "tmp_compundercut1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.923621Z",
+      "timestamp": "2026-02-11T11:17:44.800589Z",
       "strategy": "Sweep5_T28_B1_B29_Init23",
       "edge": 507.42,
       "mechanisms": [
@@ -629,7 +629,7 @@
       "strategy_file": "unknown.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.923636Z",
+      "timestamp": "2026-02-11T11:17:44.800623Z",
       "strategy": "GammaSquaredDualRegime_T28_B1_B29",
       "edge": 507.42,
       "mechanisms": [
@@ -643,7 +643,7 @@
       "strategy_file": "strategy_edge50742.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940331Z",
+      "timestamp": "2026-02-11T11:17:44.823589Z",
       "strategy": "GammaSquaredDualRegime_T28_B1_B29",
       "edge": 507.42,
       "mechanisms": [
@@ -657,7 +657,7 @@
       "strategy_file": "strategy_edge50742.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940438Z",
+      "timestamp": "2026-02-11T11:17:44.823690Z",
       "strategy": "Tmp_Tight_B27_A29",
       "edge": 507.41,
       "mechanisms": [
@@ -669,7 +669,7 @@
       "strategy_file": "tmp_tight_bid27_ask29.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940418Z",
+      "timestamp": "2026-02-11T11:17:44.823669Z",
       "strategy": "Tmp_Tight_B29_A27",
       "edge": 507.38,
       "mechanisms": [
@@ -681,7 +681,7 @@
       "strategy_file": "tmp_tight_bid29_ask27.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940428Z",
+      "timestamp": "2026-02-11T11:17:44.823679Z",
       "strategy": "Tmp_Tight_B30_A28",
       "edge": 507.37,
       "mechanisms": [
@@ -693,7 +693,7 @@
       "strategy_file": "tmp_tight_bid30_ask28.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.881363Z",
+      "timestamp": "2026-02-11T11:17:44.764043Z",
       "strategy": "gate2r_v9",
       "edge": 507.35,
       "mechanisms": [
@@ -705,7 +705,7 @@
       "strategy_file": "./gate2r_v9.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943530Z",
+      "timestamp": "2026-02-11T11:17:44.827003Z",
       "strategy": "canary_mode3_light_l1",
       "edge": 507.31,
       "mechanisms": [
@@ -717,7 +717,7 @@
       "strategy_file": "canary_mode3_light_l1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.923617Z",
+      "timestamp": "2026-02-11T11:17:44.800580Z",
       "strategy": "Sweep4_T28_B1_Band26",
       "edge": 507.27,
       "mechanisms": [
@@ -732,7 +732,7 @@
       "strategy_file": "unknown.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943500Z",
+      "timestamp": "2026-02-11T11:17:44.826972Z",
       "strategy": "canary_mode3_light_l3",
       "edge": 507.24,
       "mechanisms": [
@@ -744,7 +744,7 @@
       "strategy_file": "canary_mode3_light_l3.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.904463Z",
+      "timestamp": "2026-02-11T11:17:44.780601Z",
       "strategy": "Refine_T29_B2_Band30",
       "edge": 507.22,
       "mechanisms": [
@@ -759,7 +759,7 @@
       "strategy_file": "refine_t29_b2_band30.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943520Z",
+      "timestamp": "2026-02-11T11:17:44.826992Z",
       "strategy": "canary_mode3_light_l4",
       "edge": 507.18,
       "mechanisms": [
@@ -771,7 +771,7 @@
       "strategy_file": "canary_mode3_light_l4.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.904408Z",
+      "timestamp": "2026-02-11T11:17:44.780590Z",
       "strategy": "Refine_T28_B1",
       "edge": 507.15,
       "mechanisms": [
@@ -785,7 +785,7 @@
       "strategy_file": "unknown.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940449Z",
+      "timestamp": "2026-02-11T11:17:44.823700Z",
       "strategy": "Tmp_CompMarkup2",
       "edge": 507.14,
       "mechanisms": [
@@ -797,7 +797,7 @@
       "strategy_file": "tmp_compmarkup2.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.923602Z",
+      "timestamp": "2026-02-11T11:17:44.800546Z",
       "strategy": "Sweep_T28_B2",
       "edge": 507.02,
       "mechanisms": [
@@ -811,7 +811,7 @@
       "strategy_file": "unknown.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943465Z",
+      "timestamp": "2026-02-11T11:17:44.826937Z",
       "strategy": "canary_mode3_v7",
       "edge": 506.99,
       "mechanisms": [
@@ -823,7 +823,7 @@
       "strategy_file": "canary_mode3_v7.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943429Z",
+      "timestamp": "2026-02-11T11:17:44.826900Z",
       "strategy": "canary_mode3_v1",
       "edge": 506.98,
       "mechanisms": [
@@ -835,7 +835,19 @@
       "strategy_file": "canary_mode3_v1.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.923612Z",
+      "timestamp": "2026-02-11T11:17:44.820978Z",
+      "strategy": "canary_mode3_v1",
+      "edge": 506.98,
+      "mechanisms": [
+        "regime_state_machine_heavy"
+      ],
+      "parameters": {},
+      "iteration": 39,
+      "n_simulations": 1000,
+      "strategy_file": "canary_mode3_v1.sol"
+    },
+    {
+      "timestamp": "2026-02-11T11:17:44.800570Z",
       "strategy": "Sweep3_T27_B1",
       "edge": 506.89,
       "mechanisms": [
@@ -849,7 +861,7 @@
       "strategy_file": "unknown.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.923595Z",
+      "timestamp": "2026-02-11T11:17:44.800523Z",
       "strategy": "GammaSquaredDualRegime_Tight29Buf3",
       "edge": 506.84,
       "mechanisms": [
@@ -865,7 +877,7 @@
       "strategy_file": "phase7_iter21_candidate.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943411Z",
+      "timestamp": "2026-02-11T11:17:44.826882Z",
       "strategy": "canary_mode3_v4",
       "edge": 506.82,
       "mechanisms": [
@@ -877,7 +889,7 @@
       "strategy_file": "canary_mode3_v4.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943550Z",
+      "timestamp": "2026-02-11T11:17:44.827023Z",
       "strategy": "canary_mode3_light_l6",
       "edge": 506.82,
       "mechanisms": [
@@ -889,7 +901,7 @@
       "strategy_file": "canary_mode3_light_l6.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943484Z",
+      "timestamp": "2026-02-11T11:17:44.826956Z",
       "strategy": "canary_mode3_v10",
       "edge": 506.81,
       "mechanisms": [
@@ -901,7 +913,7 @@
       "strategy_file": "canary_mode3_v10.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943457Z",
+      "timestamp": "2026-02-11T11:17:44.826928Z",
       "strategy": "canary_mode3_v5",
       "edge": 506.79,
       "mechanisms": [
@@ -913,7 +925,7 @@
       "strategy_file": "canary_mode3_v5.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943475Z",
+      "timestamp": "2026-02-11T11:17:44.826947Z",
       "strategy": "canary_mode3_v9",
       "edge": 506.78,
       "mechanisms": [
@@ -925,7 +937,7 @@
       "strategy_file": "canary_mode3_v9.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.923607Z",
+      "timestamp": "2026-02-11T11:17:44.800558Z",
       "strategy": "Sweep2_T27_B2",
       "edge": 506.75,
       "mechanisms": [
@@ -939,7 +951,7 @@
       "strategy_file": "unknown.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943402Z",
+      "timestamp": "2026-02-11T11:17:44.826872Z",
       "strategy": "canary_mode3_v3",
       "edge": 506.75,
       "mechanisms": [
@@ -951,7 +963,7 @@
       "strategy_file": "canary_mode3_v3.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943448Z",
+      "timestamp": "2026-02-11T11:17:44.826919Z",
       "strategy": "canary_mode3_v8",
       "edge": 506.73,
       "mechanisms": [
@@ -963,7 +975,7 @@
       "strategy_file": "canary_mode3_v8.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943510Z",
+      "timestamp": "2026-02-11T11:17:44.826982Z",
       "strategy": "canary_mode3_light_l2",
       "edge": 506.73,
       "mechanisms": [
@@ -975,7 +987,7 @@
       "strategy_file": "canary_mode3_light_l2.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943439Z",
+      "timestamp": "2026-02-11T11:17:44.826910Z",
       "strategy": "canary_mode3_v6",
       "edge": 506.57,
       "mechanisms": [
@@ -987,7 +999,7 @@
       "strategy_file": "canary_mode3_v6.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943420Z",
+      "timestamp": "2026-02-11T11:17:44.826891Z",
       "strategy": "canary_mode3_v2",
       "edge": 506.56,
       "mechanisms": [
@@ -999,7 +1011,7 @@
       "strategy_file": "canary_mode3_v2.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940708Z",
+      "timestamp": "2026-02-11T11:17:44.823963Z",
       "strategy": "Tmp_U11_B25_A25",
       "edge": 506.36,
       "mechanisms": [
@@ -1013,7 +1025,7 @@
       "strategy_file": "tmp_u11_band25_alpha25.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943540Z",
+      "timestamp": "2026-02-11T11:17:44.827013Z",
       "strategy": "canary_mode3_light_l5",
       "edge": 506.27,
       "mechanisms": [
@@ -1025,7 +1037,7 @@
       "strategy_file": "canary_mode3_light_l5.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.904386Z",
+      "timestamp": "2026-02-11T11:17:44.780584Z",
       "strategy": "Gamma2_Sweep_Alpha15",
       "edge": 506.23,
       "mechanisms": [
@@ -1037,7 +1049,7 @@
       "strategy_file": "unknown.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.904223Z",
+      "timestamp": "2026-02-11T11:17:44.780530Z",
       "strategy": "GammaSquaredDualRegime",
       "edge": 506.17,
       "mechanisms": [
@@ -1049,7 +1061,7 @@
       "strategy_file": "gamma2_dualregime.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.923573Z",
+      "timestamp": "2026-02-11T11:17:44.800439Z",
       "strategy": "GammaSquaredDualRegime",
       "edge": 506.17,
       "mechanisms": [
@@ -1061,7 +1073,7 @@
       "strategy_file": "gamma2_dualregime.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943171Z",
+      "timestamp": "2026-02-11T11:17:44.826634Z",
       "strategy": "GammaSquaredDualRegime",
       "edge": 506.17,
       "mechanisms": [
@@ -1073,7 +1085,7 @@
       "strategy_file": "gamma2_dualregime.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.891361Z",
+      "timestamp": "2026-02-11T11:17:44.769572Z",
       "strategy": "GammaSquaredDualRegime",
       "edge": 506.17,
       "mechanisms": [
@@ -1085,7 +1097,7 @@
       "strategy_file": ".ralph-amm/phase7/state/.best_strategy.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.943193Z",
+      "timestamp": "2026-02-11T11:17:44.826660Z",
       "strategy": "ArbOracleDualRegime_Tight30_Buf4",
       "edge": 505.61,
       "mechanisms": [
@@ -1100,7 +1112,7 @@
       "strategy_file": "arb_oracle_dualregime_tight30_buf4.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940377Z",
+      "timestamp": "2026-02-11T11:17:44.823628Z",
       "strategy": "GammaSquaredDualRegime_RetailMarkup",
       "edge": 504.69,
       "mechanisms": [
@@ -1112,7 +1124,7 @@
       "strategy_file": "gamma2_dualregime_retailmarkup.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940405Z",
+      "timestamp": "2026-02-11T11:17:44.823656Z",
       "strategy": "GammaSquaredDualRegime_Tight25",
       "edge": 504.64,
       "mechanisms": [
@@ -1126,7 +1138,7 @@
       "strategy_file": "gamma2_dualregime_tight25.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940357Z",
+      "timestamp": "2026-02-11T11:17:44.823612Z",
       "strategy": "GammaSquaredIntervalOracle",
       "edge": 503.78,
       "mechanisms": [
@@ -1138,7 +1150,7 @@
       "strategy_file": "gamma2_interval_oracle.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.940391Z",
+      "timestamp": "2026-02-11T11:17:44.823642Z",
       "strategy": "GammaSquaredDualRegime_Buf10",
       "edge": 503.41,
       "mechanisms": [
@@ -1153,7 +1165,7 @@
       "strategy_file": "gamma2_dualregime_buf10.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.904275Z",
+      "timestamp": "2026-02-11T11:17:44.780578Z",
       "strategy": "GammaSquaredAlwaysAsym",
       "edge": 483.33,
       "mechanisms": [
@@ -1165,7 +1177,7 @@
       "strategy_file": "gamma2_always_asym.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.904264Z",
+      "timestamp": "2026-02-11T11:17:44.780563Z",
       "strategy": "GammaSquaredDualRegime_Markup",
       "edge": 478.67,
       "mechanisms": [
@@ -1177,7 +1189,7 @@
       "strategy_file": "gamma2_dualregime_markup.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.904250Z",
+      "timestamp": "2026-02-11T11:17:44.780548Z",
       "strategy": "ArbOracleAdaptiveConfidence",
       "edge": 472.67,
       "mechanisms": [
@@ -1189,7 +1201,7 @@
       "strategy_file": "arb_oracle_adaptive_confidence.sol"
     },
     {
-      "timestamp": "2026-02-11T11:04:29.908898Z",
+      "timestamp": "2026-02-11T11:17:44.783998Z",
       "strategy": "adu_p1",
       "edge": 534.49,
       "mechanisms": [
@@ -1456,20 +1468,20 @@
     "regime_state_machine_heavy": {
       "ceiling": 506.99,
       "ceiling_strategy": "canary_mode3_v7",
-      "appearances": 10
+      "appearances": 11
     }
   },
   "failed_approaches": [
     {
-      "timestamp": "2026-02-11T11:04:29.954427+00:00",
+      "timestamp": "2026-02-11T11:17:44.847713+00:00",
       "approach": "heavy_3_state_regime_machine",
       "reason": "best 506.99 is 1.68 below champion 508.67; failed family gate (< champion - 0.8 after initial batch)",
       "edge_achieved": 506.99,
       "delta_vs_champion": -1.68,
-      "sample_size": 10
+      "sample_size": 11
     },
     {
-      "timestamp": "2026-02-11T11:04:29.954458+00:00",
+      "timestamp": "2026-02-11T11:17:44.847742+00:00",
       "approach": "light_3_state_regime_machine",
       "reason": "best 507.31 is 1.36 below champion 508.67; failed family gate (< champion - 0.8 after initial batch)",
       "edge_achieved": 507.31,
@@ -1479,7 +1491,7 @@
   ],
   "insights": [
     {
-      "timestamp": "2026-02-11T11:04:29.953835+00:00",
+      "timestamp": "2026-02-11T11:17:44.847133+00:00",
       "category": "canonical_best_1000",
       "insight": "Champion remains mode2_v1 at 508.67 edge (1000 sims).",
       "evidence": ".knowledge_context.json canonical ranking",
@@ -1490,7 +1502,7 @@
   "canonical_best_1000": {
     "strategy": "mode2_v1",
     "edge": 508.67,
-    "harvested_at": "2026-02-11T11:04:29.952293Z"
+    "harvested_at": "2026-02-11T11:17:44.844864Z"
   },
-  "updated": "2026-02-11T11:04:29.953835+00:00"
+  "updated": "2026-02-11T11:17:44.847133+00:00"
 }

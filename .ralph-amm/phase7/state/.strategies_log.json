@@ -5959,5 +5959,56 @@
       "stage": "extract",
       "message": "code extraction/validation failed"
     }
+  },
+  {
+    "iteration": 39,
+    "status": "extract_failed",
+    "timestamp": "2026-02-11T11:17:44.630481Z",
+    "final_edge": null,
+    "final_score": null,
+    "effective_score": null,
+    "score_source": null,
+    "strategy_name": "Unknown",
+    "hypothesis_ids": [],
+    "git_sha": null,
+    "git_dirty": null,
+    "slots_used": null,
+    "key_innovation": null,
+    "expected_edge_range": null,
+    "artifact_paths": {
+      "prompt_path": ".ralph-amm/phase7/prompts/iteration_39_prompt.md",
+      "codex_jsonl_path": ".ralph-amm/phase7/state/iteration_39_codex.jsonl",
+      "codex_stderr_path": ".ralph-amm/phase7/state/iteration_39_codex.stderr",
+      "codex_last_message_path": ".ralph-amm/phase7/state/iteration_39_last_message.md",
+      "strategy_path": ".ralph-amm/phase7/generated/phase7_strategy_39.sol",
+      "metadata_path": ".ralph-amm/phase7/generated/phase7_strategy_39.json",
+      "result_path": ".ralph-amm/phase7/state/iteration_39_result.json"
+    },
+    "metrics": {
+      "edge_10": null,
+      "edge_100": null,
+      "edge_1000": null,
+      "edge_screen": null,
+      "predicted_edge_1000": null
+    },
+    "selection_gate": null,
+    "error": {
+      "stage": "extract",
+      "message": "code extraction/validation failed"
+    }
+  },
+  {
+    "iteration": 39,
+    "status": "harvested",
+    "timestamp": "2026-02-11T11:17:44.820978Z",
+    "final_edge": 506.98,
+    "strategy_name": "canary_mode3_v1",
+    "source": "codex_session",
+    "n_simulations": 1000,
+    "strategy_file": "canary_mode3_v1.sol",
+    "hypothesis_ids": [],
+    "artifact_paths": {
+      "strategy_file": "canary_mode3_v1.sol"
+    }
   }
 ]
