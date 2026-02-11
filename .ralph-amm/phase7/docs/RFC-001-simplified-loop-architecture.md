@@ -282,7 +282,7 @@ def select_mechanism(stats: Dict[str, MechanismStats]) -> str:
 
 Replace abstract opportunity descriptions with concrete modification prompts:
 
-```python
+````python
 MODIFICATION_PROMPT_TEMPLATE = """
 You are improving an AMM fee strategy by modifying ONE specific mechanism.
 
@@ -318,7 +318,7 @@ Modify the **{mechanism_name}** mechanism to improve expected edge.
 ## OUTPUT FORMAT
 Return ONLY the complete Solidity code. No explanations before or after.
 """
-```
+````
 
 **Key differences from current prompts:**
 - Specific code locations provided
@@ -370,7 +370,7 @@ def validate_modification(
 
 ### 2.6 State Management
 
-Replace 6+ opportunity-system state files with 2 new loop-specific files (shared files like `knowledge_store.json` remain):
+Replace 6+ opportunity-system state files with 2 new primary loop files (plus 1 migration shadow-log file; shared files like `knowledge_store.json` remain):
 
 #### `mechanism_stats.json`
 ```json
@@ -468,7 +468,7 @@ Replace 6+ opportunity-system state files with 2 new loop-specific files (shared
 
 To preserve ability to discover fundamentally new approaches:
 
-```python
+````python
 def should_run_wildcard(iteration: int, stats: dict) -> bool:
     """
     Run wildcard (unconstrained) generation when:
@@ -504,7 +504,7 @@ def run_wildcard_iteration():
     Output complete Solidity code.
     """
     return execute_llm_generation(prompt)
-```
+````
 
 ---
 
@@ -512,20 +512,21 @@ def run_wildcard_iteration():
 
 ### Aggressive Rollout Strategy
 
-Given the current system's conformance issues and plateau state, we prioritize speed over caution. The old system continues running in the background, making reversal trivial.
+Given the current system's conformance issues and plateau state, we prioritize speed over caution. At cutover, old-system state is frozen and a read-only shadow selector records what the old algorithm would choose, making reversal trivial.
 
 ### Day 1: Implement and Deploy
 
 **Morning:**
-1. Implement `simplified_loop.py` (~200 lines)
-2. Create `mechanism_definitions.yaml` from champion analysis
-3. Initialize `mechanism_stats.json` with zeros
-4. Test one iteration manually
+1. Capture rollback snapshot in `.ralph-amm/phase7/state/migration_snapshot/` (`.opportunity_priors.json`, `.opportunity_history.json`, `.best_strategy.sol`, `.best_edge.txt`)
+2. Implement `simplified_loop.py` (~200 lines)
+3. Create `mechanism_definitions.yaml` from champion analysis
+4. Initialize `mechanism_stats.json` with zeros
+5. Test one iteration manually
 
 **Afternoon:**
-5. Deploy new loop as primary
-6. Old loop continues running in parallel (writes to separate state files)
-7. First 5 automated iterations under new system
+6. Deploy new loop as primary
+7. Start `shadow_selector.py` in read-only mode (writes only `shadow_selections.jsonl`)
+8. First 5 automated iterations under new system
 
 ### Day 2+: Monitor and Evaluate
 
@@ -544,16 +545,19 @@ Given the current system's conformance issues and plateau state, we prioritize s
 
 ### Why Rollback Is Trivial
 
-Old system state is **frozen at cutover**:
-- `.opportunity_priors.json` (snapshot, unchanged)
-- `.opportunity_history.json` (snapshot, unchanged)
-- `opportunity_rankings_iter{N}.json` (last pre-migration ranking preserved)
+Old system state is **frozen at cutover** in `.ralph-amm/phase7/state/migration_snapshot/`:
+- `.opportunity_priors.json`
+- `.opportunity_history.json`
+- `.best_strategy.sol`
+- `.best_edge.txt`
+- latest `opportunity_rankings_iter{N}.json` (optional, for audit)
 
-The new system writes to separate files:
+The new system and shadow selector write to separate files:
 - `mechanism_stats.json`
 - `iteration_log.jsonl`
+- `shadow_selections.jsonl`
 
-**No shared state.** Rollback restores the exact pre-migration state.
+**No shared mutable state.** Rollback restores exact pre-migration state by copying snapshot files back into `.ralph-amm/phase7/state/`.
 
 ### Rollback Triggers (Automatic)
 
@@ -574,15 +578,24 @@ ROLLBACK_TRIGGERS = {
 # 1. Stop new loop
 pkill -f simplified_loop.py
 
-# 2. Restart old loop (already has current state)
+# 2. Restore frozen snapshot
+STATE_DIR=".ralph-amm/phase7/state"
+SNAPSHOT_DIR="$STATE_DIR/migration_snapshot"
+cp "$SNAPSHOT_DIR/.opportunity_priors.json" "$STATE_DIR/.opportunity_priors.json"
+cp "$SNAPSHOT_DIR/.opportunity_history.json" "$STATE_DIR/.opportunity_history.json"
+cp "$SNAPSHOT_DIR/.best_strategy.sol" "$STATE_DIR/.best_strategy.sol"
+cp "$SNAPSHOT_DIR/.best_edge.txt" "$STATE_DIR/.best_edge.txt"
+
+# 3. Restart old loop
 ./scripts/amm-phase7-opportunity-engine.py --resume
 
-# 3. Archive failed experiment
-mv mechanism_stats.json .archive/mechanism_stats_failed_$(date +%Y%m%d).json
-mv iteration_log.jsonl .archive/iteration_log_failed_$(date +%Y%m%d).jsonl
+# 4. Archive failed experiment artifacts
+mv "$STATE_DIR/mechanism_stats.json" "$STATE_DIR/.archive/mechanism_stats_failed_$(date +%Y%m%d).json"
+mv "$STATE_DIR/iteration_log.jsonl" "$STATE_DIR/.archive/iteration_log_failed_$(date +%Y%m%d).jsonl"
+mv "$STATE_DIR/shadow_selections.jsonl" "$STATE_DIR/.archive/shadow_selections_failed_$(date +%Y%m%d).jsonl"
 
-# 4. Log rollback reason
-echo "Rollback at $(date): [REASON]" >> .archive/rollback_log.txt
+# 5. Log rollback reason
+echo "Rollback at $(date): [REASON]" >> "$STATE_DIR/.archive/rollback_log.txt"
 ```
 
 ### Manual Rollback Decision Points
@@ -730,7 +743,7 @@ If old system's shadow selections look more promising, that's evidence for rollb
 | Conformance rate | 56% | >95% | `valid_modifications / total_iterations` |
 | Selection interpretability | Low | High | Can explain why mechanism X was chosen in <10 words |
 | Configuration complexity | 24 params | 4 params | Count of tunable parameters |
-| State file count | 6+ | 2 | Count of state files |
+| Loop-owned state artifacts | 6+ | 3 | `mechanism_stats.json`, `iteration_log.jsonl`, `shadow_selections.jsonl` |
 | Code lines (loop logic) | ~800 | ~200 | `wc -l` on loop implementation |
 
 ### Secondary Metrics
@@ -1083,7 +1096,7 @@ mechanisms:
 | **Subfamily tracking** | Yes (with 44% mismatch) | No |
 | **Conformance handling** | EWMA-weighted learning | Binary validation |
 | **Prompt style** | Abstract descriptions | Concrete code locations |
-| **State complexity** | 6+ files, nested JSON | 2 files, flat JSON |
+| **State complexity** | 6+ files, nested JSON | 3 loop-owned files (+ shared state), JSON/JSONL |
 | **Config parameters** | 24 | 4 |
 | **Exploration mechanism** | Untried family bonus | UCB exploration term + wildcard |
 | **Learning feedback** | Indirect (inferred subfamily) | Direct (did this modification help?) |

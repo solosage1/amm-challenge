@@ -1,0 +1,5 @@
+snapshot_created_utc=20260211T151518Z
+source_state_dir=.ralph-amm/phase7/state
+champion_edge_bps=509.23
+champion_name=GammaSquaredDualRegime
+legacy_loop_pid_expected=91826

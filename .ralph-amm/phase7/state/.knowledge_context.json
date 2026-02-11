@@ -1,14 +1,77 @@
 {
-  "true_best_edge": 508.8,
-  "true_best_strategy": "iskewx_v11",
+  "true_best_edge": 509.23,
+  "true_best_strategy": "mlarm_v5",
   "has_1000_results": true,
-  "state_best_edge_benchmark": 508.8,
-  "true_best_edge_1000": 508.8,
-  "true_best_strategy_1000": "iskewx_v11",
+  "state_best_edge_benchmark": 509.23,
+  "true_best_edge_1000": 509.23,
+  "true_best_strategy_1000": "mlarm_v5",
   "true_best_edge_any": 534.72,
   "true_best_strategy_any": "cb3_v1",
   "all_tested_strategies": [
     {
+      "name": "mlarm_v5",
+      "edge": 509.23,
+      "sims": 1000,
+      "iteration": 53,
+      "file": "mlarm_v5.sol"
+    },
+    {
+      "name": "mlarm_v5",
+      "edge": 509.23,
+      "sims": 1000,
+      "iteration": 54,
+      "file": "mlarm_v5.sol"
+    },
+    {
+      "name": "ubj7_v6",
+      "edge": 509.17,
+      "sims": 1000,
+      "iteration": 52,
+      "file": "ubj7_v6.sol"
+    },
+    {
+      "name": "ubj7_v3",
+      "edge": 509.16,
+      "sims": 1000,
+      "iteration": 52,
+      "file": "ubj7_v3.sol"
+    },
+    {
+      "name": "ubj6_v11",
+      "edge": 509.14,
+      "sims": 1000,
+      "iteration": 49,
+      "file": "ubj6_v11.sol"
+    },
+    {
+      "name": "ubj6_v11",
+      "edge": 509.14,
+      "sims": 1000,
+      "iteration": 50,
+      "file": "ubj6_v11.sol"
+    },
+    {
+      "name": "ubj6_v11",
+      "edge": 509.14,
+      "sims": 1000,
+      "iteration": 52,
+      "file": "ubj6_v11.sol"
+    },
+    {
+      "name": "mlfb_v1",
+      "edge": 509.13,
+      "sims": 1000,
+      "iteration": 54,
+      "file": "mlfb_v1.sol"
+    },
+    {
+      "name": "ubj8_v7",
+      "edge": 509.02,
+      "sims": 1000,
+      "iteration": 52,
+      "file": "ubj8_v7.sol"
+    },
+    {
       "name": "iskewx_v11",
       "edge": 508.8,
       "sims": 1000,
@@ -84,73 +147,73 @@
       "sims": 1000,
       "iteration": 28,
       "file": "esmart_v1.sol"
-    },
-    {
-      "name": "ebeam_v1",
-      "edge": 508.62,
-      "sims": 1000,
-      "iteration": 29,
-      "file": "ebeam_v1.sol"
-    },
-    {
-      "name": "aburst_v7",
-      "edge": 508.28,
-      "sims": 1000,
-      "iteration": 22,
-      "file": "aburst_v7.sol"
-    },
-    {
-      "name": "canary_adu_v1",
-      "edge": 508.28,
-      "sims": 1000,
-      "iteration": 24,
-      "file": "canary_adu_v1.sol"
-    },
-    {
-      "name": "centi1_v1",
-      "edge": 508.27,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "centi1_v1.sol"
-    },
-    {
-      "name": "adu_p1",
-      "edge": 508.27,
-      "sims": 1000,
-      "iteration": 23,
-      "file": "adu_p1.sol"
-    },
-    {
-      "name": "bgate_v1",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 13,
-      "file": "bgate_v1.sol"
-    },
-    {
-      "name": "Tmp_U11_Band25",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25.sol"
-    },
-    {
-      "name": "Tmp_U11_B25_I20",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25_init20.sol"
-    },
-    {
-      "name": "Tmp_U11_B25_I27",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25_init27.sol"
     }
   ],
   "all_tested_strategies_1000": [
     {
+      "name": "mlarm_v5",
+      "edge": 509.23,
+      "sims": 1000,
+      "iteration": 53,
+      "file": "mlarm_v5.sol"
+    },
+    {
+      "name": "mlarm_v5",
+      "edge": 509.23,
+      "sims": 1000,
+      "iteration": 54,
+      "file": "mlarm_v5.sol"
+    },
+    {
+      "name": "ubj7_v6",
+      "edge": 509.17,
+      "sims": 1000,
+      "iteration": 52,
+      "file": "ubj7_v6.sol"
+    },
+    {
+      "name": "ubj7_v3",
+      "edge": 509.16,
+      "sims": 1000,
+      "iteration": 52,
+      "file": "ubj7_v3.sol"
+    },
+    {
+      "name": "ubj6_v11",
+      "edge": 509.14,
+      "sims": 1000,
+      "iteration": 49,
+      "file": "ubj6_v11.sol"
+    },
+    {
+      "name": "ubj6_v11",
+      "edge": 509.14,
+      "sims": 1000,
+      "iteration": 50,
+      "file": "ubj6_v11.sol"
+    },
+    {
+      "name": "ubj6_v11",
+      "edge": 509.14,
+      "sims": 1000,
+      "iteration": 52,
+      "file": "ubj6_v11.sol"
+    },
+    {
+      "name": "mlfb_v1",
+      "edge": 509.13,
+      "sims": 1000,
+      "iteration": 54,
+      "file": "mlfb_v1.sol"
+    },
+    {
+      "name": "ubj8_v7",
+      "edge": 509.02,
+      "sims": 1000,
+      "iteration": 52,
+      "file": "ubj8_v7.sol"
+    },
+    {
       "name": "iskewx_v11",
       "edge": 508.8,
       "sims": 1000,
@@ -226,73 +289,18 @@
       "sims": 1000,
       "iteration": 28,
       "file": "esmart_v1.sol"
-    },
-    {
-      "name": "ebeam_v1",
-      "edge": 508.62,
-      "sims": 1000,
-      "iteration": 29,
-      "file": "ebeam_v1.sol"
-    },
-    {
-      "name": "aburst_v7",
-      "edge": 508.28,
-      "sims": 1000,
-      "iteration": 22,
-      "file": "aburst_v7.sol"
-    },
-    {
-      "name": "canary_adu_v1",
-      "edge": 508.28,
-      "sims": 1000,
-      "iteration": 24,
-      "file": "canary_adu_v1.sol"
-    },
-    {
-      "name": "centi1_v1",
-      "edge": 508.27,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "centi1_v1.sol"
-    },
-    {
-      "name": "adu_p1",
-      "edge": 508.27,
-      "sims": 1000,
-      "iteration": 23,
-      "file": "adu_p1.sol"
-    },
-    {
-      "name": "bgate_v1",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 13,
-      "file": "bgate_v1.sol"
-    },
-    {
-      "name": "Tmp_U11_Band25",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25.sol"
-    },
-    {
-      "name": "Tmp_U11_B25_I20",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25_init20.sol"
-    },
-    {
-      "name": "Tmp_U11_B25_I27",
-      "edge": 508.25,
-      "sims": 1000,
-      "iteration": 3,
-      "file": "tmp_u11_band25_init27.sol"
     }
   ],
   "lessons_learned": [],
-  "regressions": [],
-  "harvested_at": "2026-02-11T13:24:06.989697Z",
-  "total_results_harvested": 98
+  "regressions": [
+    {
+      "from": "mlfb_v1",
+      "from_edge": 521.87,
+      "to": "mlfb_v1",
+      "to_edge": 330.32,
+      "iteration": 54
+    }
+  ],
+  "harvested_at": "2026-02-11T15:14:20.496675Z",
+  "total_results_harvested": 112
 }

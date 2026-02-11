@@ -7134,6 +7134,1151 @@
       "created_at": "2026-02-11T13:24:07.172850Z",
       "champion_baseline": 508.8,
       "authoritative_simulations": 1000,
+      "observed_edges": [
+        {
+          "timestamp": "2026-02-11T13:26:37.768461Z",
+          "strategy": "ubj6_v11",
+          "edge": 509.14,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run ubj6_v11.sol --simulations 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881059Z",
+          "strategy": "ubj7_v1.sol",
+          "edge": 508.87,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881148Z",
+          "strategy": "ubj7_v2.sol",
+          "edge": 509.07,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881153Z",
+          "strategy": "ubj7_v3.sol",
+          "edge": 509.16,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881156Z",
+          "strategy": "ubj7_v4.sol",
+          "edge": 508.96,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881158Z",
+          "strategy": "ubj7_v5.sol",
+          "edge": 509.09,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881160Z",
+          "strategy": "ubj7_v6.sol",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881163Z",
+          "strategy": "ubj7_v7.sol",
+          "edge": 509.1,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881165Z",
+          "strategy": "ubj7_v8.sol",
+          "edge": 509.14,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881167Z",
+          "strategy": "ubj7_v9.sol",
+          "edge": 509.11,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881169Z",
+          "strategy": "ubj7_v10.sol",
+          "edge": 509.02,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881170Z",
+          "strategy": "ubj7_v11.sol",
+          "edge": 509.03,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:31:37.881172Z",
+          "strategy": "ubj7_v12.sol",
+          "edge": 508.48,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v1.sol ubj7_v2.sol ubj7_v3.sol ubj7_v4.sol ubj7_v5.sol ubj7_v6.sol ubj7_v7.sol ubj7_v8.sol ubj7_v9.sol ubj7_v10.sol ubj7_v11.sol ubj7_v12.sol --workers 4 --sims 1000 --champion 508.8 --ea"
+        },
+        {
+          "timestamp": "2026-02-11T13:36:44.288798Z",
+          "strategy": "ubj7_v6.sol",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v6.sol ubj7_v6.sol ubj7_v6.sol --workers 3 --sims 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T13:36:44.288824Z",
+          "strategy": "ubj7_v6.sol",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v6.sol ubj7_v6.sol ubj7_v6.sol --workers 3 --sims 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T13:36:44.288830Z",
+          "strategy": "ubj7_v6.sol",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj7_v6.sol ubj7_v6.sol ubj7_v6.sol --workers 3 --sims 1000'"
+        }
+      ],
+      "observed_item_ids": [
+        "item_45",
+        "item_56",
+        "item_67"
+      ],
+      "early_abort": {
+        "enabled": true,
+        "min_results": 4,
+        "delta_below_champion": 0.8,
+        "triggered": false,
+        "trigger_count": null,
+        "trigger_reason": null,
+        "triggered_at": null,
+        "termination_result": null
+      },
+      "batch": {
+        "fail_delta_below_champion": 0.5,
+        "count": 16,
+        "best_edge": 509.17,
+        "failed": false,
+        "fail_reason": null
+      },
+      "status": "completed",
+      "families": {
+        "20260211_082723_71140": {
+          "run_id": "20260211_082723_71140",
+          "started_at": "2026-02-11T13:31:37.884617Z",
+          "completed_at": "2026-02-11T13:31:37.884617Z",
+          "n_strategies": null,
+          "completed_count": 12,
+          "killed_count": 0,
+          "best_edge": 509.17,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T13:31:37.884617Z"
+        },
+        "20260211_083149_79391": {
+          "run_id": "20260211_083149_79391",
+          "started_at": "2026-02-11T13:36:44.293121Z",
+          "completed_at": "2026-02-11T13:36:44.293121Z",
+          "n_strategies": null,
+          "completed_count": 3,
+          "killed_count": 0,
+          "best_edge": 509.17,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T13:36:44.293121Z"
+        }
+      },
+      "updated_at": "2026-02-11T13:38:43.811830Z"
+    },
+    "50": {
+      "iteration": 50,
+      "created_at": "2026-02-11T13:38:44.485420Z",
+      "champion_baseline": 509.14,
+      "authoritative_simulations": 1000,
+      "observed_edges": [
+        {
+          "timestamp": "2026-02-11T13:46:02.094372Z",
+          "strategy": "ubj8_v1.sol",
+          "edge": 508.87,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:46:02.094440Z",
+          "strategy": "ubj8_v2.sol",
+          "edge": 508.89,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:46:02.094447Z",
+          "strategy": "ubj8_v3.sol",
+          "edge": 508.96,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:46:02.094452Z",
+          "strategy": "ubj8_v4.sol",
+          "edge": 508.93,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:46:02.094458Z",
+          "strategy": "ubj8_v5.sol",
+          "edge": 508.95,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:46:02.094461Z",
+          "strategy": "ubj8_v6.sol",
+          "edge": 508.91,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:46:02.094464Z",
+          "strategy": "ubj8_v7.sol",
+          "edge": 509.02,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:46:02.094466Z",
+          "strategy": "ubj8_v8.sol",
+          "edge": 508.98,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:46:02.094469Z",
+          "strategy": "ubj8_v9.sol",
+          "edge": 508.88,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:46:02.094478Z",
+          "strategy": "ubj8_v10.sol",
+          "edge": 508.85,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:46:02.094480Z",
+          "strategy": "ubj8_v11.sol",
+          "edge": 508.71,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:46:02.094483Z",
+          "strategy": "ubj8_v12.sol",
+          "edge": 508.48,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj8_v1.sol ubj8_v2.sol ubj8_v3.sol ubj8_v4.sol ubj8_v5.sol ubj8_v6.sol ubj8_v7.sol ubj8_v8.sol ubj8_v9.sol ubj8_v10.sol ubj8_v11.sol ubj8_v12.sol --workers 4 --sims 1000 --champion 509.14 --e"
+        },
+        {
+          "timestamp": "2026-02-11T13:47:03.378363Z",
+          "strategy": "ubj6_v11",
+          "edge": 509.14,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'amm-match run ubj6_v11.sol --simulations 1000'"
+        }
+      ],
+      "observed_item_ids": [
+        "item_34",
+        "item_46"
+      ],
+      "early_abort": {
+        "enabled": true,
+        "min_results": 4,
+        "delta_below_champion": 0.8,
+        "triggered": false,
+        "trigger_count": null,
+        "trigger_reason": null,
+        "triggered_at": null,
+        "termination_result": null
+      },
+      "batch": {
+        "fail_delta_below_champion": 0.5,
+        "count": 13,
+        "best_edge": 509.14,
+        "failed": false,
+        "fail_reason": null
+      },
+      "status": "completed",
+      "families": {
+        "20260211_084149_89133": {
+          "run_id": "20260211_084149_89133",
+          "started_at": "2026-02-11T13:46:02.098242Z",
+          "completed_at": "2026-02-11T13:46:02.098242Z",
+          "n_strategies": null,
+          "completed_count": 12,
+          "killed_count": 0,
+          "best_edge": 509.02,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T13:46:02.098242Z"
+        }
+      },
+      "updated_at": "2026-02-11T13:48:10.703591Z"
+    },
+    "51": {
+      "iteration": 51,
+      "created_at": "2026-02-11T13:48:11.379845Z",
+      "champion_baseline": 509.14,
+      "authoritative_simulations": 1000,
+      "observed_edges": [
+        {
+          "timestamp": "2026-02-11T14:01:32.612345Z",
+          "strategy": "arbinf_v1.sol",
+          "edge": 498.2,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh arbinf_v1.sol arbinf_v2.sol arbinf_v3.sol arbinf_v4.sol arbinf_v5.sol arbinf_v6.sol arbinf_v7.sol arbinf_v8.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8 --batch-"
+        },
+        {
+          "timestamp": "2026-02-11T14:01:32.612443Z",
+          "strategy": "arbinf_v2.sol",
+          "edge": 496.74,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh arbinf_v1.sol arbinf_v2.sol arbinf_v3.sol arbinf_v4.sol arbinf_v5.sol arbinf_v6.sol arbinf_v7.sol arbinf_v8.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8 --batch-"
+        },
+        {
+          "timestamp": "2026-02-11T14:01:32.612463Z",
+          "strategy": "arbinf_v3.sol",
+          "edge": 499.86,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh arbinf_v1.sol arbinf_v2.sol arbinf_v3.sol arbinf_v4.sol arbinf_v5.sol arbinf_v6.sol arbinf_v7.sol arbinf_v8.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8 --batch-"
+        },
+        {
+          "timestamp": "2026-02-11T14:01:32.612473Z",
+          "strategy": "arbinf_v4.sol",
+          "edge": 495.2,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh arbinf_v1.sol arbinf_v2.sol arbinf_v3.sol arbinf_v4.sol arbinf_v5.sol arbinf_v6.sol arbinf_v7.sol arbinf_v8.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8 --batch-"
+        }
+      ],
+      "observed_item_ids": [
+        "item_83"
+      ],
+      "early_abort": {
+        "enabled": true,
+        "min_results": 4,
+        "delta_below_champion": 0.8,
+        "triggered": true,
+        "trigger_count": 4,
+        "trigger_reason": "first 4 authoritative edges [498.20, 496.74, 499.86, 495.20] are all < champion 509.14 - 0.80 (508.34)",
+        "triggered_at": "2026-02-11T14:01:32.719144Z",
+        "termination_result": "terminated"
+      },
+      "batch": {
+        "fail_delta_below_champion": 0.5,
+        "count": 4,
+        "best_edge": 499.86,
+        "failed": true,
+        "fail_reason": "batch best 499.86 < champion 509.14 - 0.50"
+      },
+      "status": "early_aborted",
+      "families": {
+        "20260211_085939_8938": {
+          "run_id": "20260211_085939_8938",
+          "started_at": "2026-02-11T14:01:32.616694Z",
+          "completed_at": "2026-02-11T14:01:32.616703Z",
+          "n_strategies": null,
+          "completed_count": 4,
+          "killed_count": 4,
+          "best_edge": 499.86,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": true,
+          "batch_failed": true,
+          "fail_reason": "first 4 successful edges [495.20, 496.74, 498.20, 499.86] are all < champion 509.14 - 0.80 (508.34)",
+          "status": "aborted",
+          "updated_at": "2026-02-11T14:01:32.616703Z"
+        }
+      },
+      "updated_at": "2026-02-11T14:01:32.725208Z"
+    },
+    "52": {
+      "iteration": 52,
+      "created_at": "2026-02-11T14:01:33.317696Z",
+      "champion_baseline": 509.14,
+      "authoritative_simulations": 1000,
+      "observed_edges": [
+        {
+          "timestamp": "2026-02-11T14:07:19.596941Z",
+          "strategy": "cb3_v1",
+          "edge": 507.42,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run cb3_v1.sol --simulations 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T14:07:21.609513Z",
+          "strategy": "ubj6_v11",
+          "edge": 509.14,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run ubj6_v11.sol --simulations 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T14:09:48.201062Z",
+          "strategy": "ubj7_v3",
+          "edge": 509.16,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run ubj7_v3.sol --simulations 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T14:09:48.201082Z",
+          "strategy": "ubj7_v6",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run ubj7_v6.sol --simulations 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T14:09:49.208314Z",
+          "strategy": "ubj8_v7",
+          "edge": 509.02,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run ubj8_v7.sol --simulations 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T14:14:35.261777Z",
+          "strategy": "ubj9_v1.sol",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj9_v1.sol ubj9_v2.sol ubj9_v3.sol ubj9_v4.sol ubj9_v5.sol ubj9_v6.sol ubj9_v7.sol ubj9_v8.sol ubj9_v9.sol ubj9_v10.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8"
+        },
+        {
+          "timestamp": "2026-02-11T14:14:35.261849Z",
+          "strategy": "ubj9_v2.sol",
+          "edge": 509.2,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj9_v1.sol ubj9_v2.sol ubj9_v3.sol ubj9_v4.sol ubj9_v5.sol ubj9_v6.sol ubj9_v7.sol ubj9_v8.sol ubj9_v9.sol ubj9_v10.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8"
+        },
+        {
+          "timestamp": "2026-02-11T14:14:35.261856Z",
+          "strategy": "ubj9_v3.sol",
+          "edge": 509.11,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj9_v1.sol ubj9_v2.sol ubj9_v3.sol ubj9_v4.sol ubj9_v5.sol ubj9_v6.sol ubj9_v7.sol ubj9_v8.sol ubj9_v9.sol ubj9_v10.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8"
+        },
+        {
+          "timestamp": "2026-02-11T14:14:35.261858Z",
+          "strategy": "ubj9_v4.sol",
+          "edge": 509.18,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj9_v1.sol ubj9_v2.sol ubj9_v3.sol ubj9_v4.sol ubj9_v5.sol ubj9_v6.sol ubj9_v7.sol ubj9_v8.sol ubj9_v9.sol ubj9_v10.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8"
+        },
+        {
+          "timestamp": "2026-02-11T14:14:35.261862Z",
+          "strategy": "ubj9_v5.sol",
+          "edge": 509.15,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj9_v1.sol ubj9_v2.sol ubj9_v3.sol ubj9_v4.sol ubj9_v5.sol ubj9_v6.sol ubj9_v7.sol ubj9_v8.sol ubj9_v9.sol ubj9_v10.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8"
+        },
+        {
+          "timestamp": "2026-02-11T14:14:35.261864Z",
+          "strategy": "ubj9_v6.sol",
+          "edge": 509.16,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj9_v1.sol ubj9_v2.sol ubj9_v3.sol ubj9_v4.sol ubj9_v5.sol ubj9_v6.sol ubj9_v7.sol ubj9_v8.sol ubj9_v9.sol ubj9_v10.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8"
+        },
+        {
+          "timestamp": "2026-02-11T14:14:35.261865Z",
+          "strategy": "ubj9_v7.sol",
+          "edge": 509.14,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj9_v1.sol ubj9_v2.sol ubj9_v3.sol ubj9_v4.sol ubj9_v5.sol ubj9_v6.sol ubj9_v7.sol ubj9_v8.sol ubj9_v9.sol ubj9_v10.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8"
+        },
+        {
+          "timestamp": "2026-02-11T14:14:35.261870Z",
+          "strategy": "ubj9_v8.sol",
+          "edge": 509.1,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj9_v1.sol ubj9_v2.sol ubj9_v3.sol ubj9_v4.sol ubj9_v5.sol ubj9_v6.sol ubj9_v7.sol ubj9_v8.sol ubj9_v9.sol ubj9_v10.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8"
+        },
+        {
+          "timestamp": "2026-02-11T14:14:35.261872Z",
+          "strategy": "ubj9_v9.sol",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj9_v1.sol ubj9_v2.sol ubj9_v3.sol ubj9_v4.sol ubj9_v5.sol ubj9_v6.sol ubj9_v7.sol ubj9_v8.sol ubj9_v9.sol ubj9_v10.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8"
+        },
+        {
+          "timestamp": "2026-02-11T14:14:35.261874Z",
+          "strategy": "ubj9_v10.sol",
+          "edge": 508.71,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj9_v1.sol ubj9_v2.sol ubj9_v3.sol ubj9_v4.sol ubj9_v5.sol ubj9_v6.sol ubj9_v7.sol ubj9_v8.sol ubj9_v9.sol ubj9_v10.sol --workers 4 --sims 1000 --champion 509.14 --early-n 4 --early-delta 0.8"
+        },
+        {
+          "timestamp": "2026-02-11T14:18:46.430920Z",
+          "strategy": "ubj10_v1.sol",
+          "edge": 509.2,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj10_v1.sol ubj10_v2.sol ubj10_v3.sol ubj10_v4.sol ubj10_v5.sol ubj10_v6.sol ubj10_v7.sol ubj10_v8.sol ubj10_v9.sol ubj10_v10.sol --workers 4 --sims 1000 --champion 509.20 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:18:46.430986Z",
+          "strategy": "ubj10_v2.sol",
+          "edge": 509.22,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj10_v1.sol ubj10_v2.sol ubj10_v3.sol ubj10_v4.sol ubj10_v5.sol ubj10_v6.sol ubj10_v7.sol ubj10_v8.sol ubj10_v9.sol ubj10_v10.sol --workers 4 --sims 1000 --champion 509.20 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:18:46.430991Z",
+          "strategy": "ubj10_v3.sol",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj10_v1.sol ubj10_v2.sol ubj10_v3.sol ubj10_v4.sol ubj10_v5.sol ubj10_v6.sol ubj10_v7.sol ubj10_v8.sol ubj10_v9.sol ubj10_v10.sol --workers 4 --sims 1000 --champion 509.20 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:18:46.430994Z",
+          "strategy": "ubj10_v4.sol",
+          "edge": 509.19,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj10_v1.sol ubj10_v2.sol ubj10_v3.sol ubj10_v4.sol ubj10_v5.sol ubj10_v6.sol ubj10_v7.sol ubj10_v8.sol ubj10_v9.sol ubj10_v10.sol --workers 4 --sims 1000 --champion 509.20 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:18:46.430996Z",
+          "strategy": "ubj10_v5.sol",
+          "edge": 509.16,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj10_v1.sol ubj10_v2.sol ubj10_v3.sol ubj10_v4.sol ubj10_v5.sol ubj10_v6.sol ubj10_v7.sol ubj10_v8.sol ubj10_v9.sol ubj10_v10.sol --workers 4 --sims 1000 --champion 509.20 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:18:46.430999Z",
+          "strategy": "ubj10_v6.sol",
+          "edge": 509.13,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj10_v1.sol ubj10_v2.sol ubj10_v3.sol ubj10_v4.sol ubj10_v5.sol ubj10_v6.sol ubj10_v7.sol ubj10_v8.sol ubj10_v9.sol ubj10_v10.sol --workers 4 --sims 1000 --champion 509.20 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:18:46.431002Z",
+          "strategy": "ubj10_v7.sol",
+          "edge": 509.2,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj10_v1.sol ubj10_v2.sol ubj10_v3.sol ubj10_v4.sol ubj10_v5.sol ubj10_v6.sol ubj10_v7.sol ubj10_v8.sol ubj10_v9.sol ubj10_v10.sol --workers 4 --sims 1000 --champion 509.20 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:18:46.431009Z",
+          "strategy": "ubj10_v8.sol",
+          "edge": 509.19,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj10_v1.sol ubj10_v2.sol ubj10_v3.sol ubj10_v4.sol ubj10_v5.sol ubj10_v6.sol ubj10_v7.sol ubj10_v8.sol ubj10_v9.sol ubj10_v10.sol --workers 4 --sims 1000 --champion 509.20 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:18:46.431012Z",
+          "strategy": "ubj10_v9.sol",
+          "edge": 509.2,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj10_v1.sol ubj10_v2.sol ubj10_v3.sol ubj10_v4.sol ubj10_v5.sol ubj10_v6.sol ubj10_v7.sol ubj10_v8.sol ubj10_v9.sol ubj10_v10.sol --workers 4 --sims 1000 --champion 509.20 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:18:46.431015Z",
+          "strategy": "ubj10_v10.sol",
+          "edge": 509.16,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj10_v1.sol ubj10_v2.sol ubj10_v3.sol ubj10_v4.sol ubj10_v5.sol ubj10_v6.sol ubj10_v7.sol ubj10_v8.sol ubj10_v9.sol ubj10_v10.sol --workers 4 --sims 1000 --champion 509.20 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:22:54.739219Z",
+          "strategy": "ubj11_v1.sol",
+          "edge": 509.21,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj11_v1.sol ubj11_v2.sol ubj11_v3.sol ubj11_v4.sol ubj11_v5.sol ubj11_v6.sol ubj11_v7.sol ubj11_v8.sol ubj11_v9.sol ubj11_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:22:54.739318Z",
+          "strategy": "ubj11_v2.sol",
+          "edge": 509.21,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj11_v1.sol ubj11_v2.sol ubj11_v3.sol ubj11_v4.sol ubj11_v5.sol ubj11_v6.sol ubj11_v7.sol ubj11_v8.sol ubj11_v9.sol ubj11_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:22:54.739330Z",
+          "strategy": "ubj11_v3.sol",
+          "edge": 509.21,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj11_v1.sol ubj11_v2.sol ubj11_v3.sol ubj11_v4.sol ubj11_v5.sol ubj11_v6.sol ubj11_v7.sol ubj11_v8.sol ubj11_v9.sol ubj11_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:22:54.739335Z",
+          "strategy": "ubj11_v4.sol",
+          "edge": 509.22,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj11_v1.sol ubj11_v2.sol ubj11_v3.sol ubj11_v4.sol ubj11_v5.sol ubj11_v6.sol ubj11_v7.sol ubj11_v8.sol ubj11_v9.sol ubj11_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:22:54.739338Z",
+          "strategy": "ubj11_v5.sol",
+          "edge": 509.2,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj11_v1.sol ubj11_v2.sol ubj11_v3.sol ubj11_v4.sol ubj11_v5.sol ubj11_v6.sol ubj11_v7.sol ubj11_v8.sol ubj11_v9.sol ubj11_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:22:54.739345Z",
+          "strategy": "ubj11_v6.sol",
+          "edge": 509.2,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj11_v1.sol ubj11_v2.sol ubj11_v3.sol ubj11_v4.sol ubj11_v5.sol ubj11_v6.sol ubj11_v7.sol ubj11_v8.sol ubj11_v9.sol ubj11_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:22:54.739349Z",
+          "strategy": "ubj11_v7.sol",
+          "edge": 509.19,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj11_v1.sol ubj11_v2.sol ubj11_v3.sol ubj11_v4.sol ubj11_v5.sol ubj11_v6.sol ubj11_v7.sol ubj11_v8.sol ubj11_v9.sol ubj11_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:22:54.739353Z",
+          "strategy": "ubj11_v8.sol",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj11_v1.sol ubj11_v2.sol ubj11_v3.sol ubj11_v4.sol ubj11_v5.sol ubj11_v6.sol ubj11_v7.sol ubj11_v8.sol ubj11_v9.sol ubj11_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:22:54.739357Z",
+          "strategy": "ubj11_v9.sol",
+          "edge": 509.21,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj11_v1.sol ubj11_v2.sol ubj11_v3.sol ubj11_v4.sol ubj11_v5.sol ubj11_v6.sol ubj11_v7.sol ubj11_v8.sol ubj11_v9.sol ubj11_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:22:54.739360Z",
+          "strategy": "ubj11_v10.sol",
+          "edge": 509.18,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj11_v1.sol ubj11_v2.sol ubj11_v3.sol ubj11_v4.sol ubj11_v5.sol ubj11_v6.sol ubj11_v7.sol ubj11_v8.sol ubj11_v9.sol ubj11_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:27:06.713942Z",
+          "strategy": "ubj12_v1.sol",
+          "edge": 509.22,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj12_v1.sol ubj12_v2.sol ubj12_v3.sol ubj12_v4.sol ubj12_v5.sol ubj12_v6.sol ubj12_v7.sol ubj12_v8.sol ubj12_v9.sol ubj12_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:27:06.714285Z",
+          "strategy": "ubj12_v2.sol",
+          "edge": 509.19,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj12_v1.sol ubj12_v2.sol ubj12_v3.sol ubj12_v4.sol ubj12_v5.sol ubj12_v6.sol ubj12_v7.sol ubj12_v8.sol ubj12_v9.sol ubj12_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:27:06.714294Z",
+          "strategy": "ubj12_v3.sol",
+          "edge": 509.18,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj12_v1.sol ubj12_v2.sol ubj12_v3.sol ubj12_v4.sol ubj12_v5.sol ubj12_v6.sol ubj12_v7.sol ubj12_v8.sol ubj12_v9.sol ubj12_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:27:06.714320Z",
+          "strategy": "ubj12_v4.sol",
+          "edge": 509.12,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj12_v1.sol ubj12_v2.sol ubj12_v3.sol ubj12_v4.sol ubj12_v5.sol ubj12_v6.sol ubj12_v7.sol ubj12_v8.sol ubj12_v9.sol ubj12_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:27:06.714325Z",
+          "strategy": "ubj12_v5.sol",
+          "edge": 509.21,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj12_v1.sol ubj12_v2.sol ubj12_v3.sol ubj12_v4.sol ubj12_v5.sol ubj12_v6.sol ubj12_v7.sol ubj12_v8.sol ubj12_v9.sol ubj12_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:27:06.714328Z",
+          "strategy": "ubj12_v6.sol",
+          "edge": 509.22,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj12_v1.sol ubj12_v2.sol ubj12_v3.sol ubj12_v4.sol ubj12_v5.sol ubj12_v6.sol ubj12_v7.sol ubj12_v8.sol ubj12_v9.sol ubj12_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:27:06.714332Z",
+          "strategy": "ubj12_v7.sol",
+          "edge": 509.18,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj12_v1.sol ubj12_v2.sol ubj12_v3.sol ubj12_v4.sol ubj12_v5.sol ubj12_v6.sol ubj12_v7.sol ubj12_v8.sol ubj12_v9.sol ubj12_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:27:06.714335Z",
+          "strategy": "ubj12_v8.sol",
+          "edge": 509.21,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj12_v1.sol ubj12_v2.sol ubj12_v3.sol ubj12_v4.sol ubj12_v5.sol ubj12_v6.sol ubj12_v7.sol ubj12_v8.sol ubj12_v9.sol ubj12_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:27:06.714339Z",
+          "strategy": "ubj12_v9.sol",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj12_v1.sol ubj12_v2.sol ubj12_v3.sol ubj12_v4.sol ubj12_v5.sol ubj12_v6.sol ubj12_v7.sol ubj12_v8.sol ubj12_v9.sol ubj12_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        },
+        {
+          "timestamp": "2026-02-11T14:27:06.714342Z",
+          "strategy": "ubj12_v10.sol",
+          "edge": 509.16,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj12_v1.sol ubj12_v2.sol ubj12_v3.sol ubj12_v4.sol ubj12_v5.sol ubj12_v6.sol ubj12_v7.sol ubj12_v8.sol ubj12_v9.sol ubj12_v10.sol --workers 4 --sims 1000 --champion 509.22 --early-n 4 --early"
+        }
+      ],
+      "observed_item_ids": [
+        "item_26",
+        "item_28",
+        "item_34",
+        "item_35",
+        "item_36",
+        "item_54",
+        "item_69",
+        "item_82",
+        "item_93"
+      ],
+      "early_abort": {
+        "enabled": true,
+        "min_results": 4,
+        "delta_below_champion": 0.8,
+        "triggered": false,
+        "trigger_count": null,
+        "trigger_reason": null,
+        "triggered_at": null,
+        "termination_result": null
+      },
+      "batch": {
+        "fail_delta_below_champion": 0.5,
+        "count": 45,
+        "best_edge": 509.22,
+        "failed": false,
+        "fail_reason": null
+      },
+      "status": "completed",
+      "families": {
+        "20260211_091056_16021": {
+          "run_id": "20260211_091056_16021",
+          "started_at": "2026-02-11T14:14:35.264650Z",
+          "completed_at": "2026-02-11T14:14:35.264650Z",
+          "n_strategies": null,
+          "completed_count": 10,
+          "killed_count": 0,
+          "best_edge": 509.2,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T14:14:35.264650Z"
+        },
+        "20260211_091511_21701": {
+          "run_id": "20260211_091511_21701",
+          "started_at": "2026-02-11T14:18:46.433601Z",
+          "completed_at": "2026-02-11T14:18:46.433601Z",
+          "n_strategies": null,
+          "completed_count": 10,
+          "killed_count": 0,
+          "best_edge": 509.22,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T14:18:46.433601Z"
+        },
+        "20260211_091914_27100": {
+          "run_id": "20260211_091914_27100",
+          "started_at": "2026-02-11T14:22:54.746371Z",
+          "completed_at": "2026-02-11T14:22:54.746371Z",
+          "n_strategies": null,
+          "completed_count": 10,
+          "killed_count": 0,
+          "best_edge": 509.22,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T14:22:54.746371Z"
+        },
+        "20260211_092324_33441": {
+          "run_id": "20260211_092324_33441",
+          "started_at": "2026-02-11T14:27:06.719137Z",
+          "completed_at": "2026-02-11T14:27:06.719137Z",
+          "n_strategies": null,
+          "completed_count": 10,
+          "killed_count": 0,
+          "best_edge": 509.22,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T14:27:06.719137Z"
+        }
+      },
+      "updated_at": "2026-02-11T14:28:12.990654Z"
+    },
+    "53": {
+      "iteration": 53,
+      "created_at": "2026-02-11T14:28:13.653296Z",
+      "champion_baseline": 509.17,
+      "authoritative_simulations": 1000,
+      "observed_edges": [
+        {
+          "timestamp": "2026-02-11T14:42:35.974952Z",
+          "strategy": "mlarm_v5",
+          "edge": 509.23,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run mlarm_v5.sol --simulations 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T14:42:36.982365Z",
+          "strategy": "mlarm_v5",
+          "edge": 509.23,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run mlarm_v5.sol --simulations 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T14:42:36.982403Z",
+          "strategy": "mlarm_v5",
+          "edge": 509.23,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run mlarm_v5.sol --simulations 1000'"
+        }
+      ],
+      "observed_item_ids": [
+        "item_104",
+        "item_105",
+        "item_106",
+        "item_73"
+      ],
+      "early_abort": {
+        "enabled": true,
+        "min_results": 4,
+        "delta_below_champion": 0.8,
+        "triggered": false,
+        "trigger_count": null,
+        "trigger_reason": null,
+        "triggered_at": null,
+        "termination_result": null
+      },
+      "batch": {
+        "fail_delta_below_champion": 0.5,
+        "count": 3,
+        "best_edge": 509.23,
+        "failed": false,
+        "fail_reason": null
+      },
+      "status": "completed",
+      "families": {
+        "20260211_093644_46707": {
+          "run_id": "20260211_093644_46707",
+          "started_at": "2026-02-11T14:41:02.615377Z",
+          "completed_at": "2026-02-11T14:41:02.615377Z",
+          "n_strategies": null,
+          "completed_count": 10,
+          "killed_count": 0,
+          "best_edge": 509.23,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T14:41:02.615377Z"
+        }
+      },
+      "updated_at": "2026-02-11T14:44:10.372979Z"
+    },
+    "54": {
+      "iteration": 54,
+      "created_at": "2026-02-11T14:44:11.098840Z",
+      "champion_baseline": 509.23,
+      "authoritative_simulations": 1000,
+      "observed_edges": [
+        {
+          "timestamp": "2026-02-11T14:52:51.261739Z",
+          "strategy": "mlfb_v1",
+          "edge": 509.13,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run mlfb_v1.sol --simulations 1000'"
+        },
+        {
+          "timestamp": "2026-02-11T14:58:27.520448Z",
+          "strategy": "mlfb_v1.sol",
+          "edge": 509.13,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh mlfb_v1.sol mlfb_v2.sol mlfb_v3.sol mlfb_v4.sol mlfb_v5.sol mlfb_v6.sol mlfb_v7.sol mlfb_v8.sol --workers 4 --sims 1000 --champion 509.23 --early-n 4 --early-delta 0.8 --batch-delta 0.5'"
+        },
+        {
+          "timestamp": "2026-02-11T14:58:27.520484Z",
+          "strategy": "mlfb_v2.sol",
+          "edge": 509.18,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh mlfb_v1.sol mlfb_v2.sol mlfb_v3.sol mlfb_v4.sol mlfb_v5.sol mlfb_v6.sol mlfb_v7.sol mlfb_v8.sol --workers 4 --sims 1000 --champion 509.23 --early-n 4 --early-delta 0.8 --batch-delta 0.5'"
+        },
+        {
+          "timestamp": "2026-02-11T14:58:27.520486Z",
+          "strategy": "mlfb_v3.sol",
+          "edge": 509.1,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh mlfb_v1.sol mlfb_v2.sol mlfb_v3.sol mlfb_v4.sol mlfb_v5.sol mlfb_v6.sol mlfb_v7.sol mlfb_v8.sol --workers 4 --sims 1000 --champion 509.23 --early-n 4 --early-delta 0.8 --batch-delta 0.5'"
+        },
+        {
+          "timestamp": "2026-02-11T14:58:27.520488Z",
+          "strategy": "mlfb_v4.sol",
+          "edge": 509.19,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh mlfb_v1.sol mlfb_v2.sol mlfb_v3.sol mlfb_v4.sol mlfb_v5.sol mlfb_v6.sol mlfb_v7.sol mlfb_v8.sol --workers 4 --sims 1000 --champion 509.23 --early-n 4 --early-delta 0.8 --batch-delta 0.5'"
+        },
+        {
+          "timestamp": "2026-02-11T14:58:27.520489Z",
+          "strategy": "mlfb_v5.sol",
+          "edge": 509.15,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh mlfb_v1.sol mlfb_v2.sol mlfb_v3.sol mlfb_v4.sol mlfb_v5.sol mlfb_v6.sol mlfb_v7.sol mlfb_v8.sol --workers 4 --sims 1000 --champion 509.23 --early-n 4 --early-delta 0.8 --batch-delta 0.5'"
+        },
+        {
+          "timestamp": "2026-02-11T14:58:27.520490Z",
+          "strategy": "mlfb_v6.sol",
+          "edge": 509.07,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh mlfb_v1.sol mlfb_v2.sol mlfb_v3.sol mlfb_v4.sol mlfb_v5.sol mlfb_v6.sol mlfb_v7.sol mlfb_v8.sol --workers 4 --sims 1000 --champion 509.23 --early-n 4 --early-delta 0.8 --batch-delta 0.5'"
+        },
+        {
+          "timestamp": "2026-02-11T14:58:27.520491Z",
+          "strategy": "mlfb_v7.sol",
+          "edge": 509.13,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh mlfb_v1.sol mlfb_v2.sol mlfb_v3.sol mlfb_v4.sol mlfb_v5.sol mlfb_v6.sol mlfb_v7.sol mlfb_v8.sol --workers 4 --sims 1000 --champion 509.23 --early-n 4 --early-delta 0.8 --batch-delta 0.5'"
+        },
+        {
+          "timestamp": "2026-02-11T14:58:27.520492Z",
+          "strategy": "mlfb_v8.sol",
+          "edge": 509.12,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh mlfb_v1.sol mlfb_v2.sol mlfb_v3.sol mlfb_v4.sol mlfb_v5.sol mlfb_v6.sol mlfb_v7.sol mlfb_v8.sol --workers 4 --sims 1000 --champion 509.23 --early-n 4 --early-delta 0.8 --batch-delta 0.5'"
+        },
+        {
+          "timestamp": "2026-02-11T14:59:36.814483Z",
+          "strategy": "mlarm_v5",
+          "edge": 509.23,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc './venv_fresh/bin/amm-match run mlarm_v5.sol --simulations 1000'"
+        }
+      ],
+      "observed_item_ids": [
+        "item_115",
+        "item_123",
+        "item_99"
+      ],
+      "early_abort": {
+        "enabled": true,
+        "min_results": 4,
+        "delta_below_champion": 0.8,
+        "triggered": false,
+        "trigger_count": null,
+        "trigger_reason": null,
+        "triggered_at": null,
+        "termination_result": null
+      },
+      "batch": {
+        "fail_delta_below_champion": 0.5,
+        "count": 10,
+        "best_edge": 509.23,
+        "failed": false,
+        "fail_reason": null
+      },
+      "status": "completed",
+      "families": {
+        "20260211_095405_65255": {
+          "run_id": "20260211_095405_65255",
+          "started_at": "2026-02-11T14:58:27.521913Z",
+          "completed_at": "2026-02-11T14:58:27.521913Z",
+          "n_strategies": null,
+          "completed_count": 8,
+          "killed_count": 0,
+          "best_edge": 509.19,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T14:58:27.521913Z"
+        }
+      },
+      "updated_at": "2026-02-11T15:01:13.227161Z"
+    },
+    "55": {
+      "iteration": 55,
+      "created_at": "2026-02-11T15:01:13.934147Z",
+      "champion_baseline": 509.23,
+      "authoritative_simulations": 1000,
+      "observed_edges": [
+        {
+          "timestamp": "2026-02-11T15:12:51.608878Z",
+          "strategy": "ubj13b_v1.sol",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj13b_v1.sol ubj13b_v2.sol ubj13b_v3.sol ubj13b_v4.sol ubj13b_v5.sol ubj13b_v6.sol ubj13b_v7.sol ubj13b_v8.sol ubj13b_v9.sol ubj13b_v10.sol --workers 4 --sims 1000 --champion 509.23 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T15:12:51.608922Z",
+          "strategy": "ubj13b_v2.sol",
+          "edge": 509.31,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj13b_v1.sol ubj13b_v2.sol ubj13b_v3.sol ubj13b_v4.sol ubj13b_v5.sol ubj13b_v6.sol ubj13b_v7.sol ubj13b_v8.sol ubj13b_v9.sol ubj13b_v10.sol --workers 4 --sims 1000 --champion 509.23 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T15:12:51.608928Z",
+          "strategy": "ubj13b_v3.sol",
+          "edge": 509.27,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj13b_v1.sol ubj13b_v2.sol ubj13b_v3.sol ubj13b_v4.sol ubj13b_v5.sol ubj13b_v6.sol ubj13b_v7.sol ubj13b_v8.sol ubj13b_v9.sol ubj13b_v10.sol --workers 4 --sims 1000 --champion 509.23 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T15:12:51.608930Z",
+          "strategy": "ubj13b_v4.sol",
+          "edge": 509.24,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj13b_v1.sol ubj13b_v2.sol ubj13b_v3.sol ubj13b_v4.sol ubj13b_v5.sol ubj13b_v6.sol ubj13b_v7.sol ubj13b_v8.sol ubj13b_v9.sol ubj13b_v10.sol --workers 4 --sims 1000 --champion 509.23 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T15:12:51.608932Z",
+          "strategy": "ubj13b_v5.sol",
+          "edge": 509.15,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj13b_v1.sol ubj13b_v2.sol ubj13b_v3.sol ubj13b_v4.sol ubj13b_v5.sol ubj13b_v6.sol ubj13b_v7.sol ubj13b_v8.sol ubj13b_v9.sol ubj13b_v10.sol --workers 4 --sims 1000 --champion 509.23 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T15:12:51.608937Z",
+          "strategy": "ubj13b_v6.sol",
+          "edge": 509.17,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj13b_v1.sol ubj13b_v2.sol ubj13b_v3.sol ubj13b_v4.sol ubj13b_v5.sol ubj13b_v6.sol ubj13b_v7.sol ubj13b_v8.sol ubj13b_v9.sol ubj13b_v10.sol --workers 4 --sims 1000 --champion 509.23 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T15:12:51.608938Z",
+          "strategy": "ubj13b_v7.sol",
+          "edge": 509.03,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj13b_v1.sol ubj13b_v2.sol ubj13b_v3.sol ubj13b_v4.sol ubj13b_v5.sol ubj13b_v6.sol ubj13b_v7.sol ubj13b_v8.sol ubj13b_v9.sol ubj13b_v10.sol --workers 4 --sims 1000 --champion 509.23 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T15:12:51.608940Z",
+          "strategy": "ubj13b_v8.sol",
+          "edge": 509.39,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj13b_v1.sol ubj13b_v2.sol ubj13b_v3.sol ubj13b_v4.sol ubj13b_v5.sol ubj13b_v6.sol ubj13b_v7.sol ubj13b_v8.sol ubj13b_v9.sol ubj13b_v10.sol --workers 4 --sims 1000 --champion 509.23 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T15:12:51.608941Z",
+          "strategy": "ubj13b_v9.sol",
+          "edge": 509.26,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj13b_v1.sol ubj13b_v2.sol ubj13b_v3.sol ubj13b_v4.sol ubj13b_v5.sol ubj13b_v6.sol ubj13b_v7.sol ubj13b_v8.sol ubj13b_v9.sol ubj13b_v10.sol --workers 4 --sims 1000 --champion 509.23 --early-n"
+        },
+        {
+          "timestamp": "2026-02-11T15:12:51.608942Z",
+          "strategy": "ubj13b_v10.sol",
+          "edge": 508.42,
+          "simulations": 1000,
+          "command": "/bin/zsh -lc 'bash scripts/run-parallel-sims.sh ubj13b_v1.sol ubj13b_v2.sol ubj13b_v3.sol ubj13b_v4.sol ubj13b_v5.sol ubj13b_v6.sol ubj13b_v7.sol ubj13b_v8.sol ubj13b_v9.sol ubj13b_v10.sol --workers 4 --sims 1000 --champion 509.23 --early-n"
+        }
+      ],
+      "observed_item_ids": [
+        "item_84"
+      ],
+      "early_abort": {
+        "enabled": true,
+        "min_results": 4,
+        "delta_below_champion": 0.8,
+        "triggered": false,
+        "trigger_count": null,
+        "trigger_reason": null,
+        "triggered_at": null,
+        "termination_result": null
+      },
+      "batch": {
+        "fail_delta_below_champion": 0.5,
+        "count": 10,
+        "best_edge": 509.39,
+        "failed": false,
+        "fail_reason": null
+      },
+      "status": "completed",
+      "families": {
+        "20260211_100830_87329": {
+          "run_id": "20260211_100830_87329",
+          "started_at": "2026-02-11T15:12:51.610368Z",
+          "completed_at": "2026-02-11T15:12:51.610368Z",
+          "n_strategies": null,
+          "completed_count": 10,
+          "killed_count": 0,
+          "best_edge": 509.39,
+          "champion": null,
+          "early_n": null,
+          "early_delta": null,
+          "batch_delta": null,
+          "early_aborted": false,
+          "batch_failed": false,
+          "fail_reason": "ok",
+          "status": "completed",
+          "updated_at": "2026-02-11T15:12:51.610368Z"
+        }
+      },
+      "updated_at": "2026-02-11T15:14:19.961783Z"
+    },
+    "56": {
+      "iteration": 56,
+      "created_at": "2026-02-11T15:14:20.707001Z",
+      "champion_baseline": 509.23,
+      "authoritative_simulations": 1000,
       "observed_edges": [],
       "observed_item_ids": [],
       "early_abort": {
@@ -7155,8 +8300,8 @@
       },
       "status": "monitor_running",
       "families": {},
-      "updated_at": "2026-02-11T13:24:07.172963Z"
+      "updated_at": "2026-02-11T15:14:20.707120Z"
     }
   },
-  "last_updated": "2026-02-11T13:24:07.172964Z"
+  "last_updated": "2026-02-11T15:14:20.707121Z"
 }

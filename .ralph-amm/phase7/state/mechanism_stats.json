@@ -1,0 +1,67 @@
+{
+  "schema_version": "2.0",
+  "champion": {
+    "name": "GammaSquaredDualRegime",
+    "edge": 509.23,
+    "baseline_edge": 509.23,
+    "promoted_at": "2026-02-11T15:39:39.465771+00:00"
+  },
+  "mechanisms": {
+    "fair_price_estimation": {
+      "tries": 0,
+      "successes": 0,
+      "total_uplift": 0.0,
+      "invalid_count": 0,
+      "compile_fail_count": 0,
+      "last_tried": null,
+      "best_delta": null
+    },
+    "flow_memory": {
+      "tries": 0,
+      "successes": 0,
+      "total_uplift": 0.0,
+      "invalid_count": 0,
+      "compile_fail_count": 0,
+      "last_tried": null,
+      "best_delta": null
+    },
+    "arbitrage_response": {
+      "tries": 0,
+      "successes": 0,
+      "total_uplift": 0.0,
+      "invalid_count": 0,
+      "compile_fail_count": 0,
+      "last_tried": null,
+      "best_delta": null
+    },
+    "tight_band_pricing": {
+      "tries": 0,
+      "successes": 0,
+      "total_uplift": 0.0,
+      "invalid_count": 0,
+      "compile_fail_count": 0,
+      "last_tried": null,
+      "best_delta": null
+    },
+    "outer_regime_pricing": {
+      "tries": 0,
+      "successes": 0,
+      "total_uplift": 0.0,
+      "invalid_count": 0,
+      "compile_fail_count": 0,
+      "last_tried": null,
+      "best_delta": null
+    }
+  },
+  "global": {
+    "total_iterations": 0,
+    "total_champion_updates": 0,
+    "exploration_constant": 0.5,
+    "improvement_threshold": 0.02,
+    "max_retries_on_invalid": 2,
+    "wildcard_frequency": 10,
+    "rollback_triggered": false,
+    "rollback_reason": null,
+    "consecutive_invalid": 0
+  }
+}

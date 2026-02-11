@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "champion_file": ".best_strategy.sol",
+  "champion_edge": 509.23,
+  "mechanisms": {
+    "fair_price_estimation": {
+      "current_implementation": "Per-timestamp gamma-anchored fair-price candidate with jump clamp and 80/20 EWMA update.",
+      "code_location": "afterSwap lines 49-70",
+      "parameters": {
+        "EWMA_OLD_WEIGHT_PCT": 80,
+        "EWMA_NEW_WEIGHT_PCT": 20,
+        "MAX_JUMP_BPS": 400
+      },
+      "modification_directions": [
+        "Use regime-conditional EWMA weights",
+        "Add confidence-weighted anchor blending",
+        "Use asymmetric jump clamps by direction",
+        "Add volatility-aware adaptation speed"
+      ]
+    },
+    "flow_memory": {
+      "current_implementation": "No explicit persistent flow memory; mispricing and static tight-band threshold are used as near-fair proxy.",
+      "code_location": "afterSwap lines 81-83",
+      "parameters": {
+        "TIGHT_BAND_BPS": 25
+      },
+      "modification_directions": [
+        "Introduce lightweight flow state in slots",
+        "Add decay-based memory from recent trade direction",
+        "Condition tight-band by short-term order-flow proxy",
+        "Use volatility-conditioned memory reset"
+      ]
+    },
+    "arbitrage_response": {
+      "current_implementation": "Protective side sets required fee from gamma requirement plus buffer when spot deviates from fair.",
+      "code_location": "afterSwap lines 91-97, 103-107",
+      "parameters": {
+        "BUFFER_BPS": 4
+      },
+      "modification_directions": [
+        "Use asymmetric protective buffers by side",
+        "Scale protection with mispricing magnitude",
+        "Add smoother recovery after large deviations",
+        "Use side-specific clamp behavior"
+      ]
+    },
+    "tight_band_pricing": {
+      "current_implementation": "Within tight band, both bid and ask are pinned to 30 bps to avoid unnecessary undercutting.",
+      "code_location": "afterSwap lines 84-88",
+      "parameters": {
+        "MATCHED_FEE_BPS": 30
+      },
+      "modification_directions": [
+        "Use adaptive tight-band width",
+        "Introduce mild directional skew near fair",
+        "Condition near-fair fee on volatility estimate",
+        "Use soft transition instead of hard regime boundary"
+      ]
+    },
+    "outer_regime_pricing": {
+      "current_implementation": "Competitive side uses gamma-squared matching against normalizer weakness in the out-of-band regime.",
+      "code_location": "afterSwap lines 89-90, 99-101, 108-110",
+      "parameters": {
+        "BASE_MATCH_FEE_BPS": 30,
+        "COMPETITOR_MODEL": "gamma_squared"
+      },
+      "modification_directions": [
+        "Try gamma-power variants beyond square",
+        "Use mispricing-proportional matching aggressiveness",
+        "Blend competitor models by regime confidence",
+        "Add side-specific competitive offsets"
+      ]
+    }
+  }
+}

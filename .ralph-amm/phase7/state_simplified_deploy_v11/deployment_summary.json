@@ -1,0 +1,12 @@
+{
+  "iterations": 10,
+  "valid_count": 10,
+  "invalid_count": 0,
+  "validation_rate": 1.0,
+  "champion_updates": 6,
+  "avg_delta_valid": 0.03800000000000523,
+  "cumulative_delta_valid": 0.3800000000000523,
+  "final_champion_edge": 509.45,
+  "rollback_triggered": false,
+  "rollback_reason": null
+}
