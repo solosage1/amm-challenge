@@ -48,6 +48,12 @@ ROBUST_FREE_SPREAD="${ROBUST_FREE_SPREAD:-50.0}"
 ROBUST_PENALTY_PER_POINT="${ROBUST_PENALTY_PER_POINT:-0.02}"
 KNOWLEDGE_GUARDRAIL_EPSILON="${KNOWLEDGE_GUARDRAIL_EPSILON:-0.02}"
 
+# Autonomous opportunity engine (incremental rollout; defaults are safe/OFF)
+AUTO_OPP_ENGINE_ENABLED="${AUTO_OPP_ENGINE_ENABLED:-0}"   # 0=disabled (baseline behavior)
+AUTO_OPP_SHADOW_ITERS="${AUTO_OPP_SHADOW_ITERS:-20}"      # read-only decision period
+AUTO_OPP_CANARY_PCT="${AUTO_OPP_CANARY_PCT:-20}"          # execute on <=20% iterations in canary
+AUTO_OPP_WINDOW_SIZE="${AUTO_OPP_WINDOW_SIZE:-20}"        # non-regression window
+
 # Template extraction (reachable) rules
 TEMPLATE_MIN_EDGE="${TEMPLATE_MIN_EDGE:-350.0}"
 TEMPLATE_WITHIN_BEST="${TEMPLATE_WITHIN_BEST:-5.0}"
@@ -65,6 +71,10 @@ STATE_STRATEGIES="$PHASE7_STATE_DIR/.strategies_log.json"
 STATE_TEMPLATES="$PHASE7_STATE_DIR/.templates_created.json"
 STATE_RATE_LIMIT="$PHASE7_STATE_DIR/.rate_limit_tracker.json"
 STATE_START_TIME="$PHASE7_STATE_DIR/.start_timestamp.txt"
+STATE_OPP_HISTORY="$PHASE7_STATE_DIR/.opportunity_history.json"
+STATE_OPP_PRIORS="$PHASE7_STATE_DIR/.opportunity_priors.json"
+STATE_OPP_ROLLOUT="$PHASE7_STATE_DIR/.autoloop_rollout_state.json"
+STATE_OPP_ACTIVE_PLAN="$PHASE7_STATE_DIR/.autoplan_active.json"
 
 # ============================================================================
 # UTILITY FUNCTIONS
@@ -144,7 +154,9 @@ init_phase7_state() {
 
     # Initialize / repair state files (must be valid JSON / scalars).
     "$VENV_PY" - "$STATE_ITERATION" "$STATE_CHAMPION" "$STATE_CHAMPION_SCORE" "$STATE_STRATEGIES" "$STATE_TEMPLATES" \
-        "$STATE_RATE_LIMIT" "$STATE_START_TIME" <<'PY'
+        "$STATE_RATE_LIMIT" "$STATE_START_TIME" "$STATE_OPP_HISTORY" "$STATE_OPP_PRIORS" "$STATE_OPP_ROLLOUT" \
+        "$STATE_OPP_ACTIVE_PLAN" \
+        <<'PY'
 import json
 import os
 from pathlib import Path
@@ -158,6 +170,10 @@ state_strategies = Path(sys.argv[4])
 state_templates = Path(sys.argv[5])
 state_rate_limit = Path(sys.argv[6])
 state_start_time = Path(sys.argv[7])
+state_opp_history = Path(sys.argv[8])
+state_opp_priors = Path(sys.argv[9])
+state_opp_rollout = Path(sys.argv[10])
+state_opp_active_plan = Path(sys.argv[11])
 
 def atomic_write_text(path: Path, text: str) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -194,6 +210,22 @@ ensure_json_file(state_strategies, [])
 ensure_json_file(state_templates, [])
 ensure_json_file(state_rate_limit, {"last_call_timestamp": 0, "calls_count": 0})
 ensure_int_file(state_start_time, int(time.time()))
+ensure_json_file(state_opp_history, [])
+ensure_json_file(state_opp_priors, {})
+ensure_json_file(state_opp_rollout, {
+    "schema_version": "1.0",
+    "feature_enabled": False,
+    "started_iteration": None,
+    "mode": "off",
+    "shadow_completed": 0,
+    "canary_executed": 0,
+    "baseline_metrics": None,
+    "non_regression_fail_streak": 0,
+    "rollback_triggered": False,
+    "rollback_reason": None,
+    "last_updated": None
+})
+ensure_json_file(state_opp_active_plan, {})
 PY
 
     log "INFO" "State initialized."
@@ -213,6 +245,71 @@ run_knowledge_guardrail() {
     "$VENV_PY" scripts/amm-phase7-knowledge-check.py \
         --state-dir "$PHASE7_STATE_DIR" \
         --epsilon "$KNOWLEDGE_GUARDRAIL_EPSILON"
+}
+
+run_opportunity_evaluate() {
+    local iteration="$1"
+    local ranking_path="$2"
+    local plan_path="$3"
+
+    local enabled_arg=()
+    if [[ "${AUTO_OPP_ENGINE_ENABLED}" == "1" ]]; then
+        enabled_arg+=(--enabled)
+    fi
+
+    "$VENV_PY" scripts/amm-phase7-opportunity-engine.py evaluate \
+        --state-dir "$PHASE7_STATE_DIR" \
+        --iteration "$iteration" \
+        --target-edge "$COMPETITIVE_EDGE" \
+        --shadow-iters "$AUTO_OPP_SHADOW_ITERS" \
+        --canary-pct "$AUTO_OPP_CANARY_PCT" \
+        --window-size "$AUTO_OPP_WINDOW_SIZE" \
+        --ranking-out "$ranking_path" \
+        --plan-out "$plan_path" \
+        ${enabled_arg[@]+"${enabled_arg[@]}"}
+}
+
+plan_field() {
+    local plan_path="$1"
+    local field="$2"
+    "$VENV_PY" - "$plan_path" "$field" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+plan_path = Path(sys.argv[1])
+field = sys.argv[2]
+if not plan_path.exists():
+    print("")
+    raise SystemExit(0)
+try:
+    data = json.loads(plan_path.read_text())
+except Exception:
+    print("")
+    raise SystemExit(0)
+value = data.get(field, "")
+if isinstance(value, bool):
+    print("true" if value else "false")
+elif value is None:
+    print("")
+else:
+    print(value)
+PY
+}
+
+record_opportunity_outcome() {
+    local iteration="$1"
+    local status="$2"
+    local result_path="$3"
+    local plan_path="$4"
+
+    [[ -f "$plan_path" ]] || return 0
+    "$VENV_PY" scripts/amm-phase7-opportunity-engine.py record \
+        --state-dir "$PHASE7_STATE_DIR" \
+        --iteration "$iteration" \
+        --status "$status" \
+        --plan-file "$plan_path" \
+        --result-file "$result_path" >/dev/null 2>&1 || true
 }
 
 # ============================================================================
@@ -712,6 +809,8 @@ main_loop() {
         local strategy_path="$PHASE7_GENERATED_DIR/phase7_strategy_${iteration}.sol"
         local metadata_path="$PHASE7_GENERATED_DIR/phase7_strategy_${iteration}.json"
         local result_path="$PHASE7_STATE_DIR/iteration_${iteration}_result.json"
+        local opp_ranking_path="$PHASE7_STATE_DIR/opportunity_rankings_iter${iteration}.json"
+        local opp_plan_path="$PHASE7_STATE_DIR/autoplan_iter${iteration}.json"
 
         local status="ok"
         local error_stage=""
@@ -720,6 +819,9 @@ main_loop() {
         local final_score=""
         local effective_score=""
         local score_source="none"
+        local opp_mode="off"
+        local opp_execute="false"
+        local autoplan_for_prompt=""
         local is_new_champion="0"
 
         # === STEP 0: Harvest results from previous Codex session ===
@@ -737,17 +839,39 @@ main_loop() {
             append_strategies_log_entry "$iteration" "$status" "$error_stage" "$error_message" \
                 "$prompt_path" "$codex_jsonl_path" "$codex_stderr_path" "$codex_last_msg_path" \
                 "$strategy_path" "$metadata_path" "$result_path"
+            record_opportunity_outcome "$iteration" "$status" "$result_path" "$opp_plan_path"
             continue
+        fi
+
+        # === STEP 0.5: Opportunity discovery + autonomous plan generation ===
+        if [[ "${AUTO_OPP_ENGINE_ENABLED}" == "1" ]]; then
+            log "INFO" "Evaluating autonomous opportunity engine..."
+            if run_opportunity_evaluate "$iteration" "$opp_ranking_path" "$opp_plan_path"; then
+                opp_mode="$(plan_field "$opp_plan_path" "mode")"
+                opp_execute="$(plan_field "$opp_plan_path" "execute_this_iteration")"
+                if [[ "$opp_execute" == "true" ]]; then
+                    autoplan_for_prompt="$opp_plan_path"
+                fi
+                cp "$opp_plan_path" "$STATE_OPP_ACTIVE_PLAN" 2>/dev/null || true
+                log "INFO" "  Opportunity mode: ${opp_mode:-unknown} | execute=${opp_execute:-false}"
+            else
+                log "WARN" "  Opportunity engine evaluate failed; continuing baseline behavior"
+            fi
         fi
 
         # === STEP 1: Generate prompt context ===
         log "INFO" "Building prompt..."
+        local prompt_auto_plan_args=()
+        if [[ -n "$autoplan_for_prompt" ]]; then
+            prompt_auto_plan_args+=(--auto-plan "$autoplan_for_prompt")
+        fi
         if ! "$VENV_PY" scripts/amm-phase7-prompt-builder.py \
             --iteration "$iteration" \
             --state-dir "$PHASE7_STATE_DIR" \
             --output "$prompt_path" \
             --target-edge "$COMPETITIVE_EDGE" \
-            --max-runtime-seconds "$MAX_RUNTIME_SECONDS"; then
+            --max-runtime-seconds "$MAX_RUNTIME_SECONDS" \
+            ${prompt_auto_plan_args[@]+"${prompt_auto_plan_args[@]}"}; then
             log "ERROR" "Failed to build prompt"
             status="prompt_failed"
             error_stage="prompt"
@@ -755,6 +879,7 @@ main_loop() {
             append_strategies_log_entry "$iteration" "$status" "$error_stage" "$error_message" \
                 "$prompt_path" "$codex_jsonl_path" "$codex_stderr_path" "$codex_last_msg_path" \
                 "$strategy_path" "$metadata_path" "$result_path"
+            record_opportunity_outcome "$iteration" "$status" "$result_path" "$opp_plan_path"
             continue
         fi
 
@@ -777,6 +902,7 @@ PY
             append_strategies_log_entry "$iteration" "$status" "$error_stage" "$error_message" \
                 "$prompt_path" "$codex_jsonl_path" "$codex_stderr_path" "$codex_last_msg_path" \
                 "$strategy_path" "$metadata_path" "$result_path"
+            record_opportunity_outcome "$iteration" "$status" "$result_path" "$opp_plan_path"
             continue
         fi
 
@@ -792,6 +918,7 @@ PY
             append_strategies_log_entry "$iteration" "$status" "$error_stage" "$error_message" \
                 "$prompt_path" "$codex_jsonl_path" "$codex_stderr_path" "$codex_last_msg_path" \
                 "$strategy_path" "$metadata_path" "$result_path"
+            record_opportunity_outcome "$iteration" "$status" "$result_path" "$opp_plan_path"
             continue
         fi
 
@@ -813,6 +940,7 @@ PY
             append_strategies_log_entry "$iteration" "$status" "$error_stage" "$error_message" \
                 "$prompt_path" "$codex_jsonl_path" "$codex_stderr_path" "$codex_last_msg_path" \
                 "$strategy_path" "$metadata_path" "$result_path"
+            record_opportunity_outcome "$iteration" "$status" "$result_path" "$opp_plan_path"
             continue
         fi
 
@@ -877,6 +1005,7 @@ PY
         append_strategies_log_entry "$iteration" "ok" "" "" \
             "$prompt_path" "$codex_jsonl_path" "$codex_stderr_path" "$codex_last_msg_path" \
             "$strategy_path" "$metadata_path" "$result_path"
+        record_opportunity_outcome "$iteration" "ok" "$result_path" "$opp_plan_path"
 
         # === STEP 8: Extract template (reachable rules; idempotent per iteration) ===
         local template_sentinel="$PHASE7_STATE_DIR/iteration_${iteration}_template_extracted.ok"
@@ -981,6 +1110,9 @@ PY
 
         log "INFO" "Iteration $iteration complete. Current best raw edge: $(cat "$STATE_CHAMPION")"
         log "INFO" "Iteration $iteration complete. Current best robust score: $(cat "$STATE_CHAMPION_SCORE")"
+        if [[ "${AUTO_OPP_ENGINE_ENABLED}" == "1" ]]; then
+            log "INFO" "Iteration $iteration opportunity mode: ${opp_mode:-unknown}, execute=${opp_execute:-false}"
+        fi
         log "INFO" ""
 
         # Brief pause between iterations
@@ -1022,6 +1154,29 @@ PY
     log "INFO" "Final Best Robust Score: $final_best_score"
     log "INFO" "Templates Created: $templates_created"
     log "INFO" "Runtime: $(format_duration $elapsed)"
+    if [[ "${AUTO_OPP_ENGINE_ENABLED}" == "1" ]]; then
+        local opp_rollout_summary
+        opp_rollout_summary="$("$VENV_PY" - "$STATE_OPP_ROLLOUT" <<'PY'
+import json, sys
+from pathlib import Path
+p=Path(sys.argv[1])
+try:
+    d=json.loads(p.read_text())
+except Exception:
+    d={}
+mode=d.get("mode","unknown")
+rollback=d.get("rollback_triggered", False)
+reason=d.get("rollback_reason")
+shadow=d.get("shadow_completed", 0)
+canary=d.get("canary_executed", 0)
+msg=f"mode={mode} shadow_completed={shadow} canary_executed={canary} rollback={rollback}"
+if reason:
+    msg += f" reason={reason}"
+print(msg)
+PY
+)"
+        log "INFO" "Auto opportunity rollout: $opp_rollout_summary"
+    fi
     log "INFO" "======================================"
 
     if ! run_knowledge_guardrail; then
@@ -1059,6 +1214,10 @@ Options:
     --robust-free-spread N  Corner spread ignored before score penalty (default: 50)
     --robust-penalty N      Penalty per spread point above free spread (default: 0.02)
     --knowledge-epsilon N   Knowledge guardrail epsilon tolerance (default: 0.02)
+    --auto-opp-enable       Enable autonomous opportunity engine (default: disabled)
+    --auto-opp-shadow N     Shadow iterations before execution (default: 20)
+    --auto-opp-canary N     Canary execute percentage after shadow (default: 20)
+    --auto-opp-window N     Non-regression window size in iterations (default: 20)
     --enable-shell-tool     Allow Codex to run local commands (default)
     --disable-shell-tool    Prevent Codex from running local commands (may cause stalls in some setups)
     --help                  Show this help message
@@ -1118,6 +1277,22 @@ while [[ $# -gt 0 ]]; do
             KNOWLEDGE_GUARDRAIL_EPSILON="$2"
             shift 2
             ;;
+        --auto-opp-enable)
+            AUTO_OPP_ENGINE_ENABLED="1"
+            shift 1
+            ;;
+        --auto-opp-shadow)
+            AUTO_OPP_SHADOW_ITERS="$2"
+            shift 2
+            ;;
+        --auto-opp-canary)
+            AUTO_OPP_CANARY_PCT="$2"
+            shift 2
+            ;;
+        --auto-opp-window)
+            AUTO_OPP_WINDOW_SIZE="$2"
+            shift 2
+            ;;
         --enable-shell-tool)
             CODEX_DISABLE_SHELL_TOOL="0"
             shift 1
@@ -1145,10 +1320,14 @@ done
 require_file "$VENV_PY" "create/activate venv_fresh first"
 require_file "$AMM_MATCH" "ensure venv_fresh has project installed"
 require_cmd codex
+if [[ "${AUTO_OPP_ENGINE_ENABLED}" == "1" ]]; then
+    require_file "scripts/amm-phase7-opportunity-engine.py" "missing opportunity engine script"
+fi
 
 log "INFO" "Codex config: model=${CODEX_MODEL:-<default>} max_output_tokens=$CODEX_MAX_OUTPUT_TOKENS timeout_minutes=$CODEX_TIMEOUT_MINUTES CODEX_DISABLE_SHELL_TOOL=$CODEX_DISABLE_SHELL_TOOL"
 log "INFO" "Pipeline config: screen_sims=$PIPE_SCREEN_SIMS screen_min_edge=$PIPE_SCREEN_MIN_EDGE predicted_drop=$PIPE_PREDICTED_DROP predicted_min_edge=$PIPE_PREDICTED_MIN_EDGE robust_free_spread=$ROBUST_FREE_SPREAD robust_penalty=$ROBUST_PENALTY_PER_POINT"
 log "INFO" "Knowledge guardrail config: epsilon=$KNOWLEDGE_GUARDRAIL_EPSILON"
+log "INFO" "Autonomous opportunity config: enabled=$AUTO_OPP_ENGINE_ENABLED shadow_iters=$AUTO_OPP_SHADOW_ITERS canary_pct=$AUTO_OPP_CANARY_PCT window_size=$AUTO_OPP_WINDOW_SIZE"
 if [[ "${CODEX_DISABLE_SHELL_TOOL}" == "1" ]]; then
     log "WARN" "Shell tool is disabled. If Codex stalls after {turn.started} with no tokens, re-run with --enable-shell-tool or set CODEX_DISABLE_SHELL_TOOL=0."
 fi

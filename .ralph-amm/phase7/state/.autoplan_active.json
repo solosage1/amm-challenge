@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-02-11T04:22:04.451422Z",
+  "iteration": 4,
+  "mode": "shadow",
+  "execute_this_iteration": false,
+  "non_regression_ok": true,
+  "non_regression_reasons": [],
+  "rollout_state": {
+    "started_iteration": 3,
+    "shadow_completed": 3,
+    "canary_executed": 0,
+    "rollback_triggered": false,
+    "rollback_reason": null
+  },
+  "target_edge": 527.0,
+  "reference_best_edge": 506.17,
+  "selected_opportunity": {
+    "id": "regime_state_transition_search",
+    "rationale": "Plateau/brittleness suggest structure-level transition logic is under-optimized.",
+    "expected_uplift": 4.75,
+    "confidence": 4.25,
+    "weighted_score": 47.75
+  },
+  "ranked_opportunities": [
+    {
+      "id": "regime_state_transition_search",
+      "rationale": "Plateau/brittleness suggest structure-level transition logic is under-optimized.",
+      "expected_uplift": 4.75,
+      "confidence": 4.25,
+      "time_to_signal": 6.0,
+      "complexity": 6.0,
+      "overfit_risk": 5.0,
+      "weighted_score": 47.75
+    },
+    {
+      "id": "parallel_parameter_beam",
+      "rationale": "If sweep throughput is bottlenecked, parallel beams can improve search efficiency.",
+      "expected_uplift": 1.75,
+      "confidence": 6.0,
+      "time_to_signal": 9.0,
+      "complexity": 4.0,
+      "overfit_risk": 6.0,
+      "weighted_score": 46.625
+    },
+    {
+      "id": "robustness_repair_search",
+      "rationale": "Spread instability indicates robust-score improvements may unlock reliable gains.",
+      "expected_uplift": 2.75,
+      "confidence": 3.75,
+      "time_to_signal": 7.0,
+      "complexity": 5.0,
+      "overfit_risk": 3.0,
+      "weighted_score": 45.0
+    }
+  ],
+  "search_plan": {
+    "frozen_core": [
+      "gamma^2 competitive anchoring",
+      "strict protective-side buffer",
+      "mild timestamp-aware tightening in tight regime"
+    ],
+    "mutation_dimensions": [
+      "3-state mode machine (NORMAL/DEFENSIVE/RECOVERY)",
+      "entry/exit hysteresis thresholds",
+      "cooldown lengths",
+      "inventory-trigger thresholds",
+      "mispricing-trigger thresholds"
+    ],
+    "run_budget": {
+      "variants": 10,
+      "parallel_workers": 4,
+      "authoritative_sims": 1000
+    },
+    "promotion_criteria": {
+      "median_delta_vs_reference": 3.0,
+      "worst_case_delta_vs_reference": 1.0,
+      "required_repeats": 3
+    },
+    "kill_criteria": {
+      "first_run_delta_below": -1.0,
+      "max_allowed_spread": 60.0
+    }
+  }
+}

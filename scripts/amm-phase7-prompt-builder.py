@@ -10,7 +10,7 @@ import re
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 # Add scripts directory to path for local imports
 sys.path.insert(0, str(Path(__file__).parent))
@@ -85,6 +85,20 @@ def load_knowledge_context(state_dir: Path) -> dict:
     if knowledge_path.exists():
         try:
             return json.loads(knowledge_path.read_text())
+        except json.JSONDecodeError:
+            pass
+    return {}
+
+
+def load_auto_plan(plan_path: Path) -> dict:
+    """Load optional autonomous opportunity plan."""
+    if not plan_path:
+        return {}
+    if plan_path.exists():
+        try:
+            data = json.loads(plan_path.read_text())
+            if isinstance(data, dict):
+                return data
         except json.JSONDecodeError:
             pass
     return {}
@@ -277,6 +291,69 @@ def format_knowledge_section(knowledge: dict) -> str:
         return ""
 
     return "## Accumulated Knowledge from Sessions\n\n" + "\n".join(sections)
+
+
+def format_auto_plan_section(plan: dict) -> str:
+    """Format autonomous plan guidance for prompt injection."""
+    if not plan:
+        return ""
+    if not bool(plan.get("execute_this_iteration", False)):
+        return ""
+
+    selected = plan.get("selected_opportunity") or {}
+    search_plan = plan.get("search_plan") or {}
+    lines = ["## Autonomous Opportunity Plan (Execution Mode)"]
+    lines.append(f"- **Mode**: {plan.get('mode', 'unknown')}")
+    lines.append(f"- **Selected Opportunity**: {selected.get('id', 'unknown')}")
+    if selected.get("rationale"):
+        lines.append(f"- **Rationale**: {selected.get('rationale')}")
+    if selected.get("expected_uplift") is not None:
+        lines.append(f"- **Expected Uplift**: {selected.get('expected_uplift')} edge")
+
+    frozen_core = search_plan.get("frozen_core") or []
+    if frozen_core:
+        lines.append("")
+        lines.append("### Frozen Core (Do Not Rewrite)")
+        for item in frozen_core:
+            lines.append(f"- {item}")
+
+    mutation_dims = search_plan.get("mutation_dimensions") or []
+    if mutation_dims:
+        lines.append("")
+        lines.append("### Targeted Mutation Dimensions")
+        for item in mutation_dims:
+            lines.append(f"- {item}")
+
+    run_budget = search_plan.get("run_budget") or {}
+    if run_budget:
+        lines.append("")
+        lines.append("### Execution Budget")
+        lines.append(f"- Variants: {run_budget.get('variants', 'N/A')}")
+        lines.append(f"- Parallel Workers: {run_budget.get('parallel_workers', 'N/A')}")
+        lines.append(f"- Authoritative Sims: {run_budget.get('authoritative_sims', 1000)}")
+        lines.append("- Execute variants in parallel where possible.")
+        lines.append("- Early-kill weak variants per criteria below.")
+
+    promotion = search_plan.get("promotion_criteria") or {}
+    if promotion:
+        lines.append("")
+        lines.append("### Promotion Criteria")
+        for key, value in promotion.items():
+            lines.append(f"- {key}: {value}")
+
+    kill = search_plan.get("kill_criteria") or {}
+    if kill:
+        lines.append("")
+        lines.append("### Kill Criteria")
+        for key, value in kill.items():
+            lines.append(f"- {key}: {value}")
+
+    lines.append("")
+    lines.append("### Implementation Instructions")
+    lines.append("- Produce a concise batch plan and execute it immediately.")
+    lines.append("- Prefer action over verbose planning.")
+    lines.append("- Keep changes explainable and measurable against 1000-sim edge.")
+    return "\n".join(lines)
 
 
 # ============================================================================
@@ -556,6 +633,7 @@ def build_prompt(
     *,
     target_edge: float,
     max_runtime_seconds: int,
+    auto_plan_path: Optional[Path] = None,
 ):
     """Build context-rich prompt for Codex from current loop state."""
     state = load_state(state_dir)
@@ -580,6 +658,12 @@ def build_prompt(
     insight_section = format_insights_section(insights)
     if insight_section:
         sections.append(insight_section.strip())
+
+    if auto_plan_path is not None:
+        auto_plan = load_auto_plan(auto_plan_path)
+        auto_plan_section = format_auto_plan_section(auto_plan)
+        if auto_plan_section:
+            sections.append(auto_plan_section)
 
     hypothesis_gaps = select_hypothesis_gaps(state)[:5]
     if hypothesis_gaps:
@@ -606,6 +690,11 @@ def main():
     parser.add_argument("--output", required=True, help="Output path for prompt")
     parser.add_argument("--target-edge", type=float, default=527.0, help="Target edge to achieve (default: 527)")
     parser.add_argument(
+        "--auto-plan",
+        default="",
+        help="Optional path to autonomous plan JSON for execution guidance",
+    )
+    parser.add_argument(
         "--max-runtime-seconds",
         type=int,
         default=36000,
@@ -619,6 +708,7 @@ def main():
         Path(args.output),
         target_edge=args.target_edge,
         max_runtime_seconds=args.max_runtime_seconds,
+        auto_plan_path=Path(args.auto_plan) if args.auto_plan else None,
     )
 
 if __name__ == "__main__":

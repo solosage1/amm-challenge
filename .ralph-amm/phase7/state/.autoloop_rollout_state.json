@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "started_iteration": 3,
+  "feature_enabled": true,
+  "mode": "shadow",
+  "shadow_completed": 3,
+  "canary_executed": 0,
+  "baseline_metrics": {
+    "success_rate": 0.0,
+    "median_runtime_seconds": null,
+    "guardrail_failures": 0,
+    "window_size": 20,
+    "captured_at_iteration": 3
+  },
+  "non_regression_fail_streak": 0,
+  "rollback_triggered": false,
+  "rollback_reason": null,
+  "last_updated": "2026-02-11T04:22:04.451205Z"
+}

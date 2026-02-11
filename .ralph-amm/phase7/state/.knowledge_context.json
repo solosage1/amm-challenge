@@ -1,14 +1,91 @@
 {
-  "true_best_edge": 506.17,
-  "true_best_strategy": "GammaSquaredDualRegime",
+  "true_best_edge": 507.42,
+  "true_best_strategy": "Sweep5_T28_B1_B29_Init23",
   "has_1000_results": true,
-  "state_best_edge_benchmark": 506.17,
-  "true_best_edge_1000": 506.17,
-  "true_best_strategy_1000": "GammaSquaredDualRegime",
+  "state_best_edge_benchmark": 507.42,
+  "true_best_edge_1000": 507.42,
+  "true_best_strategy_1000": "Sweep5_T28_B1_B29_Init23",
   "true_best_edge_any": 518.99,
   "true_best_strategy_any": "ArbOracleDualRegime_Tight30_Buf4",
   "all_tested_strategies": [
     {
+      "name": "Sweep5_T28_B1_B29_Init23",
+      "edge": 507.42,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "GammaSquaredDualRegime_T28_B1_B29",
+      "edge": 507.42,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "strategy_edge50742.sol"
+    },
+    {
+      "name": "Sweep4_T28_B1_Band26",
+      "edge": 507.27,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "Refine_T29_B2_Band30",
+      "edge": 507.22,
+      "sims": 1000,
+      "iteration": 1,
+      "file": "refine_t29_b2_band30.sol"
+    },
+    {
+      "name": "Refine_T28_B1",
+      "edge": 507.15,
+      "sims": 1000,
+      "iteration": 1,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "Sweep_T28_B2",
+      "edge": 507.02,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "Sweep3_T27_B1",
+      "edge": 506.89,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "GammaSquaredDualRegime_Tight29Buf3",
+      "edge": 506.84,
+      "sims": 1000,
+      "iteration": 21,
+      "file": "phase7_iter21_candidate.sol"
+    },
+    {
+      "name": "GammaSquaredDualRegime_Tight29Buf3",
+      "edge": 506.84,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "phase7_iter21_candidate.sol"
+    },
+    {
+      "name": "Sweep2_T27_B2",
+      "edge": 506.75,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "Gamma2_Sweep_Alpha15",
+      "edge": 506.23,
+      "sims": 1000,
+      "iteration": 1,
+      "file": "unknown.sol"
+    },
+    {
       "name": "GammaSquaredDualRegime",
       "edge": 506.17,
       "sims": 1000,
@@ -26,7 +103,21 @@
       "name": "GammaSquaredDualRegime",
       "edge": 506.17,
       "sims": 1000,
+      "iteration": 1,
+      "file": "gamma2_dualregime.sol"
+    },
+    {
+      "name": "GammaSquaredDualRegime",
+      "edge": 506.17,
+      "sims": 1000,
       "iteration": 21,
+      "file": "gamma2_dualregime.sol"
+    },
+    {
+      "name": "GammaSquaredDualRegime",
+      "edge": 506.17,
+      "sims": 1000,
+      "iteration": 2,
       "file": "gamma2_dualregime.sol"
     },
     {
@@ -56,101 +147,87 @@
       "sims": 1000,
       "iteration": 19,
       "file": "arb_oracle_dualregime_recenter.sol"
-    },
-    {
-      "name": "GammaSquaredDualRegime_RetailMarkup",
-      "edge": 504.69,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_dualregime_retailmarkup.sol"
-    },
-    {
-      "name": "GammaSquaredDualRegime_Tight25",
-      "edge": 504.64,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_dualregime_tight25.sol"
-    },
-    {
-      "name": "GammaBlendDualRegime",
-      "edge": 504.55,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma_blend_dualregime.sol"
-    },
-    {
-      "name": "GammaSquaredDualRegime_Protect60",
-      "edge": 504.55,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_dualregime_protect60.sol"
-    },
-    {
-      "name": "GammaSquaredIntervalOracle",
-      "edge": 503.78,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_interval_oracle.sol"
-    },
-    {
-      "name": "GammaSquaredDualRegime_Buf10",
-      "edge": 503.41,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_dualregime_buf10.sol"
-    },
-    {
-      "name": "ArbOracleDualRegimeExact",
-      "edge": 502.58,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "arb_oracle_dualregime_exact.sol"
-    },
-    {
-      "name": "ArbOracleDualRegimeExact",
-      "edge": 502.58,
-      "sims": 1000,
-      "iteration": 8,
-      "file": "arb_oracle_dualregime_exact.sol"
-    },
-    {
-      "name": "ArbOracleDualRegimeExact",
-      "edge": 502.58,
-      "sims": 1000,
-      "iteration": 9,
-      "file": "arb_oracle_dualregime_exact.sol"
-    },
-    {
-      "name": "Candidate",
-      "edge": 502.58,
-      "sims": 1000,
-      "iteration": 9,
-      "file": "candidate_best25.sol"
-    },
-    {
-      "name": "ArbOracleDualRegime",
-      "edge": 502.27,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "arb_oracle_dualregime.sol"
-    },
-    {
-      "name": "ArbOracleDualRegime",
-      "edge": 502.27,
-      "sims": 1000,
-      "iteration": 8,
-      "file": "arb_oracle_dualregime.sol"
-    },
-    {
-      "name": "ArbOracleDualRegime",
-      "edge": 502.27,
-      "sims": 1000,
-      "iteration": 9,
-      "file": "arb_oracle_dualregime.sol"
     }
   ],
   "all_tested_strategies_1000": [
     {
+      "name": "Sweep5_T28_B1_B29_Init23",
+      "edge": 507.42,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "GammaSquaredDualRegime_T28_B1_B29",
+      "edge": 507.42,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "strategy_edge50742.sol"
+    },
+    {
+      "name": "Sweep4_T28_B1_Band26",
+      "edge": 507.27,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "Refine_T29_B2_Band30",
+      "edge": 507.22,
+      "sims": 1000,
+      "iteration": 1,
+      "file": "refine_t29_b2_band30.sol"
+    },
+    {
+      "name": "Refine_T28_B1",
+      "edge": 507.15,
+      "sims": 1000,
+      "iteration": 1,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "Sweep_T28_B2",
+      "edge": 507.02,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "Sweep3_T27_B1",
+      "edge": 506.89,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "GammaSquaredDualRegime_Tight29Buf3",
+      "edge": 506.84,
+      "sims": 1000,
+      "iteration": 21,
+      "file": "phase7_iter21_candidate.sol"
+    },
+    {
+      "name": "GammaSquaredDualRegime_Tight29Buf3",
+      "edge": 506.84,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "phase7_iter21_candidate.sol"
+    },
+    {
+      "name": "Sweep2_T27_B2",
+      "edge": 506.75,
+      "sims": 1000,
+      "iteration": 2,
+      "file": "unknown.sol"
+    },
+    {
+      "name": "Gamma2_Sweep_Alpha15",
+      "edge": 506.23,
+      "sims": 1000,
+      "iteration": 1,
+      "file": "unknown.sol"
+    },
+    {
       "name": "GammaSquaredDualRegime",
       "edge": 506.17,
       "sims": 1000,
@@ -168,7 +245,21 @@
       "name": "GammaSquaredDualRegime",
       "edge": 506.17,
       "sims": 1000,
+      "iteration": 1,
+      "file": "gamma2_dualregime.sol"
+    },
+    {
+      "name": "GammaSquaredDualRegime",
+      "edge": 506.17,
+      "sims": 1000,
       "iteration": 21,
+      "file": "gamma2_dualregime.sol"
+    },
+    {
+      "name": "GammaSquaredDualRegime",
+      "edge": 506.17,
+      "sims": 1000,
+      "iteration": 2,
       "file": "gamma2_dualregime.sol"
     },
     {
@@ -198,97 +289,6 @@
       "sims": 1000,
       "iteration": 19,
       "file": "arb_oracle_dualregime_recenter.sol"
-    },
-    {
-      "name": "GammaSquaredDualRegime_RetailMarkup",
-      "edge": 504.69,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_dualregime_retailmarkup.sol"
-    },
-    {
-      "name": "GammaSquaredDualRegime_Tight25",
-      "edge": 504.64,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_dualregime_tight25.sol"
-    },
-    {
-      "name": "GammaBlendDualRegime",
-      "edge": 504.55,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma_blend_dualregime.sol"
-    },
-    {
-      "name": "GammaSquaredDualRegime_Protect60",
-      "edge": 504.55,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_dualregime_protect60.sol"
-    },
-    {
-      "name": "GammaSquaredIntervalOracle",
-      "edge": 503.78,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_interval_oracle.sol"
-    },
-    {
-      "name": "GammaSquaredDualRegime_Buf10",
-      "edge": 503.41,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "gamma2_dualregime_buf10.sol"
-    },
-    {
-      "name": "ArbOracleDualRegimeExact",
-      "edge": 502.58,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "arb_oracle_dualregime_exact.sol"
-    },
-    {
-      "name": "ArbOracleDualRegimeExact",
-      "edge": 502.58,
-      "sims": 1000,
-      "iteration": 8,
-      "file": "arb_oracle_dualregime_exact.sol"
-    },
-    {
-      "name": "ArbOracleDualRegimeExact",
-      "edge": 502.58,
-      "sims": 1000,
-      "iteration": 9,
-      "file": "arb_oracle_dualregime_exact.sol"
-    },
-    {
-      "name": "Candidate",
-      "edge": 502.58,
-      "sims": 1000,
-      "iteration": 9,
-      "file": "candidate_best25.sol"
-    },
-    {
-      "name": "ArbOracleDualRegime",
-      "edge": 502.27,
-      "sims": 1000,
-      "iteration": 19,
-      "file": "arb_oracle_dualregime.sol"
-    },
-    {
-      "name": "ArbOracleDualRegime",
-      "edge": 502.27,
-      "sims": 1000,
-      "iteration": 8,
-      "file": "arb_oracle_dualregime.sol"
-    },
-    {
-      "name": "ArbOracleDualRegime",
-      "edge": 502.27,
-      "sims": 1000,
-      "iteration": 9,
-      "file": "arb_oracle_dualregime.sol"
     }
   ],
   "lessons_learned": [
@@ -345,34 +345,6 @@
       "iteration": 19
     },
     {
-      "from": "ArbBandProtect",
-      "from_edge": 491.1,
-      "to": "ArbInferredSkew",
-      "to_edge": 327.93,
-      "iteration": 2
-    },
-    {
-      "from": "ArbBandProtect",
-      "from_edge": 491.1,
-      "to": "Const_200bps",
-      "to_edge": 313.75,
-      "iteration": 2
-    },
-    {
-      "from": "ArbBandProtect",
-      "from_edge": 491.1,
-      "to": "Const_20bps",
-      "to_edge": 289.01,
-      "iteration": 2
-    },
-    {
-      "from": "ArbBandProtect",
-      "from_edge": 491.1,
-      "to": "Const_10bps",
-      "to_edge": 163.0,
-      "iteration": 2
-    },
-    {
       "from": "ArbOracleDualRegimeExact",
       "from_edge": 510.98,
       "to": "ArbInferredSkew",
@@ -401,6 +373,6 @@
       "iteration": 9
     }
   ],
-  "harvested_at": "2026-02-11T03:53:37.594170Z",
-  "total_results_harvested": 162
+  "harvested_at": "2026-02-11T04:25:03.159067Z",
+  "total_results_harvested": 111
 }
