@@ -34,17 +34,6 @@ Generate a novel AMM strategy that maximizes **Edge** (profitability metric) aga
 
 ---
 
-## Execution Contract (CRITICAL)
-
-This is a **non-interactive** generation run inside an autonomous loop.
-
-- **DO NOT** run shell commands or try to inspect files/repos.
-- **DO NOT** write/modify any files.
-- The orchestrator will compile + simulate after your response; your job is to **output the final strategy** in the required format.
-- If you don’t produce the required response blocks, the iteration will fail.
-
----
-
 ## Environment Context
 
 ### Simulation Mechanics
