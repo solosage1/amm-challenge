@@ -56,9 +56,6 @@ htmlcov/
 # All ralph-amm files (approaches, state, prompts, research)
 .ralph-amm/
 
-# Scripts (competitive approaches)
-scripts/
-
 # Main strategy file
 contracts/src/Strategy.sol
 

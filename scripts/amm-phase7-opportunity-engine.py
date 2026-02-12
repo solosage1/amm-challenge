@@ -1,0 +1,3005 @@
+#!/usr/bin/env python3
+"""
+Phase 7 Opportunity Engine
+
+Incremental autonomous-loop upgrade:
+- Discover high-leverage opportunity families from state/log signals
+- Generate machine-readable search plans per iteration
+- Enforce shadow/canary rollout with non-regression gates and rollback
+- Record plan outcomes for iterative learning priors
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from statistics import median
+from typing import Any, Dict, List, Optional, Tuple
+
+
+SCHEMA_VERSION = "1.0"
+SEVERE_FAILURE_DELTA = -0.8
+DEFAULT_COOLDOWN_ITERS = 4
+DEFAULT_NO_UPLIFT_EPSILON = 0.02
+DEFAULT_NO_UPLIFT_STREAK_THRESHOLD = 3
+DEFAULT_NOVELTY_LOOKBACK = 6
+DEFAULT_NOVELTY_PENALTY = 1.0
+DEFAULT_EXPLORE_LOOKBACK = 4
+DEFAULT_EXPLORE_REPEAT_CLASSES = {"undercut_sweep", "gating_adaptive"}
+DEFAULT_EXPLORE_TARGET_CLASSES = {
+    "gamma_formula",
+    "asymmetric",
+    "online_learning",
+    "optimal_control",
+    "bayesian_optimization",
+    "microstructure",
+    "adversarial_robustness",
+    "state_estimation",
+    "volatility_targeting",
+}
+DEFAULT_EXPLORE_MIN_NO_UPLIFT = 3
+DEFAULT_EXPLORE_MIN_REPEAT_SHARE = 0.60
+DEFAULT_EXPLORE_STALL_LOOKBACK = 10
+DEFAULT_EXPLORE_STALL_MIN_NO_UPLIFT = 7
+DEFAULT_EXPLORE_UNTRIED_FLOOR_ENABLED = True
+DEFAULT_BREAKTHROUGH_TIE_EPSILON = 0.10
+DEFAULT_SEVERE_SUBFAMILY_FAILURE_THRESHOLD = 2
+DEFAULT_GATES_FALLBACK_POLLS = 8
+DEFAULT_GATES_FALLBACK_POLL_SECONDS = 0.25
+DEFAULT_SCORE_NOVELTY_WEIGHT = 0.55
+DEFAULT_SCORE_BREAKTHROUGH_WEIGHT = 0.60
+DEFAULT_SCORE_UNTRIED_BONUS = 4.0
+DEFAULT_EWMA_ALPHA = 0.30
+DEFAULT_EWMA_PENALTY_THRESHOLD = -0.20
+DEFAULT_EWMA_PENALTY_MAX = 2.0
+DEFAULT_CONFORMANCE_WEIGHT_MATCH = 1.0
+DEFAULT_CONFORMANCE_WEIGHT_PARTIAL = 0.25
+DEFAULT_CONFORMANCE_WEIGHT_MISMATCH = 0.10
+
+FAMILY_CLASS_BY_ID = {
+    "adaptive_undercut_search": "undercut_sweep",
+    "undercut_band_joint_search": "undercut_sweep",
+    "protective_buffer_undercut_search": "undercut_sweep",
+    "regime_state_transition_search": "gating_adaptive",
+    "hysteresis_gate_search": "gating_adaptive",
+    "cooldown_gate_search": "gating_adaptive",
+    "parallel_parameter_beam": "gating_adaptive",
+    "robustness_repair_search": "ema_smoothing",
+    "gamma_formula_search": "gamma_formula",
+    "gamma_exponent_sweep_search": "gamma_formula",
+    "gamma_anchor_blend_search": "gamma_formula",
+    "ema_smoothing_search": "ema_smoothing",
+    "jump_limiter_smoothing_search": "ema_smoothing",
+    "robust_smoothing_filters_search": "ema_smoothing",
+    "asymmetric_bid_ask_search": "asymmetric",
+    "inventory_skew_asymmetry_search": "asymmetric",
+    "flow_skew_asymmetry_search": "asymmetric",
+    "contextual_bandit_policy_search": "online_learning",
+    "online_parameter_tuning_search": "online_learning",
+    "meta_learning_fee_schedule_search": "online_learning",
+    "distributionally_robust_control_search": "adversarial_robustness",
+    "bayesian_optimization_meta_search": "bayesian_optimization",
+    "bayesopt_multiobjective_search": "bayesian_optimization",
+    "inventory_hjb_control_search": "optimal_control",
+    "mpc_inventory_control_search": "optimal_control",
+    "queue_microprice_impact_search": "microstructure",
+    "order_flow_imbalance_search": "microstructure",
+    "arb_implied_price_inference_search": "state_estimation",
+    "latent_regime_filter_search": "state_estimation",
+    "volatility_scaled_fee_search": "volatility_targeting",
+    "uncertainty_aware_band_search": "volatility_targeting",
+    "adversarial_regime_sim_search": "adversarial_robustness",
+    "distribution_shift_robustness_search": "adversarial_robustness",
+}
+
+SUBFAMILY_CATALOG_BY_ID = {
+    "adaptive_undercut_search": [
+        "plain_undercut",
+        "mispricing_gate",
+        "step_aware_undercut",
+        "flow_burst_memory",
+    ],
+    "undercut_band_joint_search": [
+        "coarse_grid",
+        "adaptive_grid",
+        "local_refine",
+    ],
+    "protective_buffer_undercut_search": [
+        "buffer_sweep",
+        "buffer_asym",
+        "buffer_dynamic",
+    ],
+    "regime_state_transition_search": [
+        "light_state_machine",
+        "heavy_state_machine",
+    ],
+    "hysteresis_gate_search": [
+        "band_hysteresis",
+        "trade_index_hysteresis",
+        "cooldown_hysteresis",
+    ],
+    "cooldown_gate_search": [
+        "timestamp_cooldown",
+        "trade_count_cooldown",
+        "decay_cooldown",
+    ],
+    "parallel_parameter_beam": ["parameter_beam"],
+    "robustness_repair_search": ["spread_stabilizer"],
+    "gamma_formula_search": ["gamma_transform"],
+    "gamma_exponent_sweep_search": [
+        "gamma_k_global",
+        "gamma_k_piecewise",
+        "gamma_k_clamped",
+    ],
+    "gamma_anchor_blend_search": [
+        "anchor_blend",
+        "anchor_switch",
+        "anchor_clip",
+    ],
+    "ema_smoothing_search": ["ema_smoothing"],
+    "jump_limiter_smoothing_search": [
+        "max_jump_limit",
+        "piecewise_jump",
+        "adaptive_jump",
+    ],
+    "robust_smoothing_filters_search": [
+        "median_filter",
+        "trimmed_mean",
+        "adaptive_alpha",
+    ],
+    "asymmetric_bid_ask_search": ["bid_ask_asymmetry"],
+    "inventory_skew_asymmetry_search": [
+        "linear_imbalance_skew",
+        "nonlinear_skew",
+        "target_inventory",
+    ],
+    "flow_skew_asymmetry_search": [
+        "streak_skew",
+        "signed_volume_skew",
+        "shock_skew",
+    ],
+    "contextual_bandit_policy_search": [
+        "thompson_quote_arms",
+        "ucb_quote_arms",
+        "exp3_adversarial_bandit",
+    ],
+    "online_parameter_tuning_search": [
+        "bandit_undercut",
+        "bandit_buffers",
+        "bandit_bands",
+    ],
+    "meta_learning_fee_schedule_search": [
+        "adaptive_step_size",
+        "regret_minimization",
+        "meta_alpha",
+    ],
+    "distributionally_robust_control_search": [
+        "cvar_objective",
+        "worst_case_regime_mix",
+        "ambiguity_set_penalty",
+    ],
+    "bayesian_optimization_meta_search": [
+        "gp_expected_improvement",
+        "turbo_trust_region",
+        "multi_fidelity_bayesopt",
+    ],
+    "bayesopt_multiobjective_search": [
+        "pareto_edge_robust",
+        "constraints_first",
+        "scalarized_objective",
+    ],
+    "inventory_hjb_control_search": [
+        "avellaneda_stoikov_like",
+        "hjb_discrete_inventory",
+        "risk_aversion_schedule",
+    ],
+    "mpc_inventory_control_search": [
+        "linearized_mpc",
+        "scenario_mpc",
+        "mpc_with_clamps",
+    ],
+    "queue_microprice_impact_search": [
+        "microprice_imbalance",
+        "queue_reactive_spread",
+        "impact_decay",
+    ],
+    "order_flow_imbalance_search": [
+        "signed_volume",
+        "trade_count_imbalance",
+        "impact_proxy",
+    ],
+    "arb_implied_price_inference_search": [
+        "arb_classifier",
+        "arb_implied_p",
+        "p_ewma",
+    ],
+    "latent_regime_filter_search": [
+        "hmm_2state",
+        "quantized_belief",
+        "change_point",
+    ],
+    "volatility_scaled_fee_search": [
+        "vol_ema",
+        "vol_burst",
+        "vol_clamped",
+    ],
+    "uncertainty_aware_band_search": [
+        "confidence_band",
+        "uncertainty_penalty",
+        "bandwidth_control",
+    ],
+    "adversarial_regime_sim_search": [
+        "stress_regime_mixture",
+        "adversarial_replay",
+        "change_point_guard",
+    ],
+    "distribution_shift_robustness_search": [
+        "robust_clamps",
+        "fallback_policy",
+        "stress_mode",
+    ],
+}
+
+NOVELTY_PRIOR_BY_FAMILY_CLASS = {
+    "undercut_sweep": 2.5,
+    "gating_adaptive": 3.0,
+    "ema_smoothing": 4.0,
+    "gamma_formula": 7.0,
+    "asymmetric": 7.8,
+    "online_learning": 8.9,
+    "adversarial_robustness": 8.4,
+    "bayesian_optimization": 8.0,
+    "optimal_control": 8.7,
+    "microstructure": 8.2,
+    "state_estimation": 8.6,
+    "volatility_targeting": 8.1,
+}
+
+BREAKTHROUGH_PRIOR_BY_FAMILY_CLASS = {
+    "undercut_sweep": 3.2,
+    "gating_adaptive": 3.8,
+    "ema_smoothing": 4.8,
+    "gamma_formula": 7.4,
+    "asymmetric": 7.1,
+    "online_learning": 7.9,
+    "adversarial_robustness": 7.6,
+    "bayesian_optimization": 7.2,
+    "optimal_control": 8.0,
+    "microstructure": 7.5,
+    "state_estimation": 7.8,
+    "volatility_targeting": 7.2,
+}
+
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def load_json(path: Path, default: Any) -> Any:
+    try:
+        return json.loads(path.read_text())
+    except Exception:
+        return default
+
+
+def atomic_write_json(path: Path, data: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2))
+    tmp.replace(path)
+
+
+def safe_float(value: Any) -> Optional[float]:
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def clamp(v: float, low: float = 0.0, high: float = 10.0) -> float:
+    return max(low, min(high, v))
+
+
+def resolve_conformance_weight(
+    *,
+    planned_vs_actual_match: bool,
+    subfamily_confidence: str,
+    weight_match: float,
+    weight_partial: float,
+    weight_mismatch: float,
+) -> float:
+    if planned_vs_actual_match:
+        return max(0.0, float(weight_match))
+    if subfamily_confidence in {"inferred_only", "planned"}:
+        return max(0.0, float(weight_partial))
+    return max(0.0, float(weight_mismatch))
+
+
+def family_class(opportunity_id: str) -> str:
+    return FAMILY_CLASS_BY_ID.get(opportunity_id, "unknown")
+
+
+def parse_csv_set(value: Optional[str]) -> set[str]:
+    if not value:
+        return set()
+    return {x.strip() for x in str(value).split(",") if x.strip()}
+
+
+def opportunity_subfamilies(opportunity_id: str) -> List[str]:
+    vals = SUBFAMILY_CATALOG_BY_ID.get(opportunity_id)
+    if isinstance(vals, list) and vals:
+        return list(vals)
+    return ["default"]
+
+
+def default_subfamily_for_opportunity(opportunity_id: str) -> str:
+    return opportunity_subfamilies(opportunity_id)[0]
+
+
+def parse_subfamily_overrides(value: Optional[str]) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    raw = (value or "").strip()
+    if not raw:
+        return out
+    for token in raw.split(","):
+        tok = token.strip()
+        if not tok:
+            continue
+        if ":" in tok:
+            opp, sub = tok.split(":", 1)
+            opp = opp.strip()
+            sub = sub.strip()
+            if opp and sub:
+                out[opp] = sub
+        elif tok:
+            out["*"] = tok
+    return out
+
+
+def parse_subfamily_from_strategy_name(opportunity_id: str, strategy_name: str) -> Optional[str]:
+    name = str(strategy_name or "").strip().lower()
+    if not name:
+        return None
+    stem = Path(name).stem
+    stem = re.sub(r"_(v|l|r)\d+$", "", stem)
+
+    if opportunity_id == "adaptive_undercut_search":
+        if any(tok in stem for tok in ("burst", "bgate", "flow")):
+            return "flow_burst_memory"
+        if "step" in stem:
+            return "step_aware_undercut"
+        if any(tok in stem for tok in ("gate", "mode", "regime", "def")):
+            return "mispricing_gate"
+        if any(tok in stem for tok in ("u", "undercut", "band")):
+            return "plain_undercut"
+    elif opportunity_id == "regime_state_transition_search":
+        if any(tok in stem for tok in ("light", "_l", "lite")):
+            return "light_state_machine"
+        return "heavy_state_machine"
+    elif opportunity_id == "gamma_formula_search":
+        return "gamma_transform"
+    elif opportunity_id == "ema_smoothing_search":
+        return "ema_smoothing"
+    elif opportunity_id == "asymmetric_bid_ask_search":
+        return "bid_ask_asymmetry"
+    elif opportunity_id == "parallel_parameter_beam":
+        return "parameter_beam"
+    elif opportunity_id == "robustness_repair_search":
+        return "spread_stabilizer"
+    elif opportunity_id == "contextual_bandit_policy_search":
+        if any(tok in stem for tok in ("exp3", "adversarial")):
+            return "exp3_adversarial_bandit"
+        if "ucb" in stem:
+            return "ucb_quote_arms"
+        return "thompson_quote_arms"
+    elif opportunity_id == "distributionally_robust_control_search":
+        if "cvar" in stem:
+            return "cvar_objective"
+        if any(tok in stem for tok in ("worst", "mix")):
+            return "worst_case_regime_mix"
+        return "ambiguity_set_penalty"
+    elif opportunity_id == "bayesian_optimization_meta_search":
+        if any(tok in stem for tok in ("turbo", "trust")):
+            return "turbo_trust_region"
+        if any(tok in stem for tok in ("mf", "fidelity")):
+            return "multi_fidelity_bayesopt"
+        return "gp_expected_improvement"
+    elif opportunity_id == "inventory_hjb_control_search":
+        if any(tok in stem for tok in ("hjb", "inventory")):
+            return "hjb_discrete_inventory"
+        if any(tok in stem for tok in ("risk", "aversion")):
+            return "risk_aversion_schedule"
+        return "avellaneda_stoikov_like"
+    elif opportunity_id == "queue_microprice_impact_search":
+        if any(tok in stem for tok in ("queue", "spread")):
+            return "queue_reactive_spread"
+        if any(tok in stem for tok in ("impact", "decay")):
+            return "impact_decay"
+        return "microprice_imbalance"
+    elif opportunity_id == "adversarial_regime_sim_search":
+        if "replay" in stem:
+            return "adversarial_replay"
+        if any(tok in stem for tok in ("cpd", "change")):
+            return "change_point_guard"
+        return "stress_regime_mixture"
+
+    return None
+
+
+def subfamily_stats_bucket(priors: Dict[str, Any], opportunity_id: str, subfamily: str) -> Dict[str, Any]:
+    opp_bucket = priors.get(opportunity_id)
+    if not isinstance(opp_bucket, dict):
+        return {}
+    sub_map = opp_bucket.get("subfamilies")
+    if not isinstance(sub_map, dict):
+        return {}
+    sub_bucket = sub_map.get(subfamily)
+    if not isinstance(sub_bucket, dict):
+        return {}
+    return sub_bucket
+
+
+def has_untried_subfamily(priors: Dict[str, Any], opportunity_id: str) -> bool:
+    catalog = opportunity_subfamilies(opportunity_id)
+    for subfamily in catalog:
+        sb = subfamily_stats_bucket(priors, opportunity_id, subfamily)
+        attempts = int(sb.get("attempts", 0) or 0)
+        if attempts <= 0:
+            return True
+    return False
+
+
+def choose_subfamily_for_opportunity(
+    *,
+    opportunity_id: str,
+    priors: Dict[str, Any],
+    history: List[Dict[str, Any]],
+    iteration: int,
+    no_uplift_epsilon: float,
+    subfamily_overrides: Dict[str, str],
+) -> Tuple[str, str]:
+    catalog = opportunity_subfamilies(opportunity_id)
+    if not catalog:
+        return "default", "default_catalog"
+
+    override = (
+        subfamily_overrides.get(opportunity_id)
+        or subfamily_overrides.get("*")
+        or ""
+    )
+    if override and override in catalog:
+        return override, f"manual_override:{override}"
+
+    recent = recent_executed_history(history, max(8, len(catalog) * 3))
+    recent_subfamily_no_uplift: Dict[str, int] = {}
+    for entry in recent:
+        if str(entry.get("selected_opportunity") or "") != opportunity_id:
+            continue
+        sub = str(entry.get("selected_subfamily") or "").strip()
+        if not sub:
+            continue
+        flag = delta_is_no_uplift(entry, no_uplift_epsilon)
+        if flag is True:
+            recent_subfamily_no_uplift[sub] = recent_subfamily_no_uplift.get(sub, 0) + 1
+
+    scored: List[Tuple[float, str, str]] = []
+    for sub in catalog:
+        sb = subfamily_stats_bucket(priors, opportunity_id, sub)
+        attempts = int(sb.get("attempts", 0) or 0)
+        successes = int(sb.get("successes", 0) or 0)
+        failures = int(sb.get("failures", 0) or 0)
+        non_uplift_streak = int(sb.get("non_uplift_streak", 0) or 0)
+        cooldown_until = int(sb.get("cooldown_until_iteration", 0) or 0)
+        last_attempt = int(sb.get("last_attempt_iteration", 0) or 0)
+        probe_hits = int(sb.get("breakthrough_probe_hits", 0) or 0)
+
+        score = 0.0
+        reasons: List[str] = []
+        if attempts <= 0:
+            score += 4.0
+            reasons.append("untried")
+        if last_attempt > 0 and int(iteration) > last_attempt:
+            gap = int(iteration) - last_attempt
+            score += min(2.0, gap / 4.0)
+        score += 0.75 * float(successes)
+        score -= 0.30 * float(failures)
+        score -= min(3.0, 0.8 * float(non_uplift_streak))
+        if recent_subfamily_no_uplift.get(sub, 0) >= 2:
+            score -= 1.5
+            reasons.append("recent_no_uplift")
+        if cooldown_until >= int(iteration):
+            score -= 5.0
+            reasons.append(f"cooldown_until_{cooldown_until}")
+        if probe_hits > 0:
+            score += 1.0
+            reasons.append("probe_confirm")
+
+        tie_seed = int(hashlib.sha256(f"{iteration}:{opportunity_id}:{sub}".encode("utf-8")).hexdigest()[:8], 16)
+        score += (tie_seed % 1000) * 1e-6
+        scored.append((score, sub, ",".join(reasons) if reasons else "balanced"))
+
+    scored.sort(key=lambda x: (-x[0], x[1]))
+    best_score, best_sub, best_reason = scored[0]
+    if all(int(subfamily_stats_bucket(priors, opportunity_id, s).get("cooldown_until_iteration", 0) or 0) >= int(iteration) for s in catalog):
+        return best_sub, f"all_subfamilies_cooldown_select_best:{best_reason}"
+    return best_sub, f"policy_select:{best_reason}|score={best_score:.3f}"
+
+
+def loop_entries(strategies_log: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for e in strategies_log:
+        if not isinstance(e, dict):
+            continue
+        if e.get("source") == "codex_session":
+            continue
+        out.append(e)
+    out.sort(key=lambda x: (int(x.get("iteration", 0) or 0), str(x.get("timestamp", ""))))
+    return out
+
+
+def deterministic_canary(iteration: int, pct: int) -> bool:
+    pct = max(0, min(100, int(pct)))
+    if pct <= 0:
+        return False
+    if pct >= 100:
+        return True
+    digest = hashlib.sha256(str(iteration).encode("utf-8")).hexdigest()
+    bucket = int(digest[:8], 16) % 100
+    return bucket < pct
+
+
+def result_payload_from_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
+    ap = entry.get("artifact_paths") if isinstance(entry.get("artifact_paths"), dict) else {}
+    result_path = Path(str(ap.get("result_path", "")))
+    if result_path.exists():
+        data = load_json(result_path, {})
+        if isinstance(data, dict):
+            return data
+    return {}
+
+
+def collect_runtime_seconds(entries: List[Dict[str, Any]]) -> List[float]:
+    runtimes: List[float] = []
+    for e in entries:
+        if e.get("status") != "ok":
+            continue
+        payload = result_payload_from_entry(e)
+        runtime = safe_float((payload.get("runtime") or {}).get("total_seconds"))
+        if runtime is not None:
+            runtimes.append(runtime)
+    return runtimes
+
+
+def collect_edges(entries: List[Dict[str, Any]]) -> List[float]:
+    edges: List[float] = []
+    for e in entries:
+        if e.get("status") != "ok":
+            continue
+        v = safe_float(e.get("final_edge"))
+        if v is not None:
+            edges.append(v)
+    return edges
+
+
+def collect_spreads(entries: List[Dict[str, Any]]) -> List[float]:
+    spreads: List[float] = []
+    for e in entries:
+        if e.get("status") != "ok":
+            continue
+        payload = result_payload_from_entry(e)
+        spread = safe_float(((payload.get("testing") or {}).get("regime_tests") or {}).get("spread"))
+        if spread is not None:
+            spreads.append(spread)
+    return spreads
+
+
+def success_rate(entries: List[Dict[str, Any]]) -> float:
+    if not entries:
+        return 1.0
+    ok = sum(1 for e in entries if e.get("status") == "ok")
+    return ok / len(entries)
+
+
+def median_or_none(values: List[float]) -> Optional[float]:
+    if not values:
+        return None
+    return float(median(values))
+
+
+def analyze_signals(entries: List[Dict[str, Any]], window_size: int) -> Dict[str, Any]:
+    recent = entries[-max(1, window_size):]
+    recent_ok = [e for e in recent if e.get("status") == "ok"]
+    edges = collect_edges(recent_ok)
+    spreads = collect_spreads(recent_ok)
+
+    plateau_strength = 0.0
+    if len(edges) >= 5:
+        span = max(edges) - min(edges)
+        slope = (edges[-1] - edges[0]) / max(1, len(edges) - 1)
+        span_term = clamp((2.0 - span) / 2.0, 0.0, 1.0)
+        slope_term = clamp((0.15 - max(0.0, slope)) / 0.15, 0.0, 1.0)
+        plateau_strength = clamp((0.6 * span_term + 0.4 * slope_term) * 10.0, 0.0, 10.0)
+
+    brittleness_strength = 0.0
+    if spreads:
+        med_spread = median(spreads)
+        max_spread = max(spreads)
+        med_term = clamp((med_spread - 35.0) / 30.0, 0.0, 1.0)
+        max_term = clamp((max_spread - 50.0) / 30.0, 0.0, 1.0)
+        brittleness_strength = clamp((0.5 * med_term + 0.5 * max_term) * 10.0, 0.0, 10.0)
+
+    sweep_like = 0
+    sweep_improving = 0
+    best_so_far = None
+    for e in recent_ok:
+        name = str(e.get("strategy_name", "")).lower()
+        edge = safe_float(e.get("final_edge"))
+        if edge is None:
+            continue
+        if any(tok in name for tok in ("sweep", "_t", "buf", "jump")):
+            sweep_like += 1
+            if best_so_far is None or edge > best_so_far + 0.5:
+                sweep_improving += 1
+        if best_so_far is None or edge > best_so_far:
+            best_so_far = edge
+
+    sweep_failure_strength = 0.0
+    if sweep_like >= 4:
+        success_frac = sweep_improving / max(1, sweep_like)
+        sweep_failure_strength = clamp((1.0 - success_frac) * 10.0, 0.0, 10.0)
+
+    return {
+        "window_size": len(recent),
+        "ok_count": len(recent_ok),
+        "success_rate": success_rate(recent),
+        "median_runtime_seconds": median_or_none(collect_runtime_seconds(recent)),
+        "guardrail_failures": sum(
+            1
+            for e in recent
+            if isinstance(e.get("error"), dict) and e.get("error", {}).get("stage") == "knowledge_guardrail"
+        ),
+        "plateau_strength": round(plateau_strength, 3),
+        "brittleness_strength": round(brittleness_strength, 3),
+        "sweep_failure_strength": round(sweep_failure_strength, 3),
+    }
+
+
+@dataclass
+class Candidate:
+    id: str
+    family_class: str
+    rationale: str
+    expected_uplift: float
+    confidence: float
+    time_to_signal: float
+    complexity: float
+    overfit_risk: float
+    weighted_score: float
+    novelty: float = 5.0
+    breakthrough_likelihood: float = 5.0
+    base_weighted_score: float = 0.0
+    score_bonus: float = 0.0
+    untried_family: bool = False
+    ewma_delta: Optional[float] = None
+    ewma_penalty: float = 0.0
+
+
+def weighted_score(uplift: float, confidence: float, time_to_signal: float, complexity: float, overfit_risk: float) -> float:
+    # Weights from user prompt:
+    # uplift 35%, confidence 25%, time-to-signal 15%, complexity (lower better) 10%, overfit risk (lower better) 15%
+    score = (
+        0.35 * clamp(uplift)
+        + 0.25 * clamp(confidence)
+        + 0.15 * clamp(time_to_signal)
+        + 0.10 * clamp(10.0 - complexity)
+        + 0.15 * clamp(10.0 - overfit_risk)
+    )
+    return round(score * 10.0, 3)  # 0..100 scale
+
+
+def recent_executed_history(history: List[Dict[str, Any]], lookback: int) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for entry in history:
+        if not isinstance(entry, dict):
+            continue
+        if not bool(entry.get("execute_this_iteration", False)):
+            continue
+        out.append(entry)
+    out.sort(
+        key=lambda x: (
+            int(x.get("iteration", 0) or 0),
+            str(x.get("recorded_at") or ""),
+        )
+    )
+    return out[-max(1, int(lookback)) :]
+
+
+def delta_is_no_uplift(entry: Dict[str, Any], epsilon: float) -> Optional[bool]:
+    delta = safe_float(entry.get("delta_vs_reference"))
+    if delta is None:
+        return None
+    return bool(delta <= epsilon)
+
+
+def summarize_history_by_opportunity(
+    history: List[Dict[str, Any]],
+    lookback: int,
+    no_uplift_epsilon: float,
+) -> Dict[str, Dict[str, int]]:
+    summary: Dict[str, Dict[str, int]] = {}
+    for entry in recent_executed_history(history, lookback):
+        opp = entry.get("selected_opportunity")
+        if not isinstance(opp, str) or not opp:
+            continue
+        bucket = summary.setdefault(opp, {"attempts": 0, "uplift": 0, "no_uplift": 0, "unknown": 0})
+        bucket["attempts"] += 1
+        flag = delta_is_no_uplift(entry, no_uplift_epsilon)
+        if flag is None:
+            bucket["unknown"] += 1
+        elif flag:
+            bucket["no_uplift"] += 1
+        else:
+            bucket["uplift"] += 1
+    return summary
+
+
+def opportunity_total_attempts(
+    priors: Dict[str, Any],
+    history: List[Dict[str, Any]],
+    opportunity_id: str,
+) -> int:
+    prior = priors.get(opportunity_id)
+    if isinstance(prior, dict):
+        attempts = int(prior.get("attempts", 0) or 0)
+        if attempts > 0:
+            return attempts
+        succ = int(prior.get("successes", 0) or 0)
+        fail = int(prior.get("failures", 0) or 0)
+        neutral = int(prior.get("neutral", 0) or 0)
+        if (succ + fail + neutral) > 0:
+            return succ + fail + neutral
+        sub_map = prior.get("subfamilies")
+        if isinstance(sub_map, dict):
+            sub_attempts = 0
+            for sb in sub_map.values():
+                if not isinstance(sb, dict):
+                    continue
+                sub_attempts += int(sb.get("attempts", 0) or 0)
+            if sub_attempts > 0:
+                return sub_attempts
+
+    attempts_from_history = 0
+    for entry in history:
+        if not isinstance(entry, dict):
+            continue
+        if not bool(entry.get("execute_this_iteration", False)):
+            continue
+        if str(entry.get("selected_opportunity") or "") != opportunity_id:
+            continue
+        attempts_from_history += 1
+    return attempts_from_history
+
+
+def compute_exploration_pressure(
+    *,
+    history: List[Dict[str, Any]],
+    lookback: int,
+    no_uplift_epsilon: float,
+    repeat_classes: set[str],
+) -> Dict[str, float]:
+    recent = recent_executed_history(history, lookback)
+    repeat_count = 0
+    repeat_no_uplift = 0
+    overall_no_uplift = 0
+
+    for entry in recent:
+        opp = str(entry.get("selected_opportunity") or "")
+        cls = family_class(opp)
+        flag = delta_is_no_uplift(entry, no_uplift_epsilon)
+        if flag is True:
+            overall_no_uplift += 1
+        if cls in repeat_classes:
+            repeat_count += 1
+            if flag is True:
+                repeat_no_uplift += 1
+
+    recent_count = len(recent)
+    repeat_share = (float(repeat_count) / float(recent_count)) if recent_count > 0 else 0.0
+    return {
+        "recent_count": float(recent_count),
+        "repeat_count": float(repeat_count),
+        "repeat_no_uplift": float(repeat_no_uplift),
+        "overall_no_uplift": float(overall_no_uplift),
+        "repeat_share": float(repeat_share),
+    }
+
+
+def should_force_orthogonal(
+    history: List[Dict[str, Any]],
+    lookback: int,
+    no_uplift_epsilon: float,
+    repeat_classes: set[str],
+    min_no_uplift: int,
+    min_repeat_share: float,
+) -> bool:
+    pressure = compute_exploration_pressure(
+        history=history,
+        lookback=lookback,
+        no_uplift_epsilon=no_uplift_epsilon,
+        repeat_classes=repeat_classes,
+    )
+    recent_count = int(pressure["recent_count"])
+    if recent_count < max(1, int(lookback)):
+        return False
+    return (
+        int(pressure["repeat_no_uplift"]) >= int(min_no_uplift)
+        and float(pressure["repeat_share"]) >= float(min_repeat_share)
+    )
+
+
+def build_candidates(
+    signals: Dict[str, Any],
+    priors: Dict[str, Any],
+    history: List[Dict[str, Any]],
+    iteration: int,
+    *,
+    novelty_lookback: int,
+    novelty_penalty: float,
+    no_uplift_epsilon: float,
+    score_novelty_weight: float,
+    score_breakthrough_weight: float,
+    score_untried_bonus: float,
+    ewma_penalty_threshold: float,
+    ewma_penalty_max: float,
+) -> List[Candidate]:
+    p = safe_float(signals.get("plateau_strength")) or 0.0
+    b = safe_float(signals.get("brittleness_strength")) or 0.0
+    s = safe_float(signals.get("sweep_failure_strength")) or 0.0
+
+    history_summary = summarize_history_by_opportunity(
+        history=history,
+        lookback=novelty_lookback,
+        no_uplift_epsilon=no_uplift_epsilon,
+    )
+
+    def pa(opportunity_id: str) -> float:
+        prior = priors.get(opportunity_id)
+        if not isinstance(prior, dict):
+            return 0.0
+        succ = int(prior.get("successes", 0) or 0)
+        fail = int(prior.get("failures", 0) or 0)
+        denom = max(1, succ + fail)
+        return ((succ / denom) - 0.5) * 1.5  # -0.75..+0.75
+
+    cands: List[Candidate] = []
+    cands.append(
+        Candidate(
+            id="regime_state_transition_search",
+            family_class=family_class("regime_state_transition_search"),
+            rationale="Plateau/brittleness suggest structure-level transition logic is under-optimized.",
+            expected_uplift=clamp(5.5 + 0.30 * p + 0.10 * b + pa("regime_state_transition_search")),
+            confidence=clamp(5.0 + 0.25 * p + pa("regime_state_transition_search")),
+            time_to_signal=6.0,
+            complexity=6.0,
+            overfit_risk=clamp(5.0 + 0.20 * b),
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="hysteresis_gate_search",
+            family_class=family_class("hysteresis_gate_search"),
+            rationale="Hysteresis can reduce fee oscillation and capture post-arb retail flow more reliably.",
+            expected_uplift=clamp(4.9 + 0.25 * p + 0.25 * b + pa("hysteresis_gate_search")),
+            confidence=clamp(4.6 + 0.20 * p + pa("hysteresis_gate_search")),
+            time_to_signal=6.5,
+            complexity=6.8,
+            overfit_risk=clamp(5.0 + 0.15 * b),
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="cooldown_gate_search",
+            family_class=family_class("cooldown_gate_search"),
+            rationale="Cooldown/decay gates can prevent overreacting to noisy retail while still reacting to shocks.",
+            expected_uplift=clamp(4.7 + 0.20 * p + 0.30 * b + pa("cooldown_gate_search")),
+            confidence=clamp(4.5 + 0.25 * b + pa("cooldown_gate_search")),
+            time_to_signal=7.0,
+            complexity=6.2,
+            overfit_risk=clamp(4.8 + 0.20 * b),
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="adaptive_undercut_search",
+            family_class=family_class("adaptive_undercut_search"),
+            rationale="Undercut signal is strong; prefer lightweight regime-aware undercut before heavy state-machine logic.",
+            expected_uplift=clamp(4.8 + 0.20 * p + 0.10 * s + pa("adaptive_undercut_search")),
+            confidence=clamp(6.0 + 0.15 * p + pa("adaptive_undercut_search")),
+            time_to_signal=8.0,
+            complexity=3.0,
+            overfit_risk=4.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="undercut_band_joint_search",
+            family_class=family_class("undercut_band_joint_search"),
+            rationale="Jointly tuning undercut and tight-band thresholds can expose non-linear routing/arb tradeoffs.",
+            expected_uplift=clamp(4.6 + 0.15 * p + 0.25 * s + pa("undercut_band_joint_search")),
+            confidence=clamp(5.7 + 0.10 * p + pa("undercut_band_joint_search")),
+            time_to_signal=8.0,
+            complexity=3.6,
+            overfit_risk=4.2,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="protective_buffer_undercut_search",
+            family_class=family_class("protective_buffer_undercut_search"),
+            rationale="Protective-side buffer and undercut interact; a small buffer may reduce arb leakage without losing retail share.",
+            expected_uplift=clamp(4.3 + 0.10 * p + 0.20 * b + 0.15 * s + pa("protective_buffer_undercut_search")),
+            confidence=clamp(5.2 + 0.10 * b + pa("protective_buffer_undercut_search")),
+            time_to_signal=7.5,
+            complexity=4.2,
+            overfit_risk=4.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="robustness_repair_search",
+            family_class=family_class("robustness_repair_search"),
+            rationale="Spread instability indicates robust-score improvements may unlock reliable gains.",
+            expected_uplift=clamp(3.5 + 0.35 * b + pa("robustness_repair_search")),
+            confidence=clamp(4.5 + 0.30 * b + pa("robustness_repair_search")),
+            time_to_signal=7.0,
+            complexity=5.0,
+            overfit_risk=3.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="parallel_parameter_beam",
+            family_class=family_class("parallel_parameter_beam"),
+            rationale="If sweep throughput is bottlenecked, parallel beams can improve search efficiency.",
+            expected_uplift=clamp(2.5 + 0.25 * s + pa("parallel_parameter_beam")),
+            confidence=6.0,
+            time_to_signal=9.0,
+            complexity=4.0,
+            overfit_risk=6.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="gamma_formula_search",
+            family_class=family_class("gamma_formula_search"),
+            rationale="Local sweep stagnation suggests changing competitive/protective gamma math itself.",
+            expected_uplift=clamp(4.2 + 0.25 * p + 0.15 * b + pa("gamma_formula_search")),
+            confidence=clamp(4.6 + 0.20 * p + pa("gamma_formula_search")),
+            time_to_signal=6.5,
+            complexity=7.0,
+            overfit_risk=4.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="gamma_exponent_sweep_search",
+            family_class=family_class("gamma_exponent_sweep_search"),
+            rationale="Explore gamma^k anchors and piecewise exponents to re-shape the no-arb band without huge code changes.",
+            expected_uplift=clamp(4.4 + 0.25 * p + 0.15 * b + pa("gamma_exponent_sweep_search")),
+            confidence=clamp(4.2 + 0.20 * p + pa("gamma_exponent_sweep_search")),
+            time_to_signal=6.5,
+            complexity=7.4,
+            overfit_risk=4.2,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="gamma_anchor_blend_search",
+            family_class=family_class("gamma_anchor_blend_search"),
+            rationale="Blend multiple competitive anchors (e.g., gamma^2 + undercut) to reduce brittleness across regimes.",
+            expected_uplift=clamp(4.1 + 0.20 * p + 0.25 * b + pa("gamma_anchor_blend_search")),
+            confidence=clamp(4.0 + 0.25 * b + pa("gamma_anchor_blend_search")),
+            time_to_signal=7.0,
+            complexity=7.2,
+            overfit_risk=4.2,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="ema_smoothing_search",
+            family_class=family_class("ema_smoothing_search"),
+            rationale="Fair-value smoothing/jump-limiter dynamics are likely under-tuned near the local optimum.",
+            expected_uplift=clamp(3.8 + 0.20 * p + 0.30 * b + pa("ema_smoothing_search")),
+            confidence=clamp(4.8 + 0.20 * b + pa("ema_smoothing_search")),
+            time_to_signal=7.0,
+            complexity=5.0,
+            overfit_risk=3.5,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="jump_limiter_smoothing_search",
+            family_class=family_class("jump_limiter_smoothing_search"),
+            rationale="Jump-limiters and bounded updates can reduce arb leakage when fair price moves quickly.",
+            expected_uplift=clamp(4.0 + 0.20 * p + 0.35 * b + pa("jump_limiter_smoothing_search")),
+            confidence=clamp(4.5 + 0.25 * b + pa("jump_limiter_smoothing_search")),
+            time_to_signal=7.0,
+            complexity=6.0,
+            overfit_risk=3.6,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="robust_smoothing_filters_search",
+            family_class=family_class("robust_smoothing_filters_search"),
+            rationale="Robust filters (median/trimmed mean) can stabilize estimates under heavy-tailed retail sizes.",
+            expected_uplift=clamp(3.7 + 0.15 * p + 0.40 * b + pa("robust_smoothing_filters_search")),
+            confidence=clamp(4.2 + 0.30 * b + pa("robust_smoothing_filters_search")),
+            time_to_signal=7.5,
+            complexity=6.5,
+            overfit_risk=3.4,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="asymmetric_bid_ask_search",
+            family_class=family_class("asymmetric_bid_ask_search"),
+            rationale="Directional asymmetry can create edge where symmetric undercut sweeps plateau.",
+            expected_uplift=clamp(4.0 + 0.20 * p + 0.20 * s + pa("asymmetric_bid_ask_search")),
+            confidence=clamp(4.7 + 0.15 * p + pa("asymmetric_bid_ask_search")),
+            time_to_signal=7.5,
+            complexity=6.0,
+            overfit_risk=4.2,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="inventory_skew_asymmetry_search",
+            family_class=family_class("inventory_skew_asymmetry_search"),
+            rationale="Inventory-skewed bid/ask fees can bias toward the 'good' side of retail flow while limiting adverse arb exposure.",
+            expected_uplift=clamp(4.6 + 0.20 * p + 0.15 * b + pa("inventory_skew_asymmetry_search")),
+            confidence=clamp(4.5 + 0.15 * p + pa("inventory_skew_asymmetry_search")),
+            time_to_signal=7.0,
+            complexity=6.4,
+            overfit_risk=4.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="flow_skew_asymmetry_search",
+            family_class=family_class("flow_skew_asymmetry_search"),
+            rationale="Flow-reactive asymmetry (streak/imbalance) may capture transient routing advantages without full learning loops.",
+            expected_uplift=clamp(4.3 + 0.15 * p + 0.25 * s + 0.10 * b + pa("flow_skew_asymmetry_search")),
+            confidence=clamp(4.3 + 0.20 * s + pa("flow_skew_asymmetry_search")),
+            time_to_signal=7.0,
+            complexity=6.0,
+            overfit_risk=4.5,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="contextual_bandit_policy_search",
+            family_class=family_class("contextual_bandit_policy_search"),
+            rationale=(
+                "Use contextual bandits to choose quote aggressiveness online by flow state "
+                "instead of static parameter families."
+            ),
+            expected_uplift=clamp(6.1 + 0.25 * p + 0.20 * s + pa("contextual_bandit_policy_search")),
+            confidence=clamp(4.2 + 0.20 * p + pa("contextual_bandit_policy_search")),
+            time_to_signal=6.5,
+            complexity=7.2,
+            overfit_risk=4.5,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="online_parameter_tuning_search",
+            family_class=family_class("online_parameter_tuning_search"),
+            rationale="Tune key knobs (undercut/buffer/band) online via light bandit updates instead of fixed sweeps.",
+            expected_uplift=clamp(5.8 + 0.20 * p + 0.25 * s + pa("online_parameter_tuning_search")),
+            confidence=clamp(3.9 + 0.25 * p + pa("online_parameter_tuning_search")),
+            time_to_signal=6.5,
+            complexity=7.6,
+            overfit_risk=4.8,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="meta_learning_fee_schedule_search",
+            family_class=family_class("meta_learning_fee_schedule_search"),
+            rationale="Meta-adapt update step sizes/thresholds to reduce brittleness while retaining responsiveness.",
+            expected_uplift=clamp(5.5 + 0.25 * p + 0.20 * b + pa("meta_learning_fee_schedule_search")),
+            confidence=clamp(3.8 + 0.25 * b + pa("meta_learning_fee_schedule_search")),
+            time_to_signal=7.0,
+            complexity=7.4,
+            overfit_risk=4.6,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="distributionally_robust_control_search",
+            family_class=family_class("distributionally_robust_control_search"),
+            rationale=(
+                "Optimize against worst-case regime mixtures (CVaR/ambiguity sets) to avoid "
+                "collapse under adversarial flow."
+            ),
+            expected_uplift=clamp(
+                6.3 + 0.25 * b + 0.15 * p + pa("distributionally_robust_control_search")
+            ),
+            confidence=clamp(4.0 + 0.25 * b + pa("distributionally_robust_control_search")),
+            time_to_signal=5.5,
+            complexity=7.8,
+            overfit_risk=3.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="bayesian_optimization_meta_search",
+            family_class=family_class("bayesian_optimization_meta_search"),
+            rationale=(
+                "Use surrogate-driven search (GP/TuRBO/multi-fidelity) to jump across non-local "
+                "strategy manifolds instead of linear sweeps."
+            ),
+            expected_uplift=clamp(
+                5.8 + 0.20 * p + 0.25 * s + pa("bayesian_optimization_meta_search")
+            ),
+            confidence=clamp(4.1 + 0.20 * s + pa("bayesian_optimization_meta_search")),
+            time_to_signal=6.0,
+            complexity=7.4,
+            overfit_risk=3.8,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="bayesopt_multiobjective_search",
+            family_class=family_class("bayesopt_multiobjective_search"),
+            rationale="Use multi-objective BayesOpt (edge + robustness diagnostics) to find less brittle strategies.",
+            expected_uplift=clamp(5.4 + 0.20 * p + 0.25 * s + pa("bayesopt_multiobjective_search")),
+            confidence=clamp(3.6 + 0.20 * s + pa("bayesopt_multiobjective_search")),
+            time_to_signal=6.5,
+            complexity=7.6,
+            overfit_risk=3.9,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="inventory_hjb_control_search",
+            family_class=family_class("inventory_hjb_control_search"),
+            rationale=(
+                "Introduce inventory-aware optimal control (HJB/Avellaneda-Stoikov style) so "
+                "spread/undercut adapts to risk state, not just mispricing."
+            ),
+            expected_uplift=clamp(6.6 + 0.20 * p + 0.20 * b + pa("inventory_hjb_control_search")),
+            confidence=clamp(3.9 + 0.20 * p + pa("inventory_hjb_control_search")),
+            time_to_signal=5.5,
+            complexity=8.0,
+            overfit_risk=4.2,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="mpc_inventory_control_search",
+            family_class=family_class("mpc_inventory_control_search"),
+            rationale="Receding-horizon (MPC-like) control can adapt spread to inventory and recent shocks with explicit constraints.",
+            expected_uplift=clamp(6.0 + 0.25 * p + 0.20 * b + pa("mpc_inventory_control_search")),
+            confidence=clamp(3.5 + 0.20 * p + pa("mpc_inventory_control_search")),
+            time_to_signal=5.5,
+            complexity=8.3,
+            overfit_risk=4.5,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="queue_microprice_impact_search",
+            family_class=family_class("queue_microprice_impact_search"),
+            rationale=(
+                "Quote off queue/microprice and short-horizon impact estimates to capture "
+                "microstructure alpha orthogonal to undercut tuning."
+            ),
+            expected_uplift=clamp(6.0 + 0.20 * s + 0.15 * b + pa("queue_microprice_impact_search")),
+            confidence=clamp(4.1 + 0.20 * s + pa("queue_microprice_impact_search")),
+            time_to_signal=6.0,
+            complexity=7.3,
+            overfit_risk=4.1,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="order_flow_imbalance_search",
+            family_class=family_class("order_flow_imbalance_search"),
+            rationale="Order-flow imbalance features (signed volume/streaks) can predict near-term routing and adverse selection risk.",
+            expected_uplift=clamp(5.5 + 0.25 * s + 0.15 * b + pa("order_flow_imbalance_search")),
+            confidence=clamp(3.8 + 0.20 * s + pa("order_flow_imbalance_search")),
+            time_to_signal=6.0,
+            complexity=7.2,
+            overfit_risk=4.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="arb_implied_price_inference_search",
+            family_class=family_class("arb_implied_price_inference_search"),
+            rationale="Infer fair price from arbitrage-like trades and use it to tighten quotes post-arb and reduce stale pricing.",
+            expected_uplift=clamp(6.2 + 0.30 * p + 0.10 * s + pa("arb_implied_price_inference_search")),
+            confidence=clamp(3.8 + 0.25 * p + pa("arb_implied_price_inference_search")),
+            time_to_signal=6.0,
+            complexity=8.2,
+            overfit_risk=4.3,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="latent_regime_filter_search",
+            family_class=family_class("latent_regime_filter_search"),
+            rationale="Use a simple latent-state filter (e.g., 2-state HMM) to gate between retail-capture and defense modes.",
+            expected_uplift=clamp(5.8 + 0.20 * p + 0.35 * b + pa("latent_regime_filter_search")),
+            confidence=clamp(3.5 + 0.30 * b + pa("latent_regime_filter_search")),
+            time_to_signal=6.5,
+            complexity=8.4,
+            overfit_risk=4.0,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="volatility_scaled_fee_search",
+            family_class=family_class("volatility_scaled_fee_search"),
+            rationale="Scale base fees with a volatility proxy to trade off retail capture against increased adverse selection in fast markets.",
+            expected_uplift=clamp(5.2 + 0.10 * p + 0.45 * b + pa("volatility_scaled_fee_search")),
+            confidence=clamp(3.7 + 0.30 * b + pa("volatility_scaled_fee_search")),
+            time_to_signal=6.5,
+            complexity=6.8,
+            overfit_risk=3.8,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="uncertainty_aware_band_search",
+            family_class=family_class("uncertainty_aware_band_search"),
+            rationale="Control tight-band width using confidence/uncertainty to avoid being too aggressive when inference is noisy.",
+            expected_uplift=clamp(5.0 + 0.20 * p + 0.35 * b + pa("uncertainty_aware_band_search")),
+            confidence=clamp(3.6 + 0.30 * b + pa("uncertainty_aware_band_search")),
+            time_to_signal=7.0,
+            complexity=6.6,
+            overfit_risk=3.9,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="adversarial_regime_sim_search",
+            family_class=family_class("adversarial_regime_sim_search"),
+            rationale=(
+                "Stress-test with adversarial regime replay/change-point detectors to learn "
+                "policies that survive worst-case transitions."
+            ),
+            expected_uplift=clamp(5.9 + 0.25 * b + 0.15 * p + pa("adversarial_regime_sim_search")),
+            confidence=clamp(3.8 + 0.25 * b + pa("adversarial_regime_sim_search")),
+            time_to_signal=5.0,
+            complexity=7.9,
+            overfit_risk=2.8,
+            weighted_score=0.0,
+        )
+    )
+    cands.append(
+        Candidate(
+            id="distribution_shift_robustness_search",
+            family_class=family_class("distribution_shift_robustness_search"),
+            rationale="Add guardrails and fallbacks to stay stable across distribution shifts (sigma/retail rate) without collapsing retail share.",
+            expected_uplift=clamp(5.4 + 0.30 * b + 0.15 * p + pa("distribution_shift_robustness_search")),
+            confidence=clamp(3.9 + 0.30 * b + pa("distribution_shift_robustness_search")),
+            time_to_signal=5.5,
+            complexity=7.2,
+            overfit_risk=3.2,
+            weighted_score=0.0,
+        )
+    )
+
+    for c in cands:
+        prior = priors.get(c.id, {}) if isinstance(priors.get(c.id), dict) else {}
+        total_attempts = opportunity_total_attempts(priors, history, c.id)
+        c.untried_family = bool(total_attempts <= 0)
+        c.novelty = clamp(
+            NOVELTY_PRIOR_BY_FAMILY_CLASS.get(c.family_class, 5.0)
+            + (0.6 if c.untried_family else 0.0)
+        )
+        c.breakthrough_likelihood = clamp(
+            BREAKTHROUGH_PRIOR_BY_FAMILY_CLASS.get(c.family_class, 5.0)
+            + (0.4 if c.untried_family else 0.0)
+        )
+        c.ewma_delta = safe_float(prior.get("ewma_delta")) if isinstance(prior, dict) else None
+        c.ewma_penalty = 0.0
+        if c.ewma_delta is not None and c.ewma_delta < float(ewma_penalty_threshold):
+            depth = min(1.0, abs(c.ewma_delta - float(ewma_penalty_threshold)) / 0.8)
+            c.ewma_penalty = max(0.0, min(float(ewma_penalty_max), depth * float(ewma_penalty_max)))
+            c.confidence = clamp(c.confidence - 0.5 * c.ewma_penalty)
+            c.rationale = (
+                f"{c.rationale} [ewma penalty: {c.ewma_penalty:.2f}; "
+                f"ewma_delta={c.ewma_delta:.3f} < {float(ewma_penalty_threshold):.3f}]"
+            )
+        cooldown_until = int(prior.get("cooldown_until_iteration", 0) or 0)
+        if cooldown_until >= int(iteration):
+            remaining = cooldown_until - int(iteration) + 1
+            c.expected_uplift = clamp(c.expected_uplift - 3.0)
+            c.confidence = clamp(c.confidence - 4.0)
+            c.rationale = (
+                f"{c.rationale} [cooldown active: {remaining} iteration(s), until {cooldown_until}]"
+            )
+
+        # Apply novelty penalty when repeated recent attempts produced no uplift.
+        h = history_summary.get(c.id, {})
+        attempts = int(h.get("attempts", 0) or 0)
+        no_uplift = int(h.get("no_uplift", 0) or 0)
+        if attempts >= 2 and no_uplift >= 2:
+            if has_untried_subfamily(priors, c.id):
+                c.rationale = (
+                    f"{c.rationale} [novelty hold: {no_uplift}/{attempts} no-uplift attempts, "
+                    "but untried subfamily remains]"
+                )
+            else:
+                penalty = min(3.0, float(novelty_penalty) * float(no_uplift))
+                c.expected_uplift = clamp(c.expected_uplift - 0.5 * penalty)
+                c.confidence = clamp(c.confidence - penalty)
+                c.rationale = (
+                    f"{c.rationale} [novelty penalty: {penalty:.2f}; "
+                    f"{no_uplift}/{attempts} recent attempts had no uplift]"
+                )
+
+        c.base_weighted_score = weighted_score(
+            c.expected_uplift, c.confidence, c.time_to_signal, c.complexity, c.overfit_risk
+        )
+        c.score_bonus = (
+            float(score_novelty_weight) * c.novelty
+            + float(score_breakthrough_weight) * c.breakthrough_likelihood
+        )
+        if c.untried_family:
+            c.score_bonus += float(score_untried_bonus)
+            c.rationale = f"{c.rationale} [untried family bonus applied]"
+        c.weighted_score = round(max(0.0, c.base_weighted_score + c.score_bonus - c.ewma_penalty), 3)
+
+    cands.sort(key=lambda x: (-x.weighted_score, x.id))
+    return cands
+
+
+def default_plan_template(opportunity_id: str, target_edge: float, reference_best: float) -> Dict[str, Any]:
+    if opportunity_id == "regime_state_transition_search":
+        return {
+            "frozen_core": [
+                "gamma^2 competitive anchoring",
+                "strict protective-side buffer",
+                "mild timestamp-aware tightening in tight regime",
+            ],
+            "mutation_dimensions": [
+                "lightweight mode gate over mispricing first (avoid heavy inventory/cooldown coupling)",
+                "3-state mode machine (NORMAL/DEFENSIVE/RECOVERY) only if lightweight gate passes",
+                "entry/exit hysteresis thresholds",
+                "cooldown lengths",
+                "inventory-trigger thresholds",
+                "mispricing-trigger thresholds",
+                "competitive_undercut_bps (8-12) by mode",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 3.0,
+                "worst_case_delta_vs_reference": 1.0,
+                "required_repeats": 3,
+            },
+            "kill_criteria": {
+                "first_run_delta_below": -1.0,
+                "max_allowed_spread": 60.0,
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "adaptive_undercut_search":
+        return {
+            "frozen_core": [
+                "gamma^2 competitive anchoring",
+                "strict protective-side buffer",
+                "single-step fair update logic",
+            ],
+            "mutation_dimensions": [
+                "competitive_undercut_bps sweep (8-13)",
+                "tight_band_bps sweep (24-29)",
+                "minimal 2-state mispricing gate (NORMAL/DEFENSIVE)",
+                "protective_buffer_bps sweep (0-2)",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.3,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "gamma_formula_search":
+        return {
+            "frozen_core": [
+                "tight-band control path",
+                "single-step fair update cadence",
+                "authoritative 1000-sim validation",
+            ],
+            "mutation_dimensions": [
+                "gamma^2 -> gamma^k competitive anchor variants",
+                "protective-side inversion math variants",
+                "piecewise gamma transforms by mispricing bucket",
+                "small undercut invariants while formula changes",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "ema_smoothing_search":
+        return {
+            "frozen_core": [
+                "gamma^2 competitive anchoring",
+                "protective-side buffer defaults",
+            ],
+            "mutation_dimensions": [
+                "fair-price EMA alpha (slow/medium/fast)",
+                "jump limiter cap and asymmetry by side",
+                "timestamp-step weighting and stabilization logic",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 50.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "asymmetric_bid_ask_search":
+        return {
+            "frozen_core": [
+                "fair-value inference pipeline",
+                "protective-side safety constraints",
+            ],
+            "mutation_dimensions": [
+                "bid/ask fee asymmetry under identical mispricing",
+                "asymmetric undercut ladders by flow type",
+                "directional hysteresis on side-specific quotes",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "contextual_bandit_policy_search":
+        return {
+            "frozen_core": [
+                "canonical 1000-sim validation",
+                "existing champion safety clamps",
+                "effective-score fallback guardrails",
+            ],
+            "mutation_dimensions": [
+                "arm definitions for quote aggressiveness regimes",
+                "context features from mispricing/flow burst/inventory proxy",
+                "policy update rule (Thompson, UCB, EXP3)",
+                "exploration temperature and regret cap",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "falsification_test": "If regret-aware policy variants do not beat static control after 10 variants, reject online policy hypothesis.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "distributionally_robust_control_search":
+        return {
+            "frozen_core": [
+                "champion quote path at low stress",
+                "canonical edge metric and robust-score checks",
+            ],
+            "mutation_dimensions": [
+                "CVaR alpha and tail-loss penalty",
+                "worst-case regime-mixture ambiguity set",
+                "stress-triggered spread widening policy",
+                "adversarial replay weight",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 52.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "falsification_test": "If robust variants reduce tail spread but cannot improve canonical edge, reject robust-control family for current regime mix.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "bayesian_optimization_meta_search":
+        return {
+            "frozen_core": [
+                "all champion guardrails",
+                "bounded parallel execution and gate monitor",
+            ],
+            "mutation_dimensions": [
+                "surrogate model choice (GP/TuRBO)",
+                "acquisition function (EI/TS/UCB)",
+                "coarse-to-fine trust region schedule",
+                "multi-fidelity allocation ratio",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "falsification_test": "If surrogate-guided candidates underperform random orthogonal controls in same budget, reject BO meta-search for this phase.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "inventory_hjb_control_search":
+        return {
+            "frozen_core": [
+                "fair-value and jump logic from champion",
+                "strict protection-side constraints",
+            ],
+            "mutation_dimensions": [
+                "inventory-risk aversion coefficient schedule",
+                "reservation price skew by inventory bucket",
+                "spread widening by inventory stress",
+                "inventory decay horizon",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.1,
+            },
+            "falsification_test": "If inventory-aware controls do not beat inventory-neutral controls after 8 variants, reject HJB family and cooldown.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "queue_microprice_impact_search":
+        return {
+            "frozen_core": [
+                "champion timing and baseline undercut clamp",
+                "canonical 1000-sim metrics only",
+            ],
+            "mutation_dimensions": [
+                "microprice/imbalance estimator variant",
+                "queue-reactive spread response",
+                "impact decay half-life and cap",
+                "flow-cluster based quote hysteresis",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "falsification_test": "If queue/microprice-informed variants tie or lose to static control across 10 variants, reject microstructure family for this simulator.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "adversarial_regime_sim_search":
+        return {
+            "frozen_core": [
+                "champion core quote engine",
+                "existing gate and rollback safety rules",
+            ],
+            "mutation_dimensions": [
+                "adversarial replay weighting",
+                "change-point detector sensitivity",
+                "stress-mode spread/undercut clamps",
+                "recovery hysteresis after stress events",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 52.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "falsification_test": "If adversarially-trained variants do not improve canonical edge and spread resilience, reject regime-adversarial branch.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if opportunity_id == "robustness_repair_search":
+        return {
+            "frozen_core": ["current best edge mechanics"],
+            "mutation_dimensions": [
+                "spread-aware dampers",
+                "regime-specific fee caps",
+                "risk-sensitive transition hysteresis",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 3, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 2.0,
+                "required_repeats": 3,
+                "max_spread": 50.0,
+            },
+            "kill_criteria": {
+                "first_run_delta_below": -1.0,
+                "abort_family_if_first_4_below_reference_by": 0.8,
+            },
+        }
+
+    # Family-class defaults (covers catalog expansions without requiring per-ID templates).
+    cls = family_class(opportunity_id)
+    if cls == "undercut_sweep":
+        return {
+            "frozen_core": [
+                "gamma^2 competitive anchoring",
+                "strict protective-side buffer",
+            ],
+            "mutation_dimensions": [
+                "competitive_undercut_bps sweep (8-13)",
+                "tight_band_bps sweep (24-30)",
+                "protective_buffer_bps sweep (0-2)",
+                "coarse-to-fine sweeps for undercut/band jointly",
+            ],
+            "run_budget": {"variants": 12, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "gating_adaptive":
+        return {
+            "frozen_core": [
+                "champion core quote engine",
+                "safety clamps and rollback rules",
+            ],
+            "mutation_dimensions": [
+                "2-3 state gating (NORMAL/DEFENSIVE/RECOVERY)",
+                "entry/exit hysteresis thresholds",
+                "timestamp and trade-index gates (post-arb tighten)",
+                "cooldown/decay lengths after shocks",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "ema_smoothing":
+        return {
+            "frozen_core": [
+                "gamma^2 competitive anchoring",
+                "protective-side buffer defaults",
+            ],
+            "mutation_dimensions": [
+                "EMA alpha / robust filter choice (median/trimmed)",
+                "jump limiter cap and asymmetry by side",
+                "decay schedule toward baseline fees",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 50.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "gamma_formula":
+        return {
+            "frozen_core": [
+                "tight-band control path",
+                "authoritative 1000-sim validation",
+            ],
+            "mutation_dimensions": [
+                "gamma^2 -> gamma^k anchor variants",
+                "anchor blending/switching logic",
+                "piecewise transforms by mispricing bucket",
+                "clamps to keep average fee near competitive regime",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "asymmetric":
+        return {
+            "frozen_core": [
+                "fair-value inference pipeline",
+                "protective-side safety constraints",
+            ],
+            "mutation_dimensions": [
+                "inventory-skewed bid/ask fees",
+                "flow-streak / signed-volume skew",
+                "side-specific hysteresis and caps",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "online_learning":
+        return {
+            "frozen_core": [
+                "canonical 1000-sim validation",
+                "champion safety clamps",
+                "deterministic and bounded updates",
+            ],
+            "mutation_dimensions": [
+                "arm definitions (fee/band/buffer actions)",
+                "context features from mispricing/flow/inventory proxies",
+                "learning rate/temperature and regret caps",
+                "fallback to static control when uncertain",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "adversarial_robustness":
+        return {
+            "frozen_core": [
+                "champion core quote engine",
+                "existing gate and rollback safety rules",
+            ],
+            "mutation_dimensions": [
+                "stress triggers and safe-mode clamps",
+                "tail-risk penalties (CVaR/ambiguity)",
+                "change-point sensitivity and replay weighting",
+                "fallback policy for uncertain regimes",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 52.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "bayesian_optimization":
+        return {
+            "frozen_core": [
+                "bounded parallel execution and gate monitor",
+                "template-based candidates (avoid ad-hoc rewrites)",
+            ],
+            "mutation_dimensions": [
+                "search space parameterization (low-dim knobs)",
+                "acquisition function (EI/TS/UCB)",
+                "trust region schedule / multi-fidelity allocation",
+                "multi-objective scalarization (edge + robustness)",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "optimal_control":
+        return {
+            "frozen_core": [
+                "fair-value and jump logic from champion",
+                "strict protection-side constraints",
+            ],
+            "mutation_dimensions": [
+                "inventory-risk aversion coefficient schedule",
+                "reservation price skew by inventory bucket",
+                "control smoothing (avoid oscillation)",
+                "MPC horizon/bucket granularity (if used)",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.1,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "microstructure":
+        return {
+            "frozen_core": [
+                "champion timing and baseline undercut clamp",
+                "canonical 1000-sim metrics only",
+            ],
+            "mutation_dimensions": [
+                "order-flow imbalance and shock proxies",
+                "impact decay half-life and cap",
+                "queue-reactive spread response and hysteresis",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "state_estimation":
+        return {
+            "frozen_core": [
+                "deterministic inference only (no randomness)",
+                "safe fallback when uncertainty is high",
+                "canonical 1000-sim validation",
+            ],
+            "mutation_dimensions": [
+                "arb-vs-retail classifier from TradeInfo/reserves",
+                "arb-implied fair-price estimator (and confidence score)",
+                "filter update rule (EMA/Kalman-like/quantized belief)",
+                "confidence-aware gating into tight/defensive modes",
+            ],
+            "run_budget": {"variants": 8, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.30,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.2,
+            },
+            "falsification_test": "If inference-guided variants do not beat the same policy without inference, reject state-estimation family.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    if cls == "volatility_targeting":
+        return {
+            "frozen_core": [
+                "bounded volatility proxy and mapping",
+                "safety clamps and rollback rules",
+                "canonical 1000-sim validation",
+            ],
+            "mutation_dimensions": [
+                "volatility proxy choice (returns/impact/arb frequency)",
+                "mapping from vol -> base fee (clamped)",
+                "mapping from vol -> tight-band bandwidth",
+                "hysteresis/decay to avoid oscillation",
+            ],
+            "run_budget": {"variants": 10, "parallel_workers": 4, "authoritative_sims": 1000},
+            "promotion_criteria": {
+                "median_delta_vs_reference": 0.25,
+                "required_repeats": 3,
+                "max_spread": 55.0,
+            },
+            "kill_criteria": {
+                "abort_family_if_first_4_below_reference_by": 0.8,
+                "abort_family_if_batch_best_below_reference_by": 0.5,
+                "first_run_delta_below": -1.0,
+            },
+            "falsification_test": "If vol-adaptive variants do not improve canonical edge without destroying retail share, reject volatility-targeting family.",
+            "fallback_strategy": {"action": "retain_champion", "strategy_edge": reference_best},
+        }
+    return {
+        "frozen_core": ["existing champion mechanics"],
+        "mutation_dimensions": [
+            "parallelized parameter beams",
+            "coarse-to-fine threshold sweeps",
+            "early elimination rules",
+        ],
+        "run_budget": {"variants": 12, "parallel_workers": 6, "authoritative_sims": 1000},
+        "promotion_criteria": {"median_delta_vs_reference": 1.5, "required_repeats": 3},
+        "kill_criteria": {
+            "first_run_delta_below": -1.0,
+            "abort_family_if_first_4_below_reference_by": 0.8,
+        },
+    }
+
+
+def update_rollout_state(
+    rollout: Dict[str, Any],
+    *,
+    enabled: bool,
+    iteration: int,
+    shadow_iters: int,
+    canary_pct: int,
+    nonreg_window: int,
+    entries: List[Dict[str, Any]],
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    if not isinstance(rollout, dict):
+        rollout = {}
+    rollout.setdefault("schema_version", SCHEMA_VERSION)
+    rollout.setdefault("started_iteration", None)
+    rollout.setdefault("feature_enabled", False)
+    rollout.setdefault("mode", "off")
+    rollout.setdefault("shadow_completed", 0)
+    rollout.setdefault("canary_executed", 0)
+    rollout.setdefault("baseline_metrics", None)
+    rollout.setdefault("non_regression_fail_streak", 0)
+    rollout.setdefault("rollback_triggered", False)
+    rollout.setdefault("rollback_reason", None)
+    rollout.setdefault("last_updated", None)
+
+    rollout["feature_enabled"] = bool(enabled)
+    nonreg = {"ok": True, "reasons": [], "current": None, "baseline": rollout.get("baseline_metrics")}
+
+    if not enabled:
+        rollout["mode"] = "off"
+        rollout["last_updated"] = utc_now_iso()
+        return rollout, {"mode": "off", "execute": False, "nonreg": nonreg}
+
+    if rollout.get("started_iteration") is None:
+        rollout["started_iteration"] = int(iteration)
+        baseline_window = entries[-max(1, nonreg_window):]
+        rollout["baseline_metrics"] = {
+            "success_rate": success_rate(baseline_window),
+            "median_runtime_seconds": median_or_none(collect_runtime_seconds(baseline_window)),
+            "guardrail_failures": 0,
+            "window_size": len(baseline_window),
+            "captured_at_iteration": int(iteration),
+        }
+
+    current_window = entries[-max(1, nonreg_window):]
+    curr_success = success_rate(current_window)
+    curr_runtime = median_or_none(collect_runtime_seconds(current_window))
+    curr_guardrail_failures = sum(
+        1
+        for e in current_window
+        if isinstance(e.get("error"), dict) and e.get("error", {}).get("stage") == "knowledge_guardrail"
+    )
+    current_metrics = {
+        "success_rate": curr_success,
+        "median_runtime_seconds": curr_runtime,
+        "guardrail_failures": curr_guardrail_failures,
+        "window_size": len(current_window),
+    }
+    nonreg["current"] = current_metrics
+
+    baseline = rollout.get("baseline_metrics") or {}
+    base_success = safe_float(baseline.get("success_rate"))
+    base_runtime = safe_float(baseline.get("median_runtime_seconds"))
+
+    reasons: List[str] = []
+    if curr_guardrail_failures > 0:
+        reasons.append(f"guardrail_failures={curr_guardrail_failures} > 0")
+    if base_success is not None and curr_success < (base_success - 0.02):
+        reasons.append(
+            f"success_rate_drop={base_success - curr_success:.4f} exceeds 0.02 threshold"
+        )
+    if base_runtime is not None and curr_runtime is not None and curr_runtime > (base_runtime * 1.10):
+        reasons.append(
+            f"median_runtime_increase={(curr_runtime / base_runtime - 1.0):.4f} exceeds 10%"
+        )
+
+    if reasons:
+        rollout["non_regression_fail_streak"] = int(rollout.get("non_regression_fail_streak", 0)) + 1
+    else:
+        rollout["non_regression_fail_streak"] = 0
+
+    if int(rollout.get("non_regression_fail_streak", 0)) >= 3:
+        rollout["rollback_triggered"] = True
+        rollout["rollback_reason"] = "; ".join(reasons) if reasons else "non-regression gate failures"
+
+    started = int(rollout.get("started_iteration", iteration))
+    shadow_progress = int(iteration) - started + 1
+    mode = "shadow"
+    execute = False
+
+    if rollout.get("rollback_triggered"):
+        mode = "rolled_back"
+        execute = False
+    elif shadow_progress <= int(shadow_iters):
+        mode = "shadow"
+        execute = False
+    else:
+        mode = "canary"
+        execute = deterministic_canary(int(iteration), int(canary_pct))
+
+    if mode == "shadow":
+        rollout["shadow_completed"] = int(rollout.get("shadow_completed", 0)) + 1
+    if mode == "canary" and execute:
+        rollout["canary_executed"] = int(rollout.get("canary_executed", 0)) + 1
+
+    rollout["mode"] = mode
+    rollout["last_updated"] = utc_now_iso()
+
+    nonreg["ok"] = len(reasons) == 0
+    nonreg["reasons"] = reasons
+    return rollout, {"mode": mode, "execute": execute, "nonreg": nonreg}
+
+
+def evaluate(args: argparse.Namespace) -> int:
+    state_dir = Path(args.state_dir)
+    state_dir.mkdir(parents=True, exist_ok=True)
+
+    strategies_log_path = state_dir / ".strategies_log.json"
+    priors_path = state_dir / ".opportunity_priors.json"
+    history_path = state_dir / ".opportunity_history.json"
+    rollout_path = state_dir / ".autoloop_rollout_state.json"
+
+    entries = loop_entries(load_json(strategies_log_path, []))
+    priors = load_json(priors_path, {})
+    if not isinstance(priors, dict):
+        priors = {}
+    history = load_json(history_path, [])
+    if not isinstance(history, list):
+        history = []
+
+    signals = analyze_signals(entries, args.window_size)
+    candidates = build_candidates(
+        signals,
+        priors,
+        history,
+        int(args.iteration),
+        novelty_lookback=int(args.novelty_lookback),
+        novelty_penalty=float(args.novelty_penalty),
+        no_uplift_epsilon=float(args.no_uplift_epsilon),
+        score_novelty_weight=float(args.score_novelty_weight),
+        score_breakthrough_weight=float(args.score_breakthrough_weight),
+        score_untried_bonus=float(args.score_untried_bonus),
+        ewma_penalty_threshold=float(args.ewma_penalty_threshold),
+        ewma_penalty_max=float(args.ewma_penalty_max),
+    )
+    top = candidates[0]
+    selection_reason = "top_weighted_score"
+    exploration_forced = False
+    subfamily_overrides = parse_subfamily_overrides(args.subfamily_override)
+
+    repeat_classes = parse_csv_set(args.explore_repeat_classes) or set(DEFAULT_EXPLORE_REPEAT_CLASSES)
+    target_classes = parse_csv_set(args.explore_target_classes) or set(DEFAULT_EXPLORE_TARGET_CLASSES)
+    explore_pressure = compute_exploration_pressure(
+        history=history,
+        lookback=int(args.explore_lookback),
+        no_uplift_epsilon=float(args.no_uplift_epsilon),
+        repeat_classes=repeat_classes,
+    )
+
+    forced = None
+    if bool(args.explore_quota_enable) and should_force_orthogonal(
+        history=history,
+        lookback=int(args.explore_lookback),
+        no_uplift_epsilon=float(args.no_uplift_epsilon),
+        repeat_classes=repeat_classes,
+        min_no_uplift=int(args.explore_min_no_uplift),
+        min_repeat_share=float(args.explore_min_repeat_share),
+    ):
+        for candidate in candidates:
+            if candidate.family_class in target_classes:
+                forced = candidate
+                break
+        if forced is None:
+            for candidate in candidates:
+                if candidate.family_class not in repeat_classes:
+                    forced = candidate
+                    break
+        if forced is not None and forced.id != top.id:
+            top = forced
+            exploration_forced = True
+            selection_reason = (
+                "forced_orthogonal_exploration: "
+                f"repeat_no_uplift={int(explore_pressure['repeat_no_uplift'])} "
+                f"repeat_share={float(explore_pressure['repeat_share']):.2f}"
+            )
+
+    if not exploration_forced and bool(args.explore_untried_floor_enable):
+        stall_pressure = compute_exploration_pressure(
+            history=history,
+            lookback=int(args.explore_stall_lookback),
+            no_uplift_epsilon=float(args.no_uplift_epsilon),
+            repeat_classes=repeat_classes,
+        )
+        if int(stall_pressure["overall_no_uplift"]) >= int(args.explore_stall_min_no_uplift):
+            for candidate in candidates:
+                if not candidate.untried_family:
+                    continue
+                if candidate.family_class in target_classes:
+                    forced = candidate
+                    break
+            if forced is None:
+                for candidate in candidates:
+                    if candidate.untried_family:
+                        forced = candidate
+                        break
+            if forced is not None and forced.id != top.id:
+                top = forced
+                exploration_forced = True
+                selection_reason = (
+                    "forced_untried_floor: "
+                    f"overall_no_uplift={int(stall_pressure['overall_no_uplift'])}/"
+                    f"{int(stall_pressure['recent_count'])} lookback={int(args.explore_stall_lookback)}"
+                )
+
+    candidate_subfamilies: Dict[str, Dict[str, str]] = {}
+    for c in candidates:
+        selected_subfamily, selected_subfamily_reason = choose_subfamily_for_opportunity(
+            opportunity_id=c.id,
+            priors=priors,
+            history=history,
+            iteration=int(args.iteration),
+            no_uplift_epsilon=float(args.no_uplift_epsilon),
+            subfamily_overrides=subfamily_overrides,
+        )
+        candidate_subfamilies[c.id] = {
+            "subfamily": selected_subfamily,
+            "reason": selected_subfamily_reason,
+        }
+
+    selected_subfamily = candidate_subfamilies.get(top.id, {}).get(
+        "subfamily",
+        default_subfamily_for_opportunity(top.id),
+    )
+    selected_subfamily_reason = candidate_subfamilies.get(top.id, {}).get(
+        "reason",
+        "default_subfamily",
+    )
+
+    best_edge_ref = 0.0
+    best_edge_path = state_dir / ".best_edge.txt"
+    if best_edge_path.exists():
+        best_edge_ref = safe_float(best_edge_path.read_text().strip()) or 0.0
+
+    rollout, rollout_decision = update_rollout_state(
+        load_json(rollout_path, {}),
+        enabled=bool(args.enabled),
+        iteration=int(args.iteration),
+        shadow_iters=int(args.shadow_iters),
+        canary_pct=int(args.canary_pct),
+        nonreg_window=int(args.window_size),
+        entries=entries,
+    )
+
+    ranking_payload = {
+        "schema_version": SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "iteration": int(args.iteration),
+        "signals": signals,
+        "weights": {
+            "expected_uplift": 0.35,
+            "confidence": 0.25,
+            "time_to_signal": 0.15,
+            "complexity_inverse": 0.10,
+            "overfit_risk_inverse": 0.15,
+            "novelty_bonus_weight": float(args.score_novelty_weight),
+            "breakthrough_bonus_weight": float(args.score_breakthrough_weight),
+            "untried_family_bonus": float(args.score_untried_bonus),
+        },
+        "exploration_pressure": {
+            "lookback": int(args.explore_lookback),
+            "repeat_no_uplift": int(explore_pressure["repeat_no_uplift"]),
+            "repeat_share": round(float(explore_pressure["repeat_share"]), 3),
+            "overall_no_uplift": int(explore_pressure["overall_no_uplift"]),
+            "recent_count": int(explore_pressure["recent_count"]),
+        },
+        "ranked_opportunities": [
+            {
+                "id": c.id,
+                "family_class": c.family_class,
+                "recommended_subfamily": candidate_subfamilies.get(c.id, {}).get(
+                    "subfamily",
+                    default_subfamily_for_opportunity(c.id),
+                ),
+                "recommended_subfamily_reason": candidate_subfamilies.get(c.id, {}).get(
+                    "reason",
+                    "default_subfamily",
+                ),
+                "rationale": c.rationale,
+                "expected_uplift": round(c.expected_uplift, 3),
+                "confidence": round(c.confidence, 3),
+                "time_to_signal": round(c.time_to_signal, 3),
+                "complexity": round(c.complexity, 3),
+                "overfit_risk": round(c.overfit_risk, 3),
+                "novelty": round(c.novelty, 3),
+                "breakthrough_likelihood": round(c.breakthrough_likelihood, 3),
+                "untried_family": bool(c.untried_family),
+                "base_weighted_score": c.base_weighted_score,
+                "score_bonus": round(c.score_bonus, 3),
+                "ewma_delta": round(c.ewma_delta, 6) if c.ewma_delta is not None else None,
+                "ewma_penalty": round(c.ewma_penalty, 6),
+                "weighted_score": c.weighted_score,
+            }
+            for c in candidates
+        ],
+    }
+
+    plan_template = default_plan_template(top.id, target_edge=args.target_edge, reference_best=best_edge_ref)
+    if isinstance(plan_template, dict):
+        plan_template.setdefault("subfamily_focus", selected_subfamily)
+        plan_template.setdefault("subfamily_focus_reason", selected_subfamily_reason)
+    plan_payload = {
+        "schema_version": SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "iteration": int(args.iteration),
+        "mode": rollout_decision["mode"],
+        "execute_this_iteration": bool(rollout_decision["execute"]),
+        "non_regression_ok": bool(rollout_decision["nonreg"]["ok"]),
+        "non_regression_reasons": rollout_decision["nonreg"]["reasons"],
+        "rollout_state": {
+            "started_iteration": rollout.get("started_iteration"),
+            "shadow_completed": rollout.get("shadow_completed"),
+            "canary_executed": rollout.get("canary_executed"),
+            "rollback_triggered": rollout.get("rollback_triggered"),
+            "rollback_reason": rollout.get("rollback_reason"),
+        },
+        "target_edge": float(args.target_edge),
+        "reference_best_edge": float(best_edge_ref),
+        "selection_reason": selection_reason,
+        "exploration_forced": bool(exploration_forced),
+        "selected_opportunity": {
+            "id": top.id,
+            "family_class": top.family_class,
+            "subfamily": selected_subfamily,
+            "subfamily_reason": selected_subfamily_reason,
+            "rationale": top.rationale,
+            "expected_uplift": round(top.expected_uplift, 3),
+            "confidence": round(top.confidence, 3),
+            "novelty": round(top.novelty, 3),
+            "breakthrough_likelihood": round(top.breakthrough_likelihood, 3),
+            "untried_family": bool(top.untried_family),
+            "base_weighted_score": top.base_weighted_score,
+            "score_bonus": round(top.score_bonus, 3),
+            "ewma_delta": round(top.ewma_delta, 6) if top.ewma_delta is not None else None,
+            "ewma_penalty": round(top.ewma_penalty, 6),
+            "weighted_score": top.weighted_score,
+        },
+        "policy": {
+            "promotion_requires_repeats": 3,
+            "family_kill_first_4_below_reference_by": 0.8,
+            "family_cooldown_iterations_on_severe_failure": DEFAULT_COOLDOWN_ITERS,
+            "no_uplift_epsilon": float(args.no_uplift_epsilon),
+            "no_uplift_streak_threshold": int(args.no_uplift_streak_threshold),
+            "no_uplift_cooldown_iters": int(args.no_uplift_cooldown_iters),
+            "novelty_lookback": int(args.novelty_lookback),
+            "novelty_penalty": float(args.novelty_penalty),
+            "explore_quota_enabled": bool(args.explore_quota_enable),
+            "explore_lookback": int(args.explore_lookback),
+            "explore_min_no_uplift": int(args.explore_min_no_uplift),
+            "explore_min_repeat_share": float(args.explore_min_repeat_share),
+            "explore_repeat_classes": sorted(repeat_classes),
+            "explore_target_classes": sorted(target_classes),
+            "explore_untried_floor_enabled": bool(args.explore_untried_floor_enable),
+            "explore_stall_lookback": int(args.explore_stall_lookback),
+            "explore_stall_min_no_uplift": int(args.explore_stall_min_no_uplift),
+            "score_novelty_weight": float(args.score_novelty_weight),
+            "score_breakthrough_weight": float(args.score_breakthrough_weight),
+            "score_untried_bonus": float(args.score_untried_bonus),
+            "ewma_penalty_threshold": float(args.ewma_penalty_threshold),
+            "ewma_penalty_max": float(args.ewma_penalty_max),
+            "subfamily_override": str(args.subfamily_override or ""),
+            "breakthrough_tie_epsilon": float(args.breakthrough_tie_epsilon),
+            "severe_subfamily_failure_threshold": int(args.severe_subfamily_failure_threshold),
+        },
+        "ranked_opportunities": ranking_payload["ranked_opportunities"],
+        "search_plan": plan_template,
+    }
+
+    # If rollback is triggered, force non-execution regardless of canary bucket.
+    if rollout.get("rollback_triggered"):
+        plan_payload["execute_this_iteration"] = False
+
+    ranking_path = Path(args.ranking_out) if args.ranking_out else (state_dir / f"opportunity_rankings_iter{int(args.iteration)}.json")
+    plan_path = Path(args.plan_out) if args.plan_out else (state_dir / f"autoplan_iter{int(args.iteration)}.json")
+
+    atomic_write_json(ranking_path, ranking_payload)
+    atomic_write_json(plan_path, plan_payload)
+    atomic_write_json(rollout_path, rollout)
+    atomic_write_json(state_dir / ".autoplan_active.json", plan_payload)
+
+    print(f"[opp-engine] wrote ranking: {ranking_path}")
+    print(f"[opp-engine] wrote plan: {plan_path}")
+    print(
+        f"[opp-engine] mode={plan_payload['mode']} "
+        f"execute_this_iteration={plan_payload['execute_this_iteration']} "
+        f"selected={top.id} class={top.family_class} "
+        f"subfamily={selected_subfamily} "
+        f"forced_exploration={exploration_forced}"
+    )
+    if not plan_payload["non_regression_ok"]:
+        print(
+            "[opp-engine] non-regression gate warning: "
+            + "; ".join(plan_payload["non_regression_reasons"])
+        )
+    if rollout.get("rollback_triggered"):
+        print(f"[opp-engine] rollback_triggered: {rollout.get('rollback_reason')}")
+
+    return 0
+
+
+def latest_family_fallback_from_gates(
+    gates_state_path: Path,
+    iteration: int,
+) -> Dict[str, Any]:
+    if not gates_state_path.exists():
+        return {}
+    gates = load_json(gates_state_path, {})
+    if not isinstance(gates, dict):
+        return {}
+    it = ((gates.get("iterations") or {}).get(str(int(iteration))))
+    if not isinstance(it, dict):
+        return {}
+
+    families = it.get("families") or {}
+    if isinstance(families, dict) and families:
+        rows: List[Tuple[str, str, str, float, int]] = []
+        for run_id, rec in families.items():
+            if not isinstance(rec, dict):
+                continue
+            edge = safe_float(rec.get("best_edge"))
+            if edge is None:
+                continue
+            completed_at = str(rec.get("completed_at") or rec.get("updated_at") or "")
+            status = str(rec.get("status") or "")
+            completed_count = int(rec.get("completed_count", 0) or 0)
+            rows.append((completed_at, str(run_id), status, edge, completed_count))
+        if rows:
+            rows.sort()
+            completed_at, run_id, status, edge, completed_count = rows[-1]
+            best_strategy = None
+            observed = it.get("observed_edges")
+            if isinstance(observed, list):
+                candidates: List[Tuple[float, str]] = []
+                for row in observed:
+                    if not isinstance(row, dict):
+                        continue
+                    row_edge = safe_float(row.get("edge"))
+                    strategy = str(row.get("strategy") or "").strip()
+                    if row_edge is None or not strategy:
+                        continue
+                    if abs(row_edge - edge) < 1e-9:
+                        candidates.append((row_edge, strategy))
+                if candidates:
+                    # Prefer file-backed strategy names when available.
+                    candidates.sort(key=lambda t: (t[1].endswith(".sol"), t[1]), reverse=True)
+                    best_strategy = candidates[0][1]
+            return {
+                "edge": edge,
+                "source": "execution_gates_family_end",
+                "run_id": run_id,
+                "family_status": status,
+                "family_completed_count": completed_count,
+                "family_completed_at": completed_at,
+                "best_strategy": best_strategy,
+            }
+
+    batch = it.get("batch") if isinstance(it.get("batch"), dict) else {}
+    batch_edge = safe_float(batch.get("best_edge"))
+    if batch_edge is not None:
+        return {
+            "edge": batch_edge,
+            "source": "execution_gates_batch_best",
+            "batch_count": int(batch.get("count", 0) or 0),
+        }
+    return {}
+
+
+def latest_edge_from_strategies_log(
+    strategies_log_path: Path,
+    iteration: int,
+) -> Dict[str, Any]:
+    if not strategies_log_path.exists():
+        return {}
+    data = load_json(strategies_log_path, [])
+    if not isinstance(data, list):
+        return {}
+    rows: List[Tuple[str, float, str]] = []
+    for entry in data:
+        if not isinstance(entry, dict):
+            continue
+        if int(entry.get("iteration", 0) or 0) != int(iteration):
+            continue
+        status = str(entry.get("status") or "")
+        if status != "ok":
+            continue
+        edge = safe_float(entry.get("final_edge"))
+        if edge is None:
+            continue
+        strategy_name = str(entry.get("strategy_name") or "")
+        ts = str(entry.get("timestamp") or "")
+        rows.append((ts, edge, strategy_name))
+    if not rows:
+        return {}
+    rows.sort()
+    ts, edge, strategy_name = rows[-1]
+    return {
+        "edge": edge,
+        "source": "strategies_log_ok",
+        "recorded_at": ts,
+        "best_strategy": strategy_name or None,
+    }
+
+
+def resolve_fallback_edge(
+    *,
+    state_dir: Path,
+    gates_state_path: Path,
+    iteration: int,
+    polls: int,
+    poll_seconds: float,
+) -> Dict[str, Any]:
+    if polls < 1:
+        polls = 1
+    for i in range(polls):
+        gate = latest_family_fallback_from_gates(gates_state_path=gates_state_path, iteration=iteration)
+        if safe_float(gate.get("edge")) is not None:
+            return gate
+        if i + 1 < polls and poll_seconds > 0:
+            time.sleep(poll_seconds)
+
+    log_fb = latest_edge_from_strategies_log(
+        strategies_log_path=state_dir / ".strategies_log.json",
+        iteration=iteration,
+    )
+    if safe_float(log_fb.get("edge")) is not None:
+        return log_fb
+    return {}
+
+
+def record(args: argparse.Namespace) -> int:
+    state_dir = Path(args.state_dir)
+    plan_path = Path(args.plan_file)
+    if not plan_path.exists():
+        print(f"[opp-engine] no plan file to record: {plan_path}")
+        return 0
+
+    plan = load_json(plan_path, {})
+    if not isinstance(plan, dict):
+        print(f"[opp-engine] invalid plan JSON: {plan_path}")
+        return 0
+
+    result_payload: Dict[str, Any] = {}
+    if args.result_file:
+        rp = Path(args.result_file)
+        if rp.exists():
+            result_payload = load_json(rp, {})
+            if not isinstance(result_payload, dict):
+                result_payload = {}
+
+    selected_opp = ((plan.get("selected_opportunity") or {}).get("id"))
+    selected_family_class = family_class(selected_opp) if isinstance(selected_opp, str) else "unknown"
+    selected_subfamily = str((plan.get("selected_opportunity") or {}).get("subfamily") or "").strip()
+    if not selected_subfamily and isinstance(selected_opp, str):
+        selected_subfamily = default_subfamily_for_opportunity(selected_opp)
+    selected_subfamily_reason = str(
+        (plan.get("selected_opportunity") or {}).get("subfamily_reason") or "default_subfamily"
+    )
+    final_edge = safe_float(result_payload.get("final_edge"))
+    final_score = safe_float(result_payload.get("final_score"))
+    strategy_name = str(result_payload.get("strategy_name") or "").strip()
+    edge_source = "result_file"
+    edge_fallback_metadata: Dict[str, Any] = {}
+
+    if final_edge is None and bool(args.use_gate_family_fallback):
+        fallback = resolve_fallback_edge(
+            state_dir=state_dir,
+            gates_state_path=Path(args.gates_state_file),
+            iteration=int(args.iteration),
+            polls=int(args.gates_fallback_polls),
+            poll_seconds=float(args.gates_fallback_poll_seconds),
+        )
+        fallback_edge = safe_float(fallback.get("edge"))
+        if fallback_edge is not None:
+            final_edge = fallback_edge
+            edge_source = str(fallback.get("source") or "execution_gates")
+            edge_fallback_metadata = fallback
+            if not strategy_name:
+                strategy_name = str(fallback.get("best_strategy") or "").strip()
+
+    if final_edge is None:
+        edge_source = "missing"
+
+    reference = safe_float(plan.get("reference_best_edge")) or 0.0
+    promotion = safe_float(((plan.get("search_plan") or {}).get("promotion_criteria") or {}).get("median_delta_vs_reference"))
+    delta = (final_edge - reference) if final_edge is not None else None
+    no_uplift: Optional[bool]
+    if delta is None:
+        no_uplift = None
+    else:
+        no_uplift = bool(delta <= float(args.no_uplift_epsilon))
+
+    validated = None
+    if delta is not None and promotion is not None:
+        validated = bool(delta >= promotion)
+    severe_failure = bool(delta is not None and delta <= SEVERE_FAILURE_DELTA)
+
+    inferred_subfamily: Optional[str] = None
+    if isinstance(selected_opp, str) and selected_opp:
+        inferred_subfamily = parse_subfamily_from_strategy_name(selected_opp, strategy_name)
+    final_subfamily = inferred_subfamily or selected_subfamily or "default"
+    subfamily_confidence = "planned"
+    if inferred_subfamily and selected_subfamily and inferred_subfamily == selected_subfamily:
+        subfamily_confidence = "inferred_match"
+    elif inferred_subfamily and selected_subfamily and inferred_subfamily != selected_subfamily:
+        subfamily_confidence = "inferred_override"
+    elif inferred_subfamily:
+        subfamily_confidence = "inferred_only"
+    planned_vs_actual_match = bool(selected_subfamily and final_subfamily and selected_subfamily == final_subfamily)
+    conformance_weight = resolve_conformance_weight(
+        planned_vs_actual_match=planned_vs_actual_match,
+        subfamily_confidence=subfamily_confidence,
+        weight_match=float(args.conformance_weight_match),
+        weight_partial=float(args.conformance_weight_partial),
+        weight_mismatch=float(args.conformance_weight_mismatch),
+    )
+    conformance_required = 1.0
+    conformance_matched = float(conformance_weight)
+    conformance_score = float(conformance_weight)
+    conformance_missing = [] if planned_vs_actual_match else ["subfamily_mismatch"]
+    effective_delta = (float(delta) * float(conformance_weight)) if delta is not None else None
+
+    history_path = state_dir / ".opportunity_history.json"
+    history = load_json(history_path, [])
+    if not isinstance(history, list):
+        history = []
+
+    entry = {
+        "schema_version": SCHEMA_VERSION,
+        "recorded_at": utc_now_iso(),
+        "iteration": int(args.iteration),
+        "status": args.status,
+        "plan_file": str(plan_path),
+        "mode": plan.get("mode"),
+        "execute_this_iteration": bool(plan.get("execute_this_iteration", False)),
+        "selected_opportunity": selected_opp,
+        "selected_family_class": selected_family_class,
+        "selected_subfamily": selected_subfamily,
+        "selected_subfamily_reason": selected_subfamily_reason,
+        "final_subfamily": final_subfamily,
+        "subfamily_confidence": subfamily_confidence,
+        "expected_uplift": safe_float((plan.get("selected_opportunity") or {}).get("expected_uplift")),
+        "reference_best_edge": reference,
+        "final_edge": final_edge,
+        "edge_source": edge_source,
+        "edge_fallback": edge_fallback_metadata or None,
+        "final_score": final_score,
+        "strategy_name": strategy_name or None,
+        "delta_vs_reference": delta,
+        "no_uplift": no_uplift,
+        "validated": validated,
+        "severe_failure": severe_failure,
+        "planned_vs_actual_match": planned_vs_actual_match,
+        "conformance_weight": conformance_weight,
+        "conformance_score": conformance_score,
+        "conformance_required": conformance_required,
+        "conformance_matched": conformance_matched,
+        "conformance_missing": conformance_missing,
+        "effective_delta": effective_delta,
+    }
+    priors_path = state_dir / ".opportunity_priors.json"
+    priors = load_json(priors_path, {})
+    if not isinstance(priors, dict):
+        priors = {}
+    opp = entry.get("selected_opportunity")
+    if isinstance(opp, str) and opp:
+        bucket = priors.setdefault(
+            opp,
+            {
+                "attempts": 0,
+                "successes": 0,
+                "failures": 0,
+                "neutral": 0,
+                "severe_failures": 0,
+                "cooldown_until_iteration": 0,
+                "cooldown_reason": None,
+                "non_uplift_streak": 0,
+                "no_uplift_outcomes": 0,
+                "last_uplift_iteration": None,
+                "ewma_delta": None,
+                "ewma_count": 0,
+                "subfamilies": {},
+            },
+        )
+        bucket["attempts"] = int(bucket.get("attempts", 0) or 0) + 1
+        bucket.setdefault("ewma_delta", None)
+        bucket.setdefault("ewma_count", 0)
+        sub_key = entry.get("final_subfamily") or entry.get("selected_subfamily") or default_subfamily_for_opportunity(opp)
+        if not isinstance(sub_key, str) or not sub_key:
+            sub_key = default_subfamily_for_opportunity(opp)
+        sub_map = bucket.setdefault("subfamilies", {})
+        if not isinstance(sub_map, dict):
+            sub_map = {}
+            bucket["subfamilies"] = sub_map
+        sub_bucket = sub_map.setdefault(
+            sub_key,
+            {
+                "attempts": 0,
+                "successes": 0,
+                "failures": 0,
+                "neutral": 0,
+                "severe_failures": 0,
+                "cooldown_until_iteration": 0,
+                "cooldown_reason": None,
+                "non_uplift_streak": 0,
+                "no_uplift_outcomes": 0,
+                "last_uplift_iteration": None,
+                "last_attempt_iteration": None,
+                "breakthrough_probe_hits": 0,
+                "ewma_delta": None,
+                "ewma_count": 0,
+            },
+        )
+        if not isinstance(sub_bucket, dict):
+            sub_bucket = {}
+            sub_map[sub_key] = sub_bucket
+        sub_bucket.setdefault("attempts", 0)
+        sub_bucket.setdefault("successes", 0)
+        sub_bucket.setdefault("failures", 0)
+        sub_bucket.setdefault("neutral", 0)
+        sub_bucket.setdefault("severe_failures", 0)
+        sub_bucket.setdefault("cooldown_until_iteration", 0)
+        sub_bucket.setdefault("cooldown_reason", None)
+        sub_bucket.setdefault("non_uplift_streak", 0)
+        sub_bucket.setdefault("no_uplift_outcomes", 0)
+        sub_bucket.setdefault("last_uplift_iteration", None)
+        sub_bucket.setdefault("last_attempt_iteration", None)
+        sub_bucket.setdefault("breakthrough_probe_hits", 0)
+        sub_bucket.setdefault("ewma_delta", None)
+        sub_bucket.setdefault("ewma_count", 0)
+
+        prior_attempts = int(sub_bucket.get("attempts", 0) or 0)
+        sub_bucket["attempts"] = prior_attempts + 1
+        sub_bucket["last_attempt_iteration"] = int(args.iteration)
+        bucket["last_selected_subfamily"] = sub_key
+        entry["actual_subfamily_prior_updated"] = True
+        planned_updated = bool(
+            (not selected_subfamily)
+            or (selected_subfamily == sub_key)
+            or planned_vs_actual_match
+        )
+        entry["planned_subfamily_prior_updated"] = planned_updated
+        if not planned_updated:
+            entry["planned_subfamily_not_updated_reason"] = "mismatch_actual_subfamily_only"
+
+        alpha = max(0.0, min(1.0, float(args.ewma_alpha)))
+        if effective_delta is not None:
+            bucket_prev_ewma = safe_float(bucket.get("ewma_delta"))
+            if bucket_prev_ewma is None:
+                bucket["ewma_delta"] = float(effective_delta)
+            else:
+                bucket["ewma_delta"] = alpha * float(effective_delta) + (1.0 - alpha) * bucket_prev_ewma
+            bucket["ewma_count"] = int(bucket.get("ewma_count", 0) or 0) + 1
+
+            sub_prev_ewma = safe_float(sub_bucket.get("ewma_delta"))
+            if sub_prev_ewma is None:
+                sub_bucket["ewma_delta"] = float(effective_delta)
+            else:
+                sub_bucket["ewma_delta"] = alpha * float(effective_delta) + (1.0 - alpha) * sub_prev_ewma
+            sub_bucket["ewma_count"] = int(sub_bucket.get("ewma_count", 0) or 0) + 1
+
+        breakthrough_probe = False
+        breakthrough_reason = None
+        if prior_attempts == 0 and delta is not None:
+            tie_eps = float(args.breakthrough_tie_epsilon)
+            near_tie = bool(delta >= (-1.0 * tie_eps))
+            robust_near_tie = bool(final_score is not None and final_score >= (reference - tie_eps))
+            if near_tie or robust_near_tie:
+                breakthrough_probe = True
+                breakthrough_reason = (
+                    f"novel_subfamily_probe: delta={delta:.4f}, tie_epsilon={tie_eps:.4f}, "
+                    f"robust_near_tie={robust_near_tie}"
+                )
+                sub_bucket["breakthrough_probe_hits"] = int(sub_bucket.get("breakthrough_probe_hits", 0) or 0) + 1
+                entry["breakthrough_probe"] = True
+                entry["breakthrough_probe_reason"] = breakthrough_reason
+
+        if validated is True:
+            bucket["successes"] = int(bucket.get("successes", 0)) + 1
+            # Clear cooldown after validated recovery.
+            bucket["cooldown_until_iteration"] = 0
+            bucket["cooldown_reason"] = None
+            bucket["last_uplift_iteration"] = int(args.iteration)
+            bucket["status"] = "ACTIVE"
+            sub_bucket["successes"] = int(sub_bucket.get("successes", 0)) + 1
+            sub_bucket["cooldown_until_iteration"] = 0
+            sub_bucket["cooldown_reason"] = None
+            sub_bucket["non_uplift_streak"] = 0
+            sub_bucket["last_uplift_iteration"] = int(args.iteration)
+            sub_bucket["status"] = "ACTIVE"
+        elif validated is False:
+            bucket["failures"] = int(bucket.get("failures", 0)) + 1
+            sub_bucket["failures"] = int(sub_bucket.get("failures", 0)) + 1
+        else:
+            bucket["neutral"] = int(bucket.get("neutral", 0)) + 1
+            sub_bucket["neutral"] = int(sub_bucket.get("neutral", 0)) + 1
+
+        if delta is not None and delta > float(args.no_uplift_epsilon):
+            sub_bucket["non_uplift_streak"] = 0
+            sub_bucket["last_uplift_iteration"] = int(args.iteration)
+            reason = str(sub_bucket.get("cooldown_reason") or "")
+            if reason.startswith("no uplift streak:"):
+                sub_bucket["cooldown_until_iteration"] = 0
+                sub_bucket["cooldown_reason"] = None
+                if str(sub_bucket.get("status") or "").upper() == "COOLDOWN":
+                    sub_bucket["status"] = "ACTIVE"
+        elif no_uplift is True and not breakthrough_probe:
+            sub_bucket["no_uplift_outcomes"] = int(sub_bucket.get("no_uplift_outcomes", 0) or 0) + 1
+            streak = int(sub_bucket.get("non_uplift_streak", 0) or 0) + 1
+            sub_bucket["non_uplift_streak"] = streak
+            if streak >= int(args.no_uplift_streak_threshold):
+                cooldown_until = int(args.iteration) + int(args.no_uplift_cooldown_iters)
+                sub_bucket["cooldown_until_iteration"] = max(
+                    int(sub_bucket.get("cooldown_until_iteration", 0) or 0),
+                    cooldown_until,
+                )
+                sub_bucket["cooldown_reason"] = (
+                    f"no uplift streak: {streak} consecutive outcomes with "
+                    f"delta <= {float(args.no_uplift_epsilon):.2f}"
+                )
+                if str(sub_bucket.get("status") or "").upper() not in {"FAILED"}:
+                    sub_bucket["status"] = "COOLDOWN"
+
+        if severe_failure:
+            bucket["severe_failures"] = int(bucket.get("severe_failures", 0)) + 1
+            sub_bucket["severe_failures"] = int(sub_bucket.get("severe_failures", 0)) + 1
+            sub_cooldown_until = int(args.iteration) + DEFAULT_COOLDOWN_ITERS
+            sub_bucket["cooldown_until_iteration"] = max(
+                int(sub_bucket.get("cooldown_until_iteration", 0) or 0),
+                sub_cooldown_until,
+            )
+            sub_bucket["cooldown_reason"] = (
+                f"severe failure: delta {delta:.2f} <= {SEVERE_FAILURE_DELTA:.2f}"
+            )
+            sub_bucket["status"] = "FAILED"
+            sub_bucket["failed_at_iteration"] = int(args.iteration)
+
+            severe_subfamilies = 0
+            for _, sb in sub_map.items():
+                if not isinstance(sb, dict):
+                    continue
+                if int(sb.get("severe_failures", 0) or 0) > 0:
+                    severe_subfamilies += 1
+            if severe_subfamilies >= int(args.severe_subfamily_failure_threshold):
+                cooldown_until = int(args.iteration) + DEFAULT_COOLDOWN_ITERS
+                bucket["cooldown_until_iteration"] = max(
+                    int(bucket.get("cooldown_until_iteration", 0) or 0),
+                    cooldown_until,
+                )
+                bucket["cooldown_reason"] = (
+                    f"multi-subfamily severe failures: {severe_subfamilies} >= "
+                    f"{int(args.severe_subfamily_failure_threshold)}"
+                )
+                bucket["status"] = "FAILED"
+                bucket["failed_at_iteration"] = int(args.iteration)
+
+        # Aggregate opportunity-level indicators from subfamilies without suppressing novel branches.
+        sub_streaks = [
+            int(sb.get("non_uplift_streak", 0) or 0)
+            for sb in sub_map.values()
+            if isinstance(sb, dict)
+        ]
+        if sub_streaks:
+            bucket["non_uplift_streak"] = max(sub_streaks)
+        bucket["no_uplift_outcomes"] = sum(
+            int((sb.get("no_uplift_outcomes", 0) or 0))
+            for sb in sub_map.values()
+            if isinstance(sb, dict)
+        )
+        atomic_write_json(priors_path, priors)
+
+    history.append(entry)
+    atomic_write_json(history_path, history)
+
+    print(
+        f"[opp-engine] recorded outcome iteration={args.iteration} "
+        f"opportunity={entry.get('selected_opportunity')} validated={validated} "
+        f"no_uplift={no_uplift} severe_failure={severe_failure} "
+        f"subfamily={entry.get('final_subfamily')} edge_source={edge_source}"
+    )
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Phase 7 opportunity engine")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_eval = sub.add_parser("evaluate", help="Discover opportunities and generate auto-plan")
+    p_eval.add_argument("--state-dir", required=True)
+    p_eval.add_argument("--iteration", required=True, type=int)
+    p_eval.add_argument("--target-edge", type=float, default=527.0)
+    p_eval.add_argument("--enabled", action="store_true", help="Enable rollout logic")
+    p_eval.add_argument("--shadow-iters", type=int, default=20)
+    p_eval.add_argument("--canary-pct", type=int, default=20)
+    p_eval.add_argument("--window-size", type=int, default=20)
+    p_eval.add_argument("--no-uplift-epsilon", type=float, default=DEFAULT_NO_UPLIFT_EPSILON)
+    p_eval.add_argument("--no-uplift-streak-threshold", type=int, default=DEFAULT_NO_UPLIFT_STREAK_THRESHOLD)
+    p_eval.add_argument("--no-uplift-cooldown-iters", type=int, default=DEFAULT_COOLDOWN_ITERS)
+    p_eval.add_argument("--novelty-lookback", type=int, default=DEFAULT_NOVELTY_LOOKBACK)
+    p_eval.add_argument("--novelty-penalty", type=float, default=DEFAULT_NOVELTY_PENALTY)
+    p_eval.add_argument("--explore-lookback", type=int, default=DEFAULT_EXPLORE_LOOKBACK)
+    p_eval.add_argument("--explore-min-no-uplift", type=int, default=DEFAULT_EXPLORE_MIN_NO_UPLIFT)
+    p_eval.add_argument("--explore-min-repeat-share", type=float, default=DEFAULT_EXPLORE_MIN_REPEAT_SHARE)
+    p_eval.add_argument(
+        "--explore-repeat-classes",
+        default=",".join(sorted(DEFAULT_EXPLORE_REPEAT_CLASSES)),
+    )
+    p_eval.add_argument(
+        "--explore-target-classes",
+        default=",".join(sorted(DEFAULT_EXPLORE_TARGET_CLASSES)),
+    )
+    p_eval.add_argument("--explore-stall-lookback", type=int, default=DEFAULT_EXPLORE_STALL_LOOKBACK)
+    p_eval.add_argument("--explore-stall-min-no-uplift", type=int, default=DEFAULT_EXPLORE_STALL_MIN_NO_UPLIFT)
+    p_eval.add_argument("--score-novelty-weight", type=float, default=DEFAULT_SCORE_NOVELTY_WEIGHT)
+    p_eval.add_argument("--score-breakthrough-weight", type=float, default=DEFAULT_SCORE_BREAKTHROUGH_WEIGHT)
+    p_eval.add_argument("--score-untried-bonus", type=float, default=DEFAULT_SCORE_UNTRIED_BONUS)
+    p_eval.add_argument("--ewma-penalty-threshold", type=float, default=DEFAULT_EWMA_PENALTY_THRESHOLD)
+    p_eval.add_argument("--ewma-penalty-max", type=float, default=DEFAULT_EWMA_PENALTY_MAX)
+    p_eval.add_argument("--subfamily-override", default="")
+    p_eval.add_argument("--breakthrough-tie-epsilon", type=float, default=DEFAULT_BREAKTHROUGH_TIE_EPSILON)
+    p_eval.add_argument(
+        "--severe-subfamily-failure-threshold",
+        type=int,
+        default=DEFAULT_SEVERE_SUBFAMILY_FAILURE_THRESHOLD,
+    )
+    p_eval.set_defaults(explore_quota_enable=True)
+    p_eval.add_argument("--explore-quota-enable", dest="explore_quota_enable", action="store_true")
+    p_eval.add_argument("--explore-quota-disable", dest="explore_quota_enable", action="store_false")
+    p_eval.set_defaults(explore_untried_floor_enable=DEFAULT_EXPLORE_UNTRIED_FLOOR_ENABLED)
+    p_eval.add_argument("--explore-untried-floor-enable", dest="explore_untried_floor_enable", action="store_true")
+    p_eval.add_argument("--explore-untried-floor-disable", dest="explore_untried_floor_enable", action="store_false")
+    p_eval.add_argument("--ranking-out")
+    p_eval.add_argument("--plan-out")
+
+    p_rec = sub.add_parser("record", help="Record plan outcome and update priors")
+    p_rec.add_argument("--state-dir", required=True)
+    p_rec.add_argument("--iteration", required=True, type=int)
+    p_rec.add_argument("--status", required=True)
+    p_rec.add_argument("--plan-file", required=True)
+    p_rec.add_argument("--result-file")
+    p_rec.add_argument("--no-uplift-epsilon", type=float, default=DEFAULT_NO_UPLIFT_EPSILON)
+    p_rec.add_argument("--no-uplift-streak-threshold", type=int, default=DEFAULT_NO_UPLIFT_STREAK_THRESHOLD)
+    p_rec.add_argument("--no-uplift-cooldown-iters", type=int, default=DEFAULT_COOLDOWN_ITERS)
+    p_rec.add_argument("--gates-state-file", default="")
+    p_rec.add_argument("--breakthrough-tie-epsilon", type=float, default=DEFAULT_BREAKTHROUGH_TIE_EPSILON)
+    p_rec.add_argument(
+        "--severe-subfamily-failure-threshold",
+        type=int,
+        default=DEFAULT_SEVERE_SUBFAMILY_FAILURE_THRESHOLD,
+    )
+    p_rec.add_argument("--gates-fallback-polls", type=int, default=DEFAULT_GATES_FALLBACK_POLLS)
+    p_rec.add_argument("--gates-fallback-poll-seconds", type=float, default=DEFAULT_GATES_FALLBACK_POLL_SECONDS)
+    p_rec.add_argument("--ewma-alpha", type=float, default=DEFAULT_EWMA_ALPHA)
+    p_rec.add_argument("--conformance-weight-match", type=float, default=DEFAULT_CONFORMANCE_WEIGHT_MATCH)
+    p_rec.add_argument("--conformance-weight-partial", type=float, default=DEFAULT_CONFORMANCE_WEIGHT_PARTIAL)
+    p_rec.add_argument("--conformance-weight-mismatch", type=float, default=DEFAULT_CONFORMANCE_WEIGHT_MISMATCH)
+    p_rec.set_defaults(use_gate_family_fallback=True)
+    p_rec.add_argument("--use-gate-family-fallback", dest="use_gate_family_fallback", action="store_true")
+    p_rec.add_argument("--disable-gate-family-fallback", dest="use_gate_family_fallback", action="store_false")
+
+    args = parser.parse_args()
+    if args.command == "evaluate":
+        return evaluate(args)
+    if args.command == "record":
+        return record(args)
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

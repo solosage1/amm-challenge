@@ -4,7 +4,7 @@ import {AMMStrategyBase} from "./AMMStrategyBase.sol";
 import {TradeInfo} from "./IAMMStrategy.sol";
 
 contract Strategy is AMMStrategyBase {
-    // ITERATION_POLICY {"decision":"continue","hypothesis_id":"H_TOX_ACT_010","confidence":0.68,"ceiling_probability":0.28,"ev_next_5":0.11,"best_delta_seen":0.15,"reason":"Pick highest eff_priority (0.962) with 20 steps_since_last to test per-trade tox/activity contribution clamp and reduce oscillation-driven routing loss.","next_mechanism":"toxicity_and_activity"}
+    // ITERATION_POLICY {"decision":"continue","hypothesis_id":"H_DIR_STALE_010","confidence":0.67,"ceiling_probability":0.31,"ev_next_5":0.14,"best_delta_seen":0.15,"reason":"Add same-step stale-overlay cooldown to reduce repeated fee nudges and churn while preserving early stale defense.","next_mechanism":"directional_skew_and_stale_protection"}
 
     uint256 constant ELAPSED_CAP = 8;
     uint256 constant SIGNAL_THRESHOLD = WAD / 700;
@@ -38,12 +38,10 @@ contract Strategy is AMMStrategyBase {
     uint256 constant TOX_QUAD_COEF = 19000 * BPS;
     uint256 constant TOX_QUAD_KNEE = 12 * BPS;
     uint256 constant ACT_COEF = 42000 * BPS;
-    uint256 constant ACT_GATE_LAMBDA = 950000000000000000;
-    uint256 constant ACT_GATE_SIZE = 3000000000000000;
-    uint256 constant TOX_ACT_STEP_CAP = 80 * BPS;
     uint256 constant DIR_COEF = 90 * BPS;
     uint256 constant DIR_TOX_COEF = 20 * BPS;
     uint256 constant STALE_DIR_COEF = 6900 * BPS;
+    uint256 constant STALE_OVERLAY_MAX_TRADES = 2;
     uint256 constant TAIL_KNEE = 700 * BPS;
     uint256 constant TAIL_SLOPE = 900000000000000000;
     uint256 constant TAIL_SLOPE_PROTECT = 820000000000000000;
@@ -130,8 +128,6 @@ contract Strategy is AMMStrategyBase {
             }
         }
 
-        uint256 prevToxActAdd = _toxActAdd(toxEma, actEma, lambdaHat, sizeHat);
-
         if (tradeRatio > SIGNAL_THRESHOLD) {
             uint256 push = tradeRatio * DIR_IMPACT_MULT;
             if (push > WAD / 4) push = WAD / 4;
@@ -157,9 +153,11 @@ contract Strategy is AMMStrategyBase {
         uint256 flowSize = wmul(lambdaHat, sizeHat);
         uint256 fBase = BASE_FEE + wmul(SIGMA_COEF, sigmaHat) + wmul(LAMBDA_COEF, lambdaHat) + wmul(FLOW_SIZE_COEF, flowSize);
 
-        uint256 toxActAdd = _toxActAdd(toxSignal, actEma, lambdaHat, sizeHat);
-        toxActAdd = _clampStepChange(prevToxActAdd, toxActAdd, TOX_ACT_STEP_CAP);
-        uint256 fMid = fBase + toxActAdd;
+        uint256 toxExcess = toxSignal > TOX_QUAD_KNEE ? toxSignal - TOX_QUAD_KNEE : 0;
+        uint256 fMid = fBase
+            + wmul(TOX_COEF, toxSignal)
+            + wmul(TOX_QUAD_COEF, wmul(toxExcess, toxExcess))
+            + wmul(ACT_COEF, actEma);
 
         uint256 dirDev;
         bool sellPressure;
@@ -183,7 +181,7 @@ contract Strategy is AMMStrategyBase {
             bidFee = fMid > skew ? fMid - skew : 0;
         }
 
-        if (STALE_DIR_COEF > 0) {
+        if (STALE_DIR_COEF > 0 && stepTradeCount < STALE_OVERLAY_MAX_TRADES) {
             uint256 staleShift = wmul(STALE_DIR_COEF, toxSignal);
             if (spot >= pHat) {
                 bidFee = bidFee + staleShift;
@@ -228,31 +226,6 @@ contract Strategy is AMMStrategyBase {
         return TAIL_KNEE + wmul(fee - TAIL_KNEE, slope);
     }
 
-    function _toxActAdd(uint256 toxSignal, uint256 actSignal, uint256 lambdaSignal, uint256 sizeSignal)
-        internal
-        pure
-        returns (uint256)
-    {
-        uint256 toxExcess = toxSignal > TOX_QUAD_KNEE ? toxSignal - TOX_QUAD_KNEE : 0;
-        uint256 actAdd = 0;
-        if (lambdaSignal >= ACT_GATE_LAMBDA && sizeSignal >= ACT_GATE_SIZE) {
-            actAdd = wmul(ACT_COEF, actSignal);
-        }
-        return wmul(TOX_COEF, toxSignal) + wmul(TOX_QUAD_COEF, wmul(toxExcess, toxExcess)) + actAdd;
-    }
-
-    function _clampStepChange(uint256 prevValue, uint256 newValue, uint256 maxStep) internal pure returns (uint256) {
-        if (newValue > prevValue) {
-            uint256 up = newValue - prevValue;
-            if (up > maxStep) return prevValue + maxStep;
-            return newValue;
-        }
-
-        uint256 down = prevValue - newValue;
-        if (down > maxStep) return prevValue - maxStep;
-        return newValue;
-    }
-
     function _powWad(uint256 factor, uint256 exp) internal pure returns (uint256 result) {
         result = WAD;
         while (exp > 0) {
@@ -272,6 +245,6 @@ contract Strategy is AMMStrategyBase {
     }
 
     function getName() external pure override returns (string memory) {
-        return "toxicity_and_activity_mod_v220";
+        return "directional_skew_and_stale_protection_mod_v166";
     }
 }

@@ -1,0 +1,311 @@
+╔══════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                     CODEX ITERATION 6 - COMPLETE VISUAL SUMMARY                                    ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STRATEGIC OVERVIEW                                                                                   │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                      │
+│  Objective:   Tune toxicity and activity parameters in _champion_bandshield_ghost.sol              │
+│  Method:      Iterative parameter optimization with empirical validation                           │
+│  Scope:       3 formula changes, 6+ constant parameters                                            │
+│  Final:       +0.15 edge improvement (validated at 400 simulations)                                │
+│                                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE PROGRESSION & DISCOVERIES                                                                     │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                      │
+│  STAGE 1: EXPLORATION & SETUP (Phases 1-3)                                                        │
+│  ──────────────────────────────────────────                                                        │
+│   [1.1] Clarify approach              → Minimal surgical edits                                     │
+│   [2.1] Identify baseline             → _champion_bandshield_ghost.sol                             │
+│   [3.1] Find evaluation CLI           → amm-match located                                          │
+│                                                                                                      │
+│   Status: Ready for variant testing                                                                │
+│                                                                                                      │
+│  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  │ STAGE 2: FORMULA DESIGN & INITIAL TEST (Phases 4-6)                                           │
+│  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  │  [4.1] Design formula improvements   → Convex tox + sigma-tox interaction + flow scaling     │
+│  │  [5.1] Implement and clone          → Base formula + parameter variants prepared            │
+│  │  [6.1] Execute 80-sim screen        → Baseline + 5 variants tested                          │
+│  │  [6.2] ⚠️  FIRST PIVOT POINT ⚠️                                                              │
+│  │         Structural family underperformed baseline!                                            │
+│  │         Decision: Simplify to constant-only tuning                                            │
+│  │                                                                                                 │
+│  │  Status: Complexity didn't help → pivot to isolation strategy                                 │
+│  │                                                                                                 │
+│  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+│                                                                                                      │
+│  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  │ STAGE 3: OPERATIONAL FIX & VALIDATION (Phases 7-8)                                            │
+│  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  │  [7.1] Fix race condition           → Switched parallel → sequential execution               │
+│  │  [8.1] Run longer validation        → Tight constant sweep at higher confidence             │
+│  │  [8.2] ✓ CRITICAL VERIFICATION ✓                                                            │
+│  │         Confirmed simulator is deterministic at fixed simulation count                       │
+│  │         → Can now trust local search methods                                                 │
+│  │                                                                                                 │
+│  │  Status: Framework verified → ready for systematic search                                     │
+│  │                                                                                                 │
+│  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+│                                                                                                      │
+│  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  │ STAGE 4: SYSTEMATIC SEARCH & REFINEMENT (Phases 9-12)                                        │
+│  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  │  [9.1]  Extended 400-sim validation  → Single-parameter changes more durable              │
+│  │  [10.1] ⭐ KEY DISCOVERY ⭐                                                                   │
+│  │          Flow coefficient shows CONSISTENT UPWARD TREND                                      │
+│  │          → Monotonic improvement signal identified                                           │
+│  │                                                                                                 │
+│  │  [11.1] Lock flow parameter         → flow=6800 delivers +0.08–0.09 baseline gain         │
+│  │          Grid search in toxicity    → Optimize tox_linear and tox_quadratic               │
+│  │                                                                                                 │
+│  │  [12.1] Compare top configurations  → Rank best results                                     │
+│  │  [12.2] Final local grid search     → Refine around flow=6800                              │
+│  │                                                                                                 │
+│  │  ✓✓ FINAL RESULT ✓✓                                                                          │
+│  │    flow=6800, tox=180, quad=19000                                                            │
+│  │    Confirmed gain: +0.15 at 400 simulations                                                  │
+│  │                                                                                                 │
+│  │  Status: Optimal configuration discovered and validated                                       │
+│  │                                                                                                 │
+│  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+│                                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ KEY ADAPTIVE PIVOTS & LEARNING MOMENTS                                                              │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                      │
+│  PIVOT 1: Structural Complexity Failure                                                            │
+│  ────────────────────────────────────                                                             │
+│    Problem:     "Convex tox term + sigma-tox interaction + flow scaling" underperformed         │
+│    Insight:     Multiple simultaneous changes obscure which helps/hurts                          │
+│    Action:      Simplified to constant-only tuning                                               │
+│    Outcome:     Cleaner signal in isolated parameters                                            │
+│                                                                                                      │
+│  PIVOT 2: Validation Escalation                                                                   │
+│  ──────────────────────────────                                                                  │
+│    Problem:     80-sim results were marginal, within noise floor                                 │
+│    Insight:     Need higher sample count to distinguish signal from variance                     │
+│    Action:      Escalated to 400-sim confirmation runs                                           │
+│    Outcome:     Durable signals emerged at higher fidelity                                       │
+│                                                                                                      │
+│  PIVOT 3: Framework Verification                                                                  │
+│  ──────────────────────────────────                                                              │
+│    Problem:     Can I trust my optimization strategy?                                            │
+│    Insight:     Must verify simulator determinism before relying on local search                 │
+│    Action:      Explicitly tested simulator at fixed simulation count                            │
+│    Outcome:     Confirmed determinism → enabled confident local search                          │
+│                                                                                                      │
+│  PIVOT 4: Single-Parameter Isolation                                                              │
+│  ────────────────────────────────────                                                            │
+│    Problem:     Multi-parameter search yielding weak signals                                     │
+│    Insight:     Complex combinations obscure individual parameter effects                        │
+│    Action:      Tested single parameters independently                                           │
+│    Outcome:     Flow coefficient emerged as strong, monotonic signal                             │
+│                                                                                                      │
+│  PIVOT 5: Hierarchical Conditioning                                                               │
+│  ──────────────────────────────────                                                              │
+│    Problem:     3D parameter space too large for efficient optimization                          │
+│    Insight:     Flow has strongest signal; can lock it and optimize others                      │
+│    Action:      Reduced to 2D search in toxicity space | flow=6800                              │
+│    Outcome:     Denser search in reduced parameter space, higher precision                       │
+│                                                                                                      │
+│  PIVOT 6: Local vs. Global Search Trade-off                                                       │
+│  ─────────────────────────────────────────────                                                   │
+│    Problem:     Continue broad exploration or refine discovered optimum?                         │
+│    Insight:     Once strong optimum found, local refinement more efficient                       │
+│    Action:      Switched from broad sweeps to local grid around discovered point                │
+│    Outcome:     Final +0.15 gain through targeted local refinement                               │
+│                                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ VALIDATION PROGRESSION                                                                              │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                      │
+│   Level 1: Lightweight Screening (80 simulations)                                                  │
+│   ────────────────────────────────────────────────                                                │
+│   When:  Early phase, explore many variants                                                      │
+│   Why:   Rapid identification with low computational cost                                        │
+│   Result: Identified promising candidates                                                        │
+│                                                                                                      │
+│                       ↓ Marginal results within noise ↓                                          │
+│                                                                                                      │
+│   Level 2: Medium-Fidelity Validation (200 simulations)                                           │
+│   ───────────────────────────────────────────────────                                            │
+│   When:  Intermediate phase, test top candidates                                                │
+│   Why:   Balance between accuracy and computational cost                                         │
+│   Result: Some signal emerging                                                                   │
+│                                                                                                      │
+│                  ↓ Need higher confidence for final decision ↓                                    │
+│                                                                                                      │
+│   Level 3: High-Fidelity Confirmation (400 simulations)                                          │
+│   ────────────────────────────────────────────────────                                           │
+│   When:  Late phase, validate final configuration                                                │
+│   Why:   Robust signals at 5x evaluation scale                                                   │
+│   Result: +0.15 edge gain confirmed                                                              │
+│                                                                                                      │
+│   Scaling Strategy: 5x increase in computational investment yields confidence in final result    │
+│                                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ PARAMETER DECOMPOSITION & OPTIMIZATION STRATEGY                                                     │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                      │
+│   INITIAL PROBLEM SPACE (Phases 4-6)                                                              │
+│   ────────────────────────────────                                                                │
+│                                                                                                      │
+│   [Convex Tox] [Sigma Interaction] [Flow Scaling] + [6+ constants]                               │
+│                                                                                                      │
+│           3 formula components × multiple parameters = HIGH DIMENSIONAL                          │
+│           Result: Structural changes underperformed                                              │
+│                                                                                                      │
+│                            ↓ Simplify ↓                                                           │
+│                                                                                                      │
+│   REDUCED PROBLEM SPACE (Phases 7-9)                                                             │
+│   ────────────────────────────────────                                                           │
+│                                                                                                      │
+│   [Flow Coefficient] [Tox Linear] [Tox Quadratic]                                                │
+│                                                                                                      │
+│           3 key parameters tested independently                                                   │
+│           Result: Flow emerges as strongest signal                                                │
+│                                                                                                      │
+│                       ↓ Hierarchical Conditioning ↓                                              │
+│                                                                                                      │
+│   OPTIMIZED SEARCH SPACE (Phases 10-12)                                                          │
+│   ─────────────────────────────────────                                                          │
+│                                                                                                      │
+│                    [Flow = 6800] (LOCKED)                                                        │
+│                           │                                                                      │
+│                           ├─ [Tox Linear] ──────┐                                               │
+│                           │                      ├─ 2D GRID SEARCH                              │
+│                           ├─ [Tox Quadratic] ───┘                                               │
+│                                                                                                      │
+│           2D parameter space with flow locked                                                     │
+│           Result: Identified optimal: tox=180, quad=19000                                        │
+│                                                                                                      │
+│   DECOMPOSITION BENEFIT: Reduced search complexity from ~∞ to manageable 2D grid                │
+│                                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ FINAL CONFIGURATION & PERFORMANCE                                                                   │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                      │
+│   BASELINE                           OPTIMIZED                                                     │
+│   ────────────────────────────────   ──────────────────────────────────                          │
+│   _champion_bandshield_ghost.sol     Modified version with tuned parameters                      │
+│                                                                                                      │
+│   Edge: [baseline level]              Edge: [baseline + 0.15]                                     │
+│                                                                                                      │
+│                                      Parameters:                                                   │
+│                                      • Flow Coefficient:         6800                              │
+│                                      • Toxicity Linear:           180                              │
+│                                      • Toxicity Quadratic:      19000                              │
+│                                                                                                      │
+│   Validation: Baseline measure        Validation: 400-simulation runs (robust)                     │
+│                                                                                                      │
+│   ┌─────────────────────────────────────────────────────────────────────────────────────────────┐ │
+│   │ IMPROVEMENT BREAKDOWN:                                                                      │ │
+│   │ • Flow coefficient adjustment:        +0.08–0.09 edge gain                                  │ │
+│   │ • Toxicity parameter refinement:      +0.06–0.07 additional gain                            │ │
+│   │ • Total confirmed improvement:        +0.15 (at 400 simulations)                            │ │
+│   └─────────────────────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ EVIDENCE OF SOPHISTICATED REASONING                                                                 │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                      │
+│  LEVEL 1: HYPOTHESIS FORMATION                                                                    │
+│  ─────────────────────────────────                                                               │
+│  ✓ Pre-planned specific formula improvements (convex tox, sigma interaction, flow scaling)       │
+│  ✓ Explicit reasoning about why each component would help                                       │
+│                                                                                                      │
+│  LEVEL 2: EMPIRICAL TESTING                                                                      │
+│  ────────────────────────────                                                                   │
+│  ✓ Systematic baseline + variant comparison                                                     │
+│  ✓ Proper controls (isolated changes)                                                           │
+│  ✓ Multiple evaluation runs for consistency                                                     │
+│                                                                                                      │
+│  LEVEL 3: FAILURE ANALYSIS                                                                       │
+│  ────────────────────────────                                                                   │
+│  ✓ When structural changes failed, recognized the failure                                       │
+│  ✓ Analyzed why complexity didn't help (signal obscuration)                                     │
+│  ✓ Adapted strategy accordingly (simplification)                                                │
+│                                                                                                      │
+│  LEVEL 4: STATISTICAL REASONING                                                                  │
+│  ──────────────────────────────                                                                 │
+│  ✓ Recognized margin al results at 80 sims were within noise                                     │
+│  ✓ Escalated sample size to increase signal-to-noise ratio                                      │
+│  ✓ Used statistics to inform computational investment                                           │
+│                                                                                                      │
+│  LEVEL 5: FRAMEWORK VALIDATION                                                                   │
+│  ────────────────────────────────                                                               │
+│  ✓ Before relying on local search, verified simulator determinism                               │
+│  ✓ Explicit testing of framework properties                                                     │
+│  ✓ Only proceeded when assumption was confirmed                                                 │
+│                                                                                                      │
+│  LEVEL 6: PROBLEM DECOMPOSITION                                                                  │
+│  ────────────────────────────────                                                               │
+│  ✓ Recognized 3D+ problem too complex for joint optimization                                    │
+│  ✓ Decomposed into single-parameter effects                                                     │
+│  ✓ Hierarchically reduced to 2D after identifying strongest signal                              │
+│                                                                                                      │
+│  LEVEL 7: ADAPTIVE SEARCH STRATEGY                                                               │
+│  ──────────────────────────────────                                                             │
+│  ✓ Used broad exploration to identify regime                                                    │
+│  ✓ Switched to local search once discovered strong signal                                       │
+│  ✓ Different strategies for exploration vs. exploitation phases                                 │
+│                                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ CONCLUSION: LEARNING PROGRESSION                                                                    │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                      │
+│  Initial State:        Complex hypothesis, high-dimensional parameter space                      │
+│                        ↓                                                                          │
+│  First Feedback:       Complexity didn't help; failure drove simplification                      │
+│                        ↓                                                                          │
+│  Refined Hypothesis:   Constant tuning on simpler basis                                          │
+│                        ↓                                                                          │
+│  Framework Check:      Verified determinism before relying on methods                            │
+│                        ↓                                                                          │
+│  Signal Discovery:     Flow coefficient shows consistent positive trend                          │
+│                        ↓                                                                          │
+│  Hierarchical Lock:    Fixed flow parameter, optimized rest                                      │
+│                        ↓                                                                          │
+│  Final Validation:     Local refinement around discovered optimum                                │
+│                        ↓                                                                          │
+│  Final Achievement:    +0.15 edge improvement (validated)                                        │
+│                                                                                                      │
+│  Key Insight: Learning was ITERATIVE, EMPIRICAL, and ADAPTIVE                                    │
+│               Not brute-force search, but intelligent problem decomposition                      │
+│                                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║  ANALYSIS COMPLETE                                                                                   ║
+║                                                                                                      ║
+║  Documents Created:                                                                                ║
+║  • CODEX_ITERATION_6_ANALYSIS.md          (340 lines) - Phase-by-phase breakdown                 ║
+║  • CODEX_ITERATION_6_LEARNING_PATTERNS.md  (317 lines) - Learning mechanism analysis             ║
+║  • CODEX_ITERATION_6_README.md             (Index and overview)                                  ║
+║  • CODEX_ITERATION_6_VISUAL_SUMMARY.txt    (This file)                                           ║
+║                                                                                                      ║
+║  Location: /Users/rbgross/amm-challenge/                                                         ║
+║                                                                                                      ║
+║  Total Items Analyzed: 90 completed items from JSONL source                                       ║
+║  Strategic Phases Identified: 12 major phases                                                      ║
+║  Adaptive Pivots Documented: 6 major strategy changes                                             ║
+║  Learning Patterns Analyzed: 10 distinct reasoning patterns                                       ║
+║                                                                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════════════╝

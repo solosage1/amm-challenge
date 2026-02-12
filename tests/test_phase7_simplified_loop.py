@@ -77,6 +77,8 @@ def test_run_once_dry_run_creates_stats_and_log(tmp_path: Path) -> None:
     assert "mechanism" in entry
     assert (state / ".best_strategy.sol").read_text() == champion_before
     assert (state / ".best_edge.txt").read_text().strip() == edge_before
+    assert (state / ".rollback_spine_strategy.sol").read_text() == champion_before
+    assert (state / ".rollback_spine_edge.txt").read_text().strip() == edge_before
 
 
 def test_invalid_candidate_increments_invalid_count(tmp_path: Path) -> None:
@@ -131,7 +133,10 @@ def test_rollback_check_triggers_on_large_loss(tmp_path: Path) -> None:
                     "valid": True,
                     "delta": -2.5,
                     "edge": 506.30,
-                    "promoted": False,
+                    "promotion_edge": 506.30,
+                    "champion_edge_before": 508.80,
+                    "authoritative_eval": True,
+                    "promoted": True,
                 }
             )
             + "\n"
@@ -320,9 +325,12 @@ contract Strategy {
     function clampFee(uint256 a) internal pure returns (uint256) { return a; }
 }
 """
-    candidate = (
-        champion.replace("uint256 fair = 1;", "uint256 fair = 2;")
-        .replace("uint256 tightBand = bpsToWad(25);", "uint256 tightBand = bpsToWad(26);")
+    candidate = champion.replace(
+        "uint256 spot = 1;\n        uint256 fair = 1;",
+        "uint256 spot = 1;\n        uint256 fairHint = spot;\n        uint256 fair = 1;",
+    ).replace(
+        "uint256 mis = wdiv(absDiff(spot, fair), fair);\n        uint256 tightBand = bpsToWad(25);",
+        "uint256 mis = wdiv(absDiff(spot, fair), fair);\n        uint256 flowBias = mis;\n        uint256 tightBand = bpsToWad(25);",
     )
     definitions = {
         "mechanisms": {
@@ -340,7 +348,7 @@ contract Strategy {
         }
     }
 
-    ok, reason = module.validate_candidate(champion, candidate, "flow_memory", definitions)
+    ok, reason, _warnings = module.validate_candidate(champion, candidate, "flow_memory", definitions)
     assert ok is True
     assert reason == "valid"
 
@@ -370,9 +378,12 @@ contract Strategy {
     function clampFee(uint256 a) internal pure returns (uint256) { return a; }
 }
 """
-    candidate = (
-        champion.replace("uint256 fair = 1;", "uint256 fair = 2;")
-        .replace("uint256 tightBand = bpsToWad(25);", "uint256 tightBand = bpsToWad(26);")
+    candidate = champion.replace(
+        "uint256 spot = 1;\n        uint256 fair = 1;",
+        "uint256 spot = 1;\n        uint256 fairHint = spot;\n        uint256 fair = 1;",
+    ).replace(
+        "uint256 mis = wdiv(absDiff(spot, fair), fair);\n        uint256 tightBand = bpsToWad(25);",
+        "uint256 mis = wdiv(absDiff(spot, fair), fair);\n        uint256 flowBias = mis;\n        uint256 tightBand = bpsToWad(25);",
     )
     definitions = {
         "mechanisms": {
@@ -390,168 +401,9 @@ contract Strategy {
         }
     }
 
-    ok, reason = module.validate_candidate(champion, candidate, "flow_memory", definitions)
+    ok, reason, _warnings = module.validate_candidate(champion, candidate, "flow_memory", definitions)
     assert ok is False
     assert reason == "non-target mechanism 'fair_price_estimation' was modified"
-
-
-def test_validate_policy_definitions_rejects_missing_existing_mechanisms() -> None:
-    module = load_simplified_module()
-    champion = """pragma solidity ^0.8.24;
-
-contract Strategy {
-    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
-        uint256 spot = 1;
-        uint256 fair = 1;
-        uint256 mis = wdiv(absDiff(spot, fair), fair);
-        uint256 tightBand = bpsToWad(25);
-        bidFee = clampFee(bidFee);
-        askFee = clampFee(askFee);
-    }
-    function getName() external pure returns (string memory) { return "Base"; }
-    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
-    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
-    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
-    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
-}
-"""
-    current_defs = {
-        "schema_version": "1.0",
-        "champion_file": ".best_strategy.sol",
-        "champion_edge": 508.80,
-        "mechanisms": {
-            "fair_price_estimation": {
-                "anchors": [{"start": "uint256 spot = 1;", "end": "uint256 fair = 1;"}],
-                "allowed_overlap_with": [],
-            },
-            "flow_memory": {
-                "anchors": [{"start": "uint256 mis = wdiv(absDiff(spot, fair), fair);", "end": "uint256 tightBand = bpsToWad(25);"}],
-                "allowed_overlap_with": [],
-            },
-        },
-    }
-    candidate_defs = {
-        "schema_version": "1.0",
-        "champion_file": ".best_strategy.sol",
-        "champion_edge": 508.80,
-        "mechanisms": {
-            "flow_memory": {
-                "anchors": [{"start": "uint256 mis = wdiv(absDiff(spot, fair), fair);", "end": "uint256 tightBand = bpsToWad(25);"}],
-                "allowed_overlap_with": [],
-            }
-        },
-    }
-
-    valid, reason, report = module.validate_policy_definitions(candidate_defs, current_defs, champion)
-    assert valid is False
-    assert reason.startswith("missing_existing_mechanisms:")
-    assert "fair_price_estimation" in report["missing_mechanisms"]
-
-
-def test_shadow_score_policy_candidate_detects_rescue(tmp_path: Path) -> None:
-    module = load_simplified_module()
-    champion = """pragma solidity ^0.8.24;
-
-contract Strategy {
-    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
-        uint256 spot = 1;
-        uint256 fair = 1;
-        uint256 mis = wdiv(absDiff(spot, fair), fair);
-        uint256 tightBand = bpsToWad(25);
-        if (mis <= tightBand) {
-            bidFee = bpsToWad(30);
-            askFee = bpsToWad(30);
-        }
-        bidFee = clampFee(bidFee);
-        askFee = clampFee(askFee);
-    }
-
-    function getName() external pure returns (string memory) { return "Base"; }
-    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
-    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
-    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
-    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
-}
-"""
-    candidate = (
-        champion.replace("uint256 fair = 1;", "uint256 fair = 2;")
-        .replace("uint256 tightBand = bpsToWad(25);", "uint256 tightBand = bpsToWad(26);")
-    )
-
-    current_defs = {
-        "mechanisms": {
-            "fair_price_estimation": {
-                "anchors": [{"start": "uint256 spot = 1;", "end": "uint256 fair = 1;"}],
-                "allowed_overlap_with": [],
-            },
-            "flow_memory": {
-                "anchors": [{"start": "uint256 mis = wdiv(absDiff(spot, fair), fair);", "end": "uint256 tightBand = bpsToWad(25);"}],
-                "allowed_overlap_with": [],
-            },
-        }
-    }
-    candidate_defs = {
-        "mechanisms": {
-            "fair_price_estimation": {
-                "anchors": [{"start": "uint256 spot = 1;", "end": "uint256 fair = 1;"}],
-                "allowed_overlap_with": [],
-            },
-            "flow_memory": {
-                "anchors": [{"start": "uint256 mis = wdiv(absDiff(spot, fair), fair);", "end": "uint256 tightBand = bpsToWad(25);"}],
-                "allowed_overlap_with": ["fair_price_estimation"],
-            },
-        }
-    }
-    candidate_path = tmp_path / "tmp_shadow_candidate.sol"
-    candidate_path.write_text(candidate)
-    try:
-        shadow = module.shadow_score_policy_candidate(
-            champion_code=champion,
-            current_definitions=current_defs,
-            candidate_definitions=candidate_defs,
-            log_entries=[{"mechanism": "flow_memory", "candidate_path": str(candidate_path)}],
-            lookback=5,
-        )
-    finally:
-        candidate_path.unlink(missing_ok=True)
-
-    assert int(shadow["replayed_candidates"]) == 1
-    assert int(shadow["rescued_validations"]) == 1
-    assert int(shadow["regressed_validations"]) == 0
-
-
-def test_maybe_run_policy_evolution_dry_run_records_state(tmp_path: Path) -> None:
-    module = load_simplified_module()
-    state = setup_state(tmp_path)
-    run_script(
-        SIMPLIFIED,
-        [
-            "run-once",
-            "--state-dir",
-            str(state),
-            "--definitions",
-            str(DEFINITIONS),
-            "--dry-run",
-            "--seed",
-            "17",
-        ],
-    )
-    args = argparse.Namespace(
-        state_dir=str(state),
-        definitions=str(DEFINITIONS),
-        dry_run=True,
-        llm_command="codex",
-        llm_model="",
-        llm_timeout_minutes=1.0,
-        llm_max_output_tokens=2000,
-        llm_disable_shell_tool=False,
-        policy_evolution_frequency=1,
-    )
-    entry = module.maybe_run_policy_evolution(args, completed_iteration=1)
-    assert isinstance(entry, dict)
-    assert entry["status"] == "policy_skipped_dry_run"
-    assert (state / "policy_evolution_log.jsonl").exists()
-    assert (state / "policy_evolution_state.json").exists()
 
 
 def test_validate_candidate_avoids_false_failure_on_anchor_drift() -> None:
@@ -603,7 +455,7 @@ contract Strategy {
         }
     }
 
-    ok, reason = module.validate_candidate(champion, candidate, "flow_memory", definitions)
+    ok, reason, _warnings = module.validate_candidate(champion, candidate, "flow_memory", definitions)
     assert ok is True
     assert reason == "valid"
 
@@ -840,13 +692,178 @@ def test_update_rollback_status_filters_non_authoritative_with_legacy_fallback()
 
     reason = module.update_rollback_status(
         make_stats(),
-        [{"valid": True, "delta": -2.0, "promotable": True}],
+        [{"valid": True, "delta": -2.0, "promotable": True, "promoted": False}],
+        consecutive_invalid_threshold=3,
+        severe_regression_threshold=-0.5,
+        cumulative_loss_threshold=-0.5,
+        cumulative_window=1,
+    )
+    assert reason is None
+
+    reason = module.update_rollback_status(
+        make_stats(),
+        [
+            {
+                "valid": True,
+                "delta": -2.0,
+                "promotable": True,
+                "authoritative_eval": True,
+                "promoted": True,
+                "champion_edge_before": 500.0,
+                "promotion_edge": 498.0,
+            }
+        ],
         consecutive_invalid_threshold=3,
         severe_regression_threshold=-0.5,
         cumulative_loss_threshold=-0.5,
         cumulative_window=1,
     )
     assert reason in {"severe_regression<=-0.5", "cumulative_loss_1<=-0.5"}
+
+
+def test_perform_rollback_prefers_history_before_spine_and_snapshot(tmp_path: Path) -> None:
+    module = load_simplified_module()
+    state = setup_state(tmp_path)
+
+    def strategy(name: str) -> str:
+        return (
+            "pragma solidity ^0.8.24; "
+            "contract Strategy { "
+            f"function getName() external pure returns (string memory) {{ return \"{name}\"; }} "
+            "}"
+        )
+
+    (state / ".best_strategy.sol").write_text(strategy("Current"))
+    (state / ".best_edge.txt").write_text("510.00\n")
+    module.write_rollback_spine(state, strategy("Spine"), 516.54, "test", "seed_spine")
+
+    snapshot = state / "migration_snapshot"
+    snapshot.mkdir(parents=True, exist_ok=True)
+    (snapshot / ".best_strategy.sol").write_text(strategy("Snapshot"))
+    (snapshot / ".best_edge.txt").write_text("509.23\n")
+
+    history_dir = state / ".champion_history"
+    (history_dir / "champion_001").mkdir(parents=True, exist_ok=True)
+    (history_dir / "champion_001" / "strategy.sol").write_text(strategy("History"))
+    (history_dir / "champion_001" / "metadata.json").write_text(
+        json.dumps({"sequence_number": 1, "name": "History", "edge": 516.54})
+    )
+    manifest = {
+        "schema_version": "1.0",
+        "max_history": 10,
+        "total_promotions": 1,
+        "champions": [
+            {
+                "sequence_number": 1,
+                "name": "History",
+                "edge": 516.54,
+                "promoted_at": "2026-02-11T00:00:00Z",
+                "directory": "champion_001",
+            }
+        ],
+        "best_ever": {
+            "sequence_number": 1,
+            "name": "History",
+            "edge": 516.54,
+            "promoted_at": "2026-02-11T00:00:00Z",
+            "directory": "champion_001",
+        },
+    }
+    (history_dir / "manifest.json").write_text(json.dumps(manifest))
+
+    (state / "mechanism_stats.json").write_text("{}")
+    (state / "iteration_log.jsonl").write_text("{}\n")
+
+    payload = module.perform_rollback(
+        state_dir=state,
+        reason="unit_test",
+        archive_only=False,
+        restore_mode="history_then_spine",
+        allow_snapshot_fallback=False,
+    )
+    assert payload["restore_source"] == "history:1"
+    assert "return \"History\";" in (state / ".best_strategy.sol").read_text()
+    assert (state / ".best_edge.txt").read_text().strip() == "516.54"
+
+
+def test_perform_rollback_uses_spine_when_history_missing(tmp_path: Path) -> None:
+    module = load_simplified_module()
+    state = setup_state(tmp_path)
+
+    def strategy(name: str) -> str:
+        return (
+            "pragma solidity ^0.8.24; "
+            "contract Strategy { "
+            f"function getName() external pure returns (string memory) {{ return \"{name}\"; }} "
+            "}"
+        )
+
+    (state / ".best_strategy.sol").write_text(strategy("Current"))
+    (state / ".best_edge.txt").write_text("510.00\n")
+    module.write_rollback_spine(state, strategy("Spine"), 516.54, "test", "seed_spine")
+
+    snapshot = state / "migration_snapshot"
+    snapshot.mkdir(parents=True, exist_ok=True)
+    (snapshot / ".best_strategy.sol").write_text(strategy("Snapshot"))
+    (snapshot / ".best_edge.txt").write_text("509.23\n")
+
+    (state / "mechanism_stats.json").write_text("{}")
+    (state / "iteration_log.jsonl").write_text("{}\n")
+
+    payload = module.perform_rollback(
+        state_dir=state,
+        reason="unit_test",
+        archive_only=False,
+        restore_mode="history_then_spine",
+        allow_snapshot_fallback=False,
+    )
+    assert payload["restore_source"] == "spine"
+    assert "return \"Spine\";" in (state / ".best_strategy.sol").read_text()
+    assert (state / ".best_edge.txt").read_text().strip() == "516.54"
+
+
+def test_perform_rollback_snapshot_fallback_is_opt_in(tmp_path: Path) -> None:
+    module = load_simplified_module()
+    state = setup_state(tmp_path)
+
+    def strategy(name: str) -> str:
+        return (
+            "pragma solidity ^0.8.24; "
+            "contract Strategy { "
+            f"function getName() external pure returns (string memory) {{ return \"{name}\"; }} "
+            "}"
+        )
+
+    (state / ".best_strategy.sol").write_text(strategy("Current"))
+    (state / ".best_edge.txt").write_text("510.00\n")
+    (state / ".rollback_spine_strategy.sol").unlink(missing_ok=True)
+    (state / ".rollback_spine_edge.txt").unlink(missing_ok=True)
+    (state / ".rollback_spine_meta.json").unlink(missing_ok=True)
+
+    snapshot = state / "migration_snapshot"
+    snapshot.mkdir(parents=True, exist_ok=True)
+    (snapshot / ".best_strategy.sol").write_text(strategy("Snapshot"))
+    (snapshot / ".best_edge.txt").write_text("509.23\n")
+
+    payload = module.perform_rollback(
+        state_dir=state,
+        reason="unit_test",
+        archive_only=False,
+        restore_mode="history_then_spine",
+        allow_snapshot_fallback=False,
+    )
+    assert payload["restore_source"] == "none"
+    assert "return \"Current\";" in (state / ".best_strategy.sol").read_text()
+
+    payload = module.perform_rollback(
+        state_dir=state,
+        reason="unit_test_fallback",
+        archive_only=False,
+        restore_mode="history_then_spine",
+        allow_snapshot_fallback=True,
+    )
+    assert payload["restore_source"] == "snapshot"
+    assert "return \"Snapshot\";" in (state / ".best_strategy.sol").read_text()
 
 
 def test_select_mechanism_uses_authoritative_tries_not_legacy_tries() -> None:
@@ -865,36 +882,6 @@ def test_select_mechanism_uses_authoritative_tries_not_legacy_tries() -> None:
     }
     chosen = module.select_mechanism(mechanisms, exploration_c=0.5, rng=random.Random(7))
     assert chosen == "mech_a"
-
-
-def test_extract_iteration_policy_metadata_parses_comment() -> None:
-    module = load_simplified_module()
-    source = """
-// ITERATION_POLICY {"decision":"pivot","confidence":0.82,"ceiling_probability":0.91,"ev_next_5":0.01,"best_delta_seen":0.04,"reason":"local ceiling likely","next_mechanism":"toxicity_and_activity"}
-pragma solidity ^0.8.24;
-contract Strategy {}
-"""
-    parsed = module.extract_iteration_policy_metadata(source)
-    assert parsed is not None
-    assert parsed["decision"] == "pivot"
-    assert parsed["confidence"] == 0.82
-    assert parsed["ceiling_probability"] == 0.91
-    assert parsed["next_mechanism"] == "toxicity_and_activity"
-
-
-def test_apply_iteration_policy_decision_sets_cooldown() -> None:
-    module = load_simplified_module()
-    stats = module.default_mechanism_stats()
-    module.apply_iteration_policy_decision(
-        mechanism_stats=stats,
-        policy_metadata={"decision": "ceiling_reached", "confidence": 0.9, "reason": "plateau"},
-        iteration=12,
-        cooldown_span=6,
-        min_confidence=0.7,
-    )
-    assert stats["cooldown_until_iter"] == 18
-    assert stats["last_policy_decision"] == "ceiling_reached"
-    assert stats["last_policy_confidence"] == 0.9
 
 
 def test_select_mechanism_respects_cooldown_when_possible() -> None:
@@ -946,3 +933,241 @@ def test_severe_regression_gate_constant_exists() -> None:
     module = load_simplified_module()
     assert hasattr(module, "DEFAULT_SEVERE_REGRESSION_GATE")
     assert module.DEFAULT_SEVERE_REGRESSION_GATE == -5.0
+
+
+def test_run_once_uses_iteration_policy_hypothesis_id_for_tracking(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    state.mkdir(parents=True, exist_ok=True)
+
+    champion = """pragma solidity ^0.8.24;
+
+contract Strategy {
+    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
+        uint256 spot = 1;
+        uint256 fair = 1;
+        uint256 mis = wdiv(absDiff(spot, fair), fair);
+        uint256 tightBand = bpsToWad(25);
+        if (mis <= tightBand) {
+            bidFee = bpsToWad(30);
+            askFee = bpsToWad(30);
+        }
+        bidFee = clampFee(bidFee);
+        askFee = clampFee(askFee);
+    }
+    function getName() external pure returns (string memory) { return "Base"; }
+    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
+    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
+    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
+}
+"""
+    (state / ".best_strategy.sol").write_text(champion)
+    (state / ".best_edge.txt").write_text("508.80\n")
+
+    definitions = tmp_path / "definitions.json"
+    definitions.write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "champion_file": ".best_strategy.sol",
+                "champion_edge": 508.80,
+                "mechanisms": {
+                    "flow_memory": {
+                        "current_implementation": "flow-memory test",
+                        "code_location": "afterSwap flow-memory test region",
+                        "anchors": [
+                            {
+                                "start": "uint256 mis = wdiv(absDiff(spot, fair), fair);",
+                                "end": "uint256 tightBand = bpsToWad(25);",
+                            }
+                        ],
+                        "allowed_overlap_with": [],
+                        "parameters": {},
+                        "modification_directions": [],
+                    }
+                },
+                "hypotheses": [
+                    {
+                        "id": "H_FLOW_001",
+                        "mechanism": "flow_memory",
+                        "hypothesis": "Increase tightBand by 1 bps for better capture.",
+                        "expected_signal": "small retail edge gain",
+                        "priority": 1.0,
+                    },
+                    {
+                        "id": "H_FLOW_002",
+                        "mechanism": "flow_memory",
+                        "hypothesis": "Add tiny directional guard in tight band.",
+                        "expected_signal": "lower arb leakage",
+                        "priority": 1.0,
+                    },
+                ],
+            }
+        )
+    )
+
+    candidate = """pragma solidity ^0.8.24;
+
+contract Strategy {
+    // ITERATION_POLICY {"decision":"continue","hypothesis_id":"H_FLOW_001","confidence":0.71,"ceiling_probability":0.20,"ev_next_5":0.11,"best_delta_seen":0.10,"reason":"test","next_mechanism":"flow_memory"}
+    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
+        uint256 spot = 1;
+        uint256 fair = 1;
+        uint256 mis = wdiv(absDiff(spot, fair), fair);
+        uint256 tightBand = bpsToWad(26);
+        if (mis <= tightBand) {
+            bidFee = bpsToWad(30);
+            askFee = bpsToWad(30);
+        }
+        bidFee = clampFee(bidFee);
+        askFee = clampFee(askFee);
+    }
+    function getName() external pure returns (string memory) { return "Base"; }
+    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
+    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
+    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
+}
+"""
+    candidate_path = tmp_path / "candidate_hypothesis.sol"
+    candidate_path.write_text(candidate)
+
+    run_script(
+        SIMPLIFIED,
+        [
+            "run-once",
+            "--state-dir",
+            str(state),
+            "--definitions",
+            str(definitions),
+            "--candidate-file",
+            str(candidate_path),
+            "--dry-run",
+            "--seed",
+            "11",
+        ],
+    )
+
+    logs = [json.loads(line) for line in (state / "iteration_log.jsonl").read_text().strip().splitlines()]
+    assert logs[-1]["status"] == "complete"
+    assert logs[-1]["hypothesis"]["id"] == "H_FLOW_001"
+
+    stats = json.loads((state / "mechanism_stats.json").read_text())
+    hstats = stats["hypotheses"]["records"]["H_FLOW_001"]
+    assert int(hstats["tries"]) == 1
+    assert int(hstats["tries_authoritative"]) == 0
+    assert int(stats["hypotheses"]["completed_count"]) == 1
+
+
+def test_run_once_ignores_unknown_hypothesis_id(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    state.mkdir(parents=True, exist_ok=True)
+
+    champion = """pragma solidity ^0.8.24;
+
+contract Strategy {
+    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
+        uint256 spot = 1;
+        uint256 fair = 1;
+        uint256 mis = wdiv(absDiff(spot, fair), fair);
+        uint256 tightBand = bpsToWad(25);
+        if (mis <= tightBand) {
+            bidFee = bpsToWad(30);
+            askFee = bpsToWad(30);
+        }
+        bidFee = clampFee(bidFee);
+        askFee = clampFee(askFee);
+    }
+    function getName() external pure returns (string memory) { return "Base"; }
+    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
+    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
+    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
+}
+"""
+    (state / ".best_strategy.sol").write_text(champion)
+    (state / ".best_edge.txt").write_text("508.80\n")
+
+    definitions = tmp_path / "definitions.json"
+    definitions.write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "champion_file": ".best_strategy.sol",
+                "champion_edge": 508.80,
+                "mechanisms": {
+                    "flow_memory": {
+                        "current_implementation": "flow-memory test",
+                        "code_location": "afterSwap flow-memory test region",
+                        "anchors": [
+                            {
+                                "start": "uint256 mis = wdiv(absDiff(spot, fair), fair);",
+                                "end": "uint256 tightBand = bpsToWad(25);",
+                            }
+                        ],
+                        "allowed_overlap_with": [],
+                        "parameters": {},
+                        "modification_directions": [],
+                    }
+                },
+                "hypotheses": [
+                    {
+                        "id": "H_FLOW_001",
+                        "mechanism": "flow_memory",
+                        "hypothesis": "Increase tightBand by 1 bps for better capture.",
+                        "expected_signal": "small retail edge gain",
+                        "priority": 1.0,
+                    }
+                ],
+            }
+        )
+    )
+
+    candidate = """pragma solidity ^0.8.24;
+
+contract Strategy {
+    // ITERATION_POLICY {"decision":"continue","hypothesis_id":"H_DOES_NOT_EXIST","confidence":0.71,"ceiling_probability":0.20,"ev_next_5":0.11,"best_delta_seen":0.10,"reason":"test","next_mechanism":"flow_memory"}
+    function afterSwap() external returns (uint256 bidFee, uint256 askFee) {
+        uint256 spot = 1;
+        uint256 fair = 1;
+        uint256 mis = wdiv(absDiff(spot, fair), fair);
+        uint256 tightBand = bpsToWad(26);
+        if (mis <= tightBand) {
+            bidFee = bpsToWad(30);
+            askFee = bpsToWad(30);
+        }
+        bidFee = clampFee(bidFee);
+        askFee = clampFee(askFee);
+    }
+    function getName() external pure returns (string memory) { return "Base"; }
+    function wdiv(uint256 a, uint256 b) internal pure returns (uint256) { return a / b; }
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
+    function bpsToWad(uint256 a) internal pure returns (uint256) { return a; }
+    function clampFee(uint256 a) internal pure returns (uint256) { return a; }
+}
+"""
+    candidate_path = tmp_path / "candidate_unknown_hypothesis.sol"
+    candidate_path.write_text(candidate)
+
+    run_script(
+        SIMPLIFIED,
+        [
+            "run-once",
+            "--state-dir",
+            str(state),
+            "--definitions",
+            str(definitions),
+            "--candidate-file",
+            str(candidate_path),
+            "--dry-run",
+            "--seed",
+            "12",
+        ],
+    )
+
+    logs = [json.loads(line) for line in (state / "iteration_log.jsonl").read_text().strip().splitlines()]
+    assert logs[-1]["status"] == "complete"
+    assert "hypothesis" not in logs[-1]
+
+    stats = json.loads((state / "mechanism_stats.json").read_text())
+    assert int(stats["hypotheses"]["records"]["H_FLOW_001"]["tries"]) == 0

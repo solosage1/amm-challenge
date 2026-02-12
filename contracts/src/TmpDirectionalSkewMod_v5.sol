@@ -1,20 +1,21 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 import {AMMStrategyBase} from "./AMMStrategyBase.sol";
 import {TradeInfo} from "./IAMMStrategy.sol";
 
 contract Strategy is AMMStrategyBase {
-    // ITERATION_POLICY {"decision":"continue","hypothesis_id":"H_TOX_ACT_010","confidence":0.68,"ceiling_probability":0.28,"ev_next_5":0.11,"best_delta_seen":0.15,"reason":"Pick highest eff_priority (0.962) with 20 steps_since_last to test per-trade tox/activity contribution clamp and reduce oscillation-driven routing loss.","next_mechanism":"toxicity_and_activity"}
-
+    // ITERATION_POLICY {"decision":"continue","confidence":0.76,"ceiling_probability":0.34,"ev_next_5":0.017,"best_delta_seen":0.011,"reason":"tox-gated skew and asymmetric stale defense should improve edge while limiting noisy overskew","next_mechanism":"directional_skew_and_stale_protection"}
+    // --- decay / update constants ---
     uint256 constant ELAPSED_CAP = 8;
-    uint256 constant SIGNAL_THRESHOLD = WAD / 700;
-    uint256 constant DIR_DECAY = 850000000000000000;
-    uint256 constant ACT_DECAY = 700000000000000000;
-    uint256 constant SIZE_DECAY = 600000000000000000;
-    uint256 constant TOX_DECAY = 900000000000000000;
-    uint256 constant SIGMA_DECAY = 650000000000000000;
-    uint256 constant LAMBDA_DECAY = 994000000000000000;
-    uint256 constant SIZE_BLEND_DECAY = 800000000000000000;
+    uint256 constant SIGNAL_THRESHOLD = WAD / 700; // ~20 bps of reserve
+    uint256 constant DIR_DECAY = 850000000000000000; // 0.80
+    uint256 constant ACT_DECAY = 700000000000000000; // 0.70
+    uint256 constant SIZE_DECAY = 600000000000000000; // 0.70
+    uint256 constant TOX_DECAY = 900000000000000000; // 0.80
+    uint256 constant SIGMA_DECAY = 650000000000000000; // 0.65
+    uint256 constant LAMBDA_DECAY = 994000000000000000; // 0.99
+    uint256 constant SIZE_BLEND_DECAY = 800000000000000000; // 0.65
     uint256 constant TOX_BLEND_DECAY = 100000000000000000;
     uint256 constant ACT_BLEND_DECAY = 993000000000000000;
     uint256 constant PHAT_ALPHA_ARB = 340000000000000000;
@@ -24,41 +25,54 @@ contract Strategy is AMMStrategyBase {
     uint256 constant ARB_MAX_RATIO = WAD / 360;
     uint256 constant SIGMA_RETAIL_DECAY = 999000000000000000;
 
-    uint256 constant RET_CAP = WAD / 10;
-    uint256 constant TOX_CAP = WAD / 5;
-    uint256 constant TRADE_RATIO_CAP = WAD / 5;
-    uint256 constant LAMBDA_CAP = 5 * WAD;
-    uint256 constant STEP_COUNT_CAP = 64;
+    // --- state caps ---
+    uint256 constant RET_CAP = WAD / 10; // 10%
+    uint256 constant TOX_CAP = WAD / 5; // 20%
+    uint256 constant TRADE_RATIO_CAP = WAD / 5; // 20%
+    uint256 constant LAMBDA_CAP = 5 * WAD; // max 5 trades/step estimate
+    uint256 constant STEP_COUNT_CAP = 64; // guardrail
 
+    // --- fee model constants ---
     uint256 constant BASE_FEE = 3 * BPS;
-    uint256 constant SIGMA_COEF = 200000000000000000;
+    uint256 constant SIGMA_COEF = 200000000000000000; // 0.20
     uint256 constant LAMBDA_COEF = 12 * BPS;
-    uint256 constant FLOW_SIZE_COEF = 6800 * BPS;
-    uint256 constant TOX_COEF = 180 * BPS;
-    uint256 constant TOX_QUAD_COEF = 19000 * BPS;
-    uint256 constant TOX_QUAD_KNEE = 12 * BPS;
+    uint256 constant FLOW_SIZE_COEF = 5600 * BPS;
+    uint256 constant TOX_COEF = 200 * BPS;
+    uint256 constant TOX_QUAD_COEF = 20000 * BPS;
     uint256 constant ACT_COEF = 42000 * BPS;
-    uint256 constant ACT_GATE_LAMBDA = 950000000000000000;
-    uint256 constant ACT_GATE_SIZE = 3000000000000000;
-    uint256 constant TOX_ACT_STEP_CAP = 80 * BPS;
-    uint256 constant DIR_COEF = 90 * BPS;
-    uint256 constant DIR_TOX_COEF = 20 * BPS;
-    uint256 constant STALE_DIR_COEF = 6900 * BPS;
+    uint256 constant DIR_COEF = 74 * BPS;
+    uint256 constant DIR_TOX_COEF = 64 * BPS;
+    uint256 constant DIR_MIN_SCALE = 350000000000000000; // 0.35
+    uint256 constant SKEW_MAX = 1800 * BPS;
+    uint256 constant STALE_DIR_COEF = 5200 * BPS;
+    uint256 constant STALE_ATTRACT_FRAC = 450000000000000000; // 0.45
+    uint256 constant TRADE_TOX_BOOST = 180000000000000000; // 0.18
+    uint256 constant STALE_SHIFT_MAX = 2500 * BPS;
     uint256 constant TAIL_KNEE = 700 * BPS;
-    uint256 constant TAIL_SLOPE = 900000000000000000;
-    uint256 constant TAIL_SLOPE_PROTECT = 820000000000000000;
-    uint256 constant TAIL_SLOPE_ATTRACT = 960000000000000000;
+    uint256 constant TAIL_SLOPE = 900000000000000000; // 0.90
+
+    // slots[0] = bid fee
+    // slots[1] = ask fee
+    // slots[2] = last timestamp
+    // slots[3] = dirState (centered at WAD, [0, 2*WAD])
+    // slots[4] = actEma
+    // slots[5] = pHat
+    // slots[6] = sigmaHat
+    // slots[7] = lambdaHat
+    // slots[8] = sizeHat
+    // slots[9] = toxEma
+    // slots[10] = stepTradeCount (raw integer)
 
     function afterInitialize(uint256 initialX, uint256 initialY) external override returns (uint256, uint256) {
         slots[0] = BASE_FEE;
         slots[1] = BASE_FEE;
         slots[2] = 0;
-        slots[3] = WAD;
+        slots[3] = WAD; // neutral direction
         slots[4] = 0;
         slots[5] = initialX > 0 ? wdiv(initialY, initialX) : 100 * WAD;
-        slots[6] = 950000000000000;
-        slots[7] = 800000000000000000;
-        slots[8] = 2000000000000000;
+        slots[6] = 950000000000000; // 0.095% initial sigma guess
+        slots[7] = 800000000000000000; // 0.8 initial arrival-rate guess
+        slots[8] = 2000000000000000; // 0.2% reserve-size ratio guess
         slots[9] = 0;
         slots[10] = 0;
         return (BASE_FEE, BASE_FEE);
@@ -82,11 +96,13 @@ contract Strategy is AMMStrategyBase {
             uint256 elapsedRaw = trade.timestamp - lastTs;
             uint256 elapsed = elapsedRaw > ELAPSED_CAP ? ELAPSED_CAP : elapsedRaw;
 
+            // Decay multi-step memory.
             dirState = _decayCentered(dirState, DIR_DECAY, elapsed);
             actEma = wmul(actEma, _powWad(ACT_DECAY, elapsed));
             sizeHat = wmul(sizeHat, _powWad(SIZE_DECAY, elapsed));
             toxEma = wmul(toxEma, _powWad(TOX_DECAY, elapsed));
 
+            // Update arrival-rate estimate using how many fills we saw in the prior active step.
             if (stepTradeCount > 0 && elapsedRaw > 0) {
                 uint256 lambdaInst = (stepTradeCount * WAD) / elapsedRaw;
                 if (lambdaInst > LAMBDA_CAP) lambdaInst = LAMBDA_CAP;
@@ -130,12 +146,11 @@ contract Strategy is AMMStrategyBase {
             }
         }
 
-        uint256 prevToxActAdd = _toxActAdd(toxEma, actEma, lambdaHat, sizeHat);
-
         if (tradeRatio > SIGNAL_THRESHOLD) {
             uint256 push = tradeRatio * DIR_IMPACT_MULT;
             if (push > WAD / 4) push = WAD / 4;
 
+            // isBuy=true => AMM buys X => sell pressure.
             if (trade.isBuy) {
                 dirState = dirState + push;
                 if (dirState > 2 * WAD) dirState = 2 * WAD;
@@ -156,54 +171,12 @@ contract Strategy is AMMStrategyBase {
 
         uint256 flowSize = wmul(lambdaHat, sizeHat);
         uint256 fBase = BASE_FEE + wmul(SIGMA_COEF, sigmaHat) + wmul(LAMBDA_COEF, lambdaHat) + wmul(FLOW_SIZE_COEF, flowSize);
+        uint256 fMid = fBase + wmul(TOX_COEF, toxSignal) + wmul(TOX_QUAD_COEF, wmul(toxSignal, toxSignal)) + wmul(ACT_COEF, actEma);
 
-        uint256 toxActAdd = _toxActAdd(toxSignal, actEma, lambdaHat, sizeHat);
-        toxActAdd = _clampStepChange(prevToxActAdd, toxActAdd, TOX_ACT_STEP_CAP);
-        uint256 fMid = fBase + toxActAdd;
+        (uint256 bidFee, uint256 askFee) = _applyDirectionalAndStale(fMid, dirState, toxSignal, spot, pHat, trade.isBuy);
 
-        uint256 dirDev;
-        bool sellPressure;
-        if (dirState >= WAD) {
-            dirDev = dirState - WAD;
-            sellPressure = true;
-        } else {
-            dirDev = WAD - dirState;
-            sellPressure = false;
-        }
-
-        uint256 skew = wmul(DIR_COEF, dirDev) + wmul(DIR_TOX_COEF, wmul(dirDev, toxSignal));
-
-        uint256 bidFee;
-        uint256 askFee;
-        if (sellPressure) {
-            bidFee = fMid + skew;
-            askFee = fMid > skew ? fMid - skew : 0;
-        } else {
-            askFee = fMid + skew;
-            bidFee = fMid > skew ? fMid - skew : 0;
-        }
-
-        if (STALE_DIR_COEF > 0) {
-            uint256 staleShift = wmul(STALE_DIR_COEF, toxSignal);
-            if (spot >= pHat) {
-                bidFee = bidFee + staleShift;
-                askFee = askFee > staleShift ? askFee - staleShift : 0;
-            } else {
-                askFee = askFee + staleShift;
-                bidFee = bidFee > staleShift ? bidFee - staleShift : 0;
-            }
-        }
-
-        if (bidFee > askFee) {
-            bidFee = clampFee(_compressTail(bidFee, TAIL_SLOPE_PROTECT));
-            askFee = clampFee(_compressTail(askFee, TAIL_SLOPE_ATTRACT));
-        } else if (askFee > bidFee) {
-            bidFee = clampFee(_compressTail(bidFee, TAIL_SLOPE_ATTRACT));
-            askFee = clampFee(_compressTail(askFee, TAIL_SLOPE_PROTECT));
-        } else {
-            bidFee = clampFee(_compressTail(bidFee, TAIL_SLOPE));
-            askFee = clampFee(_compressTail(askFee, TAIL_SLOPE));
-        }
+        bidFee = clampFee(_compressTail(bidFee));
+        askFee = clampFee(_compressTail(askFee));
 
         stepTradeCount = stepTradeCount + 1;
         if (stepTradeCount > STEP_COUNT_CAP) stepTradeCount = STEP_COUNT_CAP;
@@ -223,34 +196,63 @@ contract Strategy is AMMStrategyBase {
         return (bidFee, askFee);
     }
 
-    function _compressTail(uint256 fee, uint256 slope) internal pure returns (uint256) {
+    function _compressTail(uint256 fee) internal pure returns (uint256) {
         if (fee <= TAIL_KNEE) return fee;
-        return TAIL_KNEE + wmul(fee - TAIL_KNEE, slope);
+        return TAIL_KNEE + wmul(fee - TAIL_KNEE, TAIL_SLOPE);
     }
 
-    function _toxActAdd(uint256 toxSignal, uint256 actSignal, uint256 lambdaSignal, uint256 sizeSignal)
-        internal
-        pure
-        returns (uint256)
-    {
-        uint256 toxExcess = toxSignal > TOX_QUAD_KNEE ? toxSignal - TOX_QUAD_KNEE : 0;
-        uint256 actAdd = 0;
-        if (lambdaSignal >= ACT_GATE_LAMBDA && sizeSignal >= ACT_GATE_SIZE) {
-            actAdd = wmul(ACT_COEF, actSignal);
-        }
-        return wmul(TOX_COEF, toxSignal) + wmul(TOX_QUAD_COEF, wmul(toxExcess, toxExcess)) + actAdd;
-    }
-
-    function _clampStepChange(uint256 prevValue, uint256 newValue, uint256 maxStep) internal pure returns (uint256) {
-        if (newValue > prevValue) {
-            uint256 up = newValue - prevValue;
-            if (up > maxStep) return prevValue + maxStep;
-            return newValue;
+    function _applyDirectionalAndStale(
+        uint256 fMid,
+        uint256 dirState,
+        uint256 toxSignal,
+        uint256 spot,
+        uint256 pHat,
+        bool isBuy
+    ) internal pure returns (uint256 bidFee, uint256 askFee) {
+        uint256 dirDev;
+        bool sellPressure;
+        if (dirState >= WAD) {
+            dirDev = dirState - WAD;
+            sellPressure = true;
+        } else {
+            dirDev = WAD - dirState;
+            sellPressure = false;
         }
 
-        uint256 down = prevValue - newValue;
-        if (down > maxStep) return prevValue - maxStep;
-        return newValue;
+        uint256 skewBase = wmul(DIR_COEF, dirDev) + wmul(DIR_TOX_COEF, wmul(dirDev, toxSignal));
+        uint256 toxNorm = wdiv(toxSignal, TOX_CAP);
+        if (toxNorm > WAD) toxNorm = WAD;
+        uint256 dirScale = DIR_MIN_SCALE + wmul(WAD - DIR_MIN_SCALE, toxNorm);
+        uint256 skew = wmul(skewBase, dirScale);
+        if (skew > SKEW_MAX) skew = SKEW_MAX;
+
+        if (sellPressure) {
+            bidFee = fMid + skew;
+            askFee = fMid > skew ? fMid - skew : 0;
+        } else {
+            askFee = fMid + skew;
+            bidFee = fMid > skew ? fMid - skew : 0;
+        }
+
+        if (STALE_DIR_COEF > 0) {
+            bool staleUp = spot >= pHat;
+            bool alignedTrade = staleUp ? !isBuy : isBuy;
+
+            uint256 staleShift = wmul(STALE_DIR_COEF, toxSignal);
+            if (alignedTrade && TRADE_TOX_BOOST > 0) {
+                staleShift = staleShift + wmul(staleShift, TRADE_TOX_BOOST);
+            }
+            if (staleShift > STALE_SHIFT_MAX) staleShift = STALE_SHIFT_MAX;
+
+            uint256 attractShift = wmul(staleShift, STALE_ATTRACT_FRAC);
+            if (staleUp) {
+                bidFee = bidFee + staleShift;
+                askFee = askFee > attractShift ? askFee - attractShift : 0;
+            } else {
+                askFee = askFee + staleShift;
+                bidFee = bidFee > attractShift ? bidFee - attractShift : 0;
+            }
+        }
     }
 
     function _powWad(uint256 factor, uint256 exp) internal pure returns (uint256 result) {
@@ -272,6 +274,6 @@ contract Strategy is AMMStrategyBase {
     }
 
     function getName() external pure override returns (string memory) {
-        return "toxicity_and_activity_mod_v220";
+        return "directional_skew_and_stale_protection_mod_v5";
     }
 }

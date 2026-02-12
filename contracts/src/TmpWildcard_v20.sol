@@ -4,24 +4,35 @@ import {AMMStrategyBase} from "./AMMStrategyBase.sol";
 import {TradeInfo} from "./IAMMStrategy.sol";
 
 contract Strategy is AMMStrategyBase {
-    // ITERATION_POLICY {"decision":"continue","hypothesis_id":"H_TOX_ACT_010","confidence":0.68,"ceiling_probability":0.28,"ev_next_5":0.11,"best_delta_seen":0.15,"reason":"Pick highest eff_priority (0.962) with 20 steps_since_last to test per-trade tox/activity contribution clamp and reduce oscillation-driven routing loss.","next_mechanism":"toxicity_and_activity"}
+    // ITERATION_POLICY {"decision":"continue","hypothesis_id":"H_DUAL_DIR_CONTINUOUS_020","confidence":0.77,"ceiling_probability":0.22,"ev_next_5":0.12,"best_delta_seen":0.15,"reason":"Replace first-trade-only fair recentering with continuous gated updates and add dual-speed directional memory to stabilize skew under noisy flow.","next_mechanism":"continuous_fair_and_dual_direction"}
 
     uint256 constant ELAPSED_CAP = 8;
     uint256 constant SIGNAL_THRESHOLD = WAD / 700;
+
     uint256 constant DIR_DECAY = 850000000000000000;
+    uint256 constant DIR_SLOW_DECAY = 940000000000000000;
     uint256 constant ACT_DECAY = 700000000000000000;
     uint256 constant SIZE_DECAY = 600000000000000000;
     uint256 constant TOX_DECAY = 900000000000000000;
     uint256 constant SIGMA_DECAY = 650000000000000000;
     uint256 constant LAMBDA_DECAY = 994000000000000000;
+
     uint256 constant SIZE_BLEND_DECAY = 800000000000000000;
     uint256 constant TOX_BLEND_DECAY = 100000000000000000;
     uint256 constant ACT_BLEND_DECAY = 993000000000000000;
-    uint256 constant PHAT_ALPHA_ARB = 340000000000000000;
-    uint256 constant PHAT_ALPHA_RETAIL = 120000000000000000;
+
+    uint256 constant PHAT_ALPHA_ARB = 300000000000000000;
+    uint256 constant PHAT_ALPHA_RETAIL = 30000000000000000;
+    uint256 constant PHAT_ALPHA_RETAIL_SIZE = 0;
+    uint256 constant PHAT_ALPHA_RETAIL_CAP = 30000000000000000;
     uint256 constant PHAT_SHOCK_GATE = 30000000000000000;
+
     uint256 constant DIR_IMPACT_MULT = 1;
-    uint256 constant ARB_MAX_RATIO = WAD / 360;
+    uint256 constant DIR_SLOW_PUSH_MULT = 250000000000000000;
+
+    uint256 constant ARB_MAX_RATIO = WAD / 420;
+    uint256 constant ARB_RET_GATE = 22 * BPS;
+    uint256 constant ARB_TOX_GATE = 14 * BPS;
     uint256 constant SIGMA_RETAIL_DECAY = 999000000000000000;
 
     uint256 constant RET_CAP = WAD / 10;
@@ -38,12 +49,16 @@ contract Strategy is AMMStrategyBase {
     uint256 constant TOX_QUAD_COEF = 19000 * BPS;
     uint256 constant TOX_QUAD_KNEE = 12 * BPS;
     uint256 constant ACT_COEF = 42000 * BPS;
-    uint256 constant ACT_GATE_LAMBDA = 950000000000000000;
-    uint256 constant ACT_GATE_SIZE = 3000000000000000;
-    uint256 constant TOX_ACT_STEP_CAP = 80 * BPS;
+    uint256 constant MOM_ACT_COEF = 2500 * BPS;
+
     uint256 constant DIR_COEF = 90 * BPS;
+    uint256 constant DIR_SLOW_COEF = 12 * BPS;
+    uint256 constant MOM_COEF = 20 * BPS;
     uint256 constant DIR_TOX_COEF = 20 * BPS;
+
     uint256 constant STALE_DIR_COEF = 6900 * BPS;
+    uint256 constant STALE_TOX_GATE = 4 * BPS;
+
     uint256 constant TAIL_KNEE = 700 * BPS;
     uint256 constant TAIL_SLOPE = 900000000000000000;
     uint256 constant TAIL_SLOPE_PROTECT = 820000000000000000;
@@ -61,6 +76,7 @@ contract Strategy is AMMStrategyBase {
         slots[8] = 2000000000000000;
         slots[9] = 0;
         slots[10] = 0;
+        slots[11] = WAD;
         return (BASE_FEE, BASE_FEE);
     }
 
@@ -68,7 +84,7 @@ contract Strategy is AMMStrategyBase {
         uint256 prevBidFee = slots[0];
         uint256 prevAskFee = slots[1];
         uint256 lastTs = slots[2];
-        uint256 dirState = slots[3];
+        uint256 dirFast = slots[3];
         uint256 actEma = slots[4];
         uint256 pHat = slots[5];
         uint256 sigmaHat = slots[6];
@@ -76,13 +92,15 @@ contract Strategy is AMMStrategyBase {
         uint256 sizeHat = slots[8];
         uint256 toxEma = slots[9];
         uint256 stepTradeCount = slots[10];
+        uint256 dirSlow = slots[11];
 
         bool isNewStep = trade.timestamp > lastTs;
         if (isNewStep) {
             uint256 elapsedRaw = trade.timestamp - lastTs;
             uint256 elapsed = elapsedRaw > ELAPSED_CAP ? ELAPSED_CAP : elapsedRaw;
 
-            dirState = _decayCentered(dirState, DIR_DECAY, elapsed);
+            dirFast = _decayCentered(dirFast, DIR_DECAY, elapsed);
+            dirSlow = _decayCentered(dirSlow, DIR_SLOW_DECAY, elapsed);
             actEma = wmul(actEma, _powWad(ACT_DECAY, elapsed));
             sizeHat = wmul(sizeHat, _powWad(SIZE_DECAY, elapsed));
             toxEma = wmul(toxEma, _powWad(TOX_DECAY, elapsed));
@@ -95,8 +113,6 @@ contract Strategy is AMMStrategyBase {
 
             stepTradeCount = 0;
         }
-
-        bool firstInStep = stepTradeCount == 0;
 
         uint256 spot = trade.reserveX > 0 ? wdiv(trade.reserveY, trade.reserveX) : pHat;
         if (pHat == 0) pHat = spot;
@@ -112,35 +128,42 @@ contract Strategy is AMMStrategyBase {
 
         uint256 tradeRatio = trade.reserveY > 0 ? wdiv(trade.amountY, trade.reserveY) : 0;
         if (tradeRatio > TRADE_RATIO_CAP) tradeRatio = TRADE_RATIO_CAP;
-        bool likelyArb = firstInStep && tradeRatio <= ARB_MAX_RATIO;
 
-        if (firstInStep) {
-            uint256 ret = pHat > 0 ? wdiv(absDiff(pImplied, pHat), pHat) : 0;
-            if (likelyArb) {
-                if (ret <= PHAT_SHOCK_GATE) {
-                    pHat = wmul(pHat, WAD - PHAT_ALPHA_ARB) + wmul(pImplied, PHAT_ALPHA_ARB);
-                }
-                if (ret > RET_CAP) ret = RET_CAP;
-                sigmaHat = wmul(sigmaHat, SIGMA_DECAY) + wmul(ret, WAD - SIGMA_DECAY);
-            } else {
-                if (ret <= PHAT_SHOCK_GATE) {
-                    pHat = wmul(pHat, WAD - PHAT_ALPHA_RETAIL) + wmul(pImplied, PHAT_ALPHA_RETAIL);
-                }
-                sigmaHat = wmul(sigmaHat, SIGMA_RETAIL_DECAY);
+        uint256 ret = pHat > 0 ? wdiv(absDiff(pImplied, pHat), pHat) : 0;
+        if (ret > RET_CAP) ret = RET_CAP;
+
+        bool likelyArb = tradeRatio <= ARB_MAX_RATIO && ret <= ARB_RET_GATE;
+
+        if (likelyArb) {
+            if (ret <= PHAT_SHOCK_GATE) {
+                pHat = wmul(pHat, WAD - PHAT_ALPHA_ARB) + wmul(pImplied, PHAT_ALPHA_ARB);
             }
-        }
+            sigmaHat = wmul(sigmaHat, SIGMA_DECAY) + wmul(ret, WAD - SIGMA_DECAY);
+        } else {
+            uint256 alphaRetail = PHAT_ALPHA_RETAIL + wmul(PHAT_ALPHA_RETAIL_SIZE, tradeRatio);
+            if (alphaRetail > PHAT_ALPHA_RETAIL_CAP) alphaRetail = PHAT_ALPHA_RETAIL_CAP;
 
-        uint256 prevToxActAdd = _toxActAdd(toxEma, actEma, lambdaHat, sizeHat);
+            if (ret <= PHAT_SHOCK_GATE) {
+                pHat = wmul(pHat, WAD - alphaRetail) + wmul(pImplied, alphaRetail);
+            }
+            sigmaHat = wmul(sigmaHat, SIGMA_RETAIL_DECAY);
+        }
 
         if (tradeRatio > SIGNAL_THRESHOLD) {
             uint256 push = tradeRatio * DIR_IMPACT_MULT;
             if (push > WAD / 4) push = WAD / 4;
 
+            uint256 pushSlow = wmul(push, DIR_SLOW_PUSH_MULT);
+
             if (trade.isBuy) {
-                dirState = dirState + push;
-                if (dirState > 2 * WAD) dirState = 2 * WAD;
+                dirFast = dirFast + push;
+                if (dirFast > 2 * WAD) dirFast = 2 * WAD;
+
+                dirSlow = dirSlow + pushSlow;
+                if (dirSlow > 2 * WAD) dirSlow = 2 * WAD;
             } else {
-                dirState = dirState > push ? dirState - push : 0;
+                dirFast = dirFast > push ? dirFast - push : 0;
+                dirSlow = dirSlow > pushSlow ? dirSlow - pushSlow : 0;
             }
 
             actEma = wmul(actEma, ACT_BLEND_DECAY) + wmul(tradeRatio, WAD - ACT_BLEND_DECAY);
@@ -155,23 +178,29 @@ contract Strategy is AMMStrategyBase {
         uint256 toxSignal = toxEma;
 
         uint256 flowSize = wmul(lambdaHat, sizeHat);
-        uint256 fBase = BASE_FEE + wmul(SIGMA_COEF, sigmaHat) + wmul(LAMBDA_COEF, lambdaHat) + wmul(FLOW_SIZE_COEF, flowSize);
+        uint256 fBase = BASE_FEE
+            + wmul(SIGMA_COEF, sigmaHat)
+            + wmul(LAMBDA_COEF, lambdaHat)
+            + wmul(FLOW_SIZE_COEF, flowSize);
 
-        uint256 toxActAdd = _toxActAdd(toxSignal, actEma, lambdaHat, sizeHat);
-        toxActAdd = _clampStepChange(prevToxActAdd, toxActAdd, TOX_ACT_STEP_CAP);
-        uint256 fMid = fBase + toxActAdd;
+        uint256 dirMomentum = dirFast >= dirSlow ? dirFast - dirSlow : dirSlow - dirFast;
 
-        uint256 dirDev;
-        bool sellPressure;
-        if (dirState >= WAD) {
-            dirDev = dirState - WAD;
-            sellPressure = true;
-        } else {
-            dirDev = WAD - dirState;
-            sellPressure = false;
-        }
+        uint256 toxExcess = toxSignal > TOX_QUAD_KNEE ? toxSignal - TOX_QUAD_KNEE : 0;
+        uint256 fMid = fBase
+            + wmul(TOX_COEF, toxSignal)
+            + wmul(TOX_QUAD_COEF, wmul(toxExcess, toxExcess))
+            + wmul(ACT_COEF, actEma)
+            + wmul(MOM_ACT_COEF, dirMomentum);
 
-        uint256 skew = wmul(DIR_COEF, dirDev) + wmul(DIR_TOX_COEF, wmul(dirDev, toxSignal));
+        uint256 dirDevFast = dirFast >= WAD ? dirFast - WAD : WAD - dirFast;
+        uint256 dirDevSlow = dirSlow >= WAD ? dirSlow - WAD : WAD - dirSlow;
+
+        uint256 skew = wmul(DIR_COEF, dirDevFast)
+            + wmul(DIR_SLOW_COEF, dirDevSlow)
+            + wmul(MOM_COEF, dirMomentum)
+            + wmul(DIR_TOX_COEF, wmul(dirDevFast, toxSignal));
+
+        bool sellPressure = dirFast >= WAD;
 
         uint256 bidFee;
         uint256 askFee;
@@ -183,8 +212,8 @@ contract Strategy is AMMStrategyBase {
             bidFee = fMid > skew ? fMid - skew : 0;
         }
 
-        if (STALE_DIR_COEF > 0) {
-            uint256 staleShift = wmul(STALE_DIR_COEF, toxSignal);
+        if (STALE_DIR_COEF > 0 && toxSignal > STALE_TOX_GATE) {
+            uint256 staleShift = wmul(STALE_DIR_COEF, toxSignal - STALE_TOX_GATE);
             if (spot >= pHat) {
                 bidFee = bidFee + staleShift;
                 askFee = askFee > staleShift ? askFee - staleShift : 0;
@@ -211,7 +240,7 @@ contract Strategy is AMMStrategyBase {
         slots[0] = bidFee;
         slots[1] = askFee;
         slots[2] = trade.timestamp;
-        slots[3] = dirState;
+        slots[3] = dirFast;
         slots[4] = actEma;
         slots[5] = pHat;
         slots[6] = sigmaHat;
@@ -219,6 +248,7 @@ contract Strategy is AMMStrategyBase {
         slots[8] = sizeHat;
         slots[9] = toxEma;
         slots[10] = stepTradeCount;
+        slots[11] = dirSlow;
 
         return (bidFee, askFee);
     }
@@ -226,31 +256,6 @@ contract Strategy is AMMStrategyBase {
     function _compressTail(uint256 fee, uint256 slope) internal pure returns (uint256) {
         if (fee <= TAIL_KNEE) return fee;
         return TAIL_KNEE + wmul(fee - TAIL_KNEE, slope);
-    }
-
-    function _toxActAdd(uint256 toxSignal, uint256 actSignal, uint256 lambdaSignal, uint256 sizeSignal)
-        internal
-        pure
-        returns (uint256)
-    {
-        uint256 toxExcess = toxSignal > TOX_QUAD_KNEE ? toxSignal - TOX_QUAD_KNEE : 0;
-        uint256 actAdd = 0;
-        if (lambdaSignal >= ACT_GATE_LAMBDA && sizeSignal >= ACT_GATE_SIZE) {
-            actAdd = wmul(ACT_COEF, actSignal);
-        }
-        return wmul(TOX_COEF, toxSignal) + wmul(TOX_QUAD_COEF, wmul(toxExcess, toxExcess)) + actAdd;
-    }
-
-    function _clampStepChange(uint256 prevValue, uint256 newValue, uint256 maxStep) internal pure returns (uint256) {
-        if (newValue > prevValue) {
-            uint256 up = newValue - prevValue;
-            if (up > maxStep) return prevValue + maxStep;
-            return newValue;
-        }
-
-        uint256 down = prevValue - newValue;
-        if (down > maxStep) return prevValue - maxStep;
-        return newValue;
     }
 
     function _powWad(uint256 factor, uint256 exp) internal pure returns (uint256 result) {
@@ -272,6 +277,6 @@ contract Strategy is AMMStrategyBase {
     }
 
     function getName() external pure override returns (string memory) {
-        return "toxicity_and_activity_mod_v220";
+        return "wildcard_mod_v20";
     }
 }
