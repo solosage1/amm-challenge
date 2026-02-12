@@ -19,7 +19,7 @@ import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple
 
 
 def env_int(name: str, default: int) -> int:
@@ -92,6 +92,67 @@ DEFAULT_LLM_MAX_OUTPUT_TOKENS = env_int("CODEX_MAX_OUTPUT_TOKENS", 8000)
 DEFAULT_POLICY_EVOLUTION_FREQUENCY = 5
 DEFAULT_SEED_OFFSETS = "0,10000"
 DEFAULT_BOOTSTRAP_SEED_OFFSETS = "0,10000"
+
+# Test failure retry configuration
+# Each entry maps a failure type to its detection patterns, retry limit, and prompt modifier
+TEST_FAILURE_CATALOG = {
+    "gas_error": {
+        "patterns": [
+            "out of gas",
+            "outofgas",
+            "gas limit",
+            "exceeded gas",
+        ],
+        "max_retries": 1,
+        "prompt_modifier": "_build_gas_optimized_prompt",
+        "description": "EVM gas limit exceeded during execution",
+    },
+    # Future expansion examples (disabled for now with max_retries=0):
+    "timeout_error": {
+        "patterns": [
+            "timeout",
+            "timed out",
+            "execution timeout",
+        ],
+        "max_retries": 0,  # Disabled for now
+        "prompt_modifier": "_build_timeout_optimized_prompt",
+        "description": "Test execution timeout",
+    },
+    "simulation_error": {
+        "patterns": [
+            "numerical instability",
+            "simulation diverged",
+            "invalid price",
+        ],
+        "max_retries": 0,  # Disabled for now
+        "prompt_modifier": "_build_simulation_optimized_prompt",
+        "description": "Simulation numerical issues",
+    },
+}
+
+def _get_retry_limit(failure_type: str) -> int:
+    """
+    Get retry limit for a failure type, checking env var override first.
+
+    Environment variable overrides:
+    - RETRY_GAS_ERROR=2 would override gas_error max_retries to 2
+    - RETRY_TIMEOUT_ERROR=1 would enable timeout retries
+
+    Args:
+        failure_type: The failure type key from TEST_FAILURE_CATALOG
+
+    Returns:
+        The retry limit (0 means no retries)
+    """
+    env_key = f"RETRY_{failure_type.upper()}"
+    env_val = os.environ.get(env_key)
+    if env_val is not None:
+        try:
+            return int(env_val)
+        except ValueError:
+            pass
+    return TEST_FAILURE_CATALOG.get(failure_type, {}).get("max_retries", 0)
+
 DEFAULT_PROMOTION_STD_PENALTY = 0.5
 DEFAULT_HYPOTHESES_FILENAME = "hypotheses_backlog.json"
 DEFAULT_HYPOTHESIS_RECENT_WINDOW = 20
@@ -206,7 +267,8 @@ Return STRICT JSON only:
   "selected_hypothesis_id": "string",
   "confidence": 0.0,
   "tenet_alignment": [{"tenet": "T1", "alignment": "aligned|neutral|misaligned", "note": "short"}],
-  "reasoning": "short rationale referencing one tenet and one metric",
+  "tenet_tensions": ["short note about a real tenet tradeoff"],
+  "reasoning": "short rationale referencing multiple decisive tenets and at least one metric",
   "evidence_iteration_ids": [1, 2]
 }
 
@@ -219,6 +281,12 @@ Evidence snapshot:
 
 Candidates (best first):
 {{CANDIDATES_JSON}}
+
+Rules:
+- Select exactly one candidate id from the provided candidate list.
+- Evaluate the entire tenet set, not a single tenet.
+- tenet_alignment must include one row for each tenet id (T1..TN) exactly once.
+- If tenets conflict, record the conflict in tenet_tensions and explain your tradeoff in reasoning.
 """.strip()
 
 TENET_EVOLUTION_PROMPT_FALLBACK = """
@@ -855,6 +923,7 @@ def sync_tenet_meta_state(
                 rec = {}
             rec.setdefault("support_count", 0)
             rec.setdefault("conflict_count", 0)
+            rec.setdefault("neutral_count", 0)
             rec.setdefault("last_evidence_ids", [])
             rec.setdefault("last_updated_iter", int(iteration))
             rec["text"] = text
@@ -875,6 +944,107 @@ def _parse_evidence_iteration_ids(payload: Dict[str, Any]) -> List[int]:
         if parsed >= 0:
             ids.append(parsed)
     return ids
+
+
+def _extract_tenet_ids(tenets_payload: Optional[Dict[str, Any]]) -> List[str]:
+    if not isinstance(tenets_payload, dict):
+        return []
+    rows = tenets_payload.get("tenets")
+    if not isinstance(rows, list):
+        return []
+    ordered: List[str] = []
+    seen: Set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        tenet_id = str(row.get("id", "")).strip()
+        if not tenet_id or tenet_id in seen:
+            continue
+        seen.add(tenet_id)
+        ordered.append(tenet_id)
+    return ordered
+
+
+def _parse_tenet_tensions(payload: Dict[str, Any], limit: int = 6) -> List[str]:
+    values = payload.get("tenet_tensions")
+    if not isinstance(values, list):
+        return []
+    tensions: List[str] = []
+    max_items = max(1, int(limit))
+    for value in values:
+        if isinstance(value, dict):
+            text = str(value.get("note", "") or value.get("text", "")).strip()
+        else:
+            text = str(value).strip()
+        if not text:
+            continue
+        tensions.append(_truncate_text(text, 220))
+        if len(tensions) >= max_items:
+            break
+    return tensions
+
+
+def _normalize_tenet_alignment(
+    raw_rows: Any,
+    expected_tenet_ids: Sequence[str],
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    allowed = {"aligned", "neutral", "misaligned"}
+    expected = [str(tenet_id).strip() for tenet_id in expected_tenet_ids if str(tenet_id).strip()]
+    expected_set = set(expected)
+    llm_rows = raw_rows if isinstance(raw_rows, list) else []
+
+    parsed: List[Dict[str, Any]] = []
+    seen_ids: Set[str] = set()
+    unknown_ids: List[str] = []
+    for row in llm_rows:
+        if not isinstance(row, dict):
+            continue
+        tenet_id = str(row.get("tenet", "")).strip()
+        if not tenet_id or tenet_id in seen_ids:
+            continue
+        alignment = str(row.get("alignment", "")).strip().lower()
+        if alignment not in allowed:
+            alignment = "neutral"
+        note = _truncate_text(str(row.get("note", "")).strip(), 220)
+        parsed.append({"tenet": tenet_id, "alignment": alignment, "note": note})
+        seen_ids.add(tenet_id)
+        if expected_set and tenet_id not in expected_set:
+            unknown_ids.append(tenet_id)
+
+    if not expected:
+        return parsed, {
+            "expected_count": 0,
+            "covered_count": len(parsed),
+            "missing_tenet_ids": [],
+            "unknown_tenet_ids": unknown_ids,
+        }
+
+    by_id = {str(row.get("tenet", "")).strip(): row for row in parsed if isinstance(row, dict)}
+    normalized: List[Dict[str, Any]] = []
+    missing_ids: List[str] = []
+    covered_count = 0
+    for tenet_id in expected:
+        row = by_id.get(tenet_id)
+        if row is None:
+            normalized.append(
+                {
+                    "tenet": tenet_id,
+                    "alignment": "neutral",
+                    "note": "llm_omitted_alignment",
+                    "auto_filled": True,
+                }
+            )
+            missing_ids.append(tenet_id)
+            continue
+        covered_count += 1
+        normalized.append(row)
+
+    return normalized, {
+        "expected_count": len(expected),
+        "covered_count": covered_count,
+        "missing_tenet_ids": missing_ids,
+        "unknown_tenet_ids": unknown_ids,
+    }
 
 
 def update_tenet_meta_from_selection(
@@ -898,11 +1068,17 @@ def update_tenet_meta_from_selection(
         rec = records.get(tenet_id)
         if not isinstance(rec, dict):
             continue
+        if bool(row.get("auto_filled", False)):
+            rec["last_evidence_ids"] = evidence_ids[:12]
+            rec["last_updated_iter"] = int(iteration)
+            continue
         alignment = str(row.get("alignment", "")).strip().lower()
         if alignment == "aligned":
             rec["support_count"] = _int_value(rec.get("support_count", 0), default=0) + 1
         elif alignment == "misaligned":
             rec["conflict_count"] = _int_value(rec.get("conflict_count", 0), default=0) + 1
+        elif alignment == "neutral":
+            rec["neutral_count"] = _int_value(rec.get("neutral_count", 0), default=0) + 1
         rec["last_evidence_ids"] = evidence_ids[:12]
         rec["last_updated_iter"] = int(iteration)
 
@@ -927,6 +1103,7 @@ def update_tenet_meta_from_proposal(
         rec = {
             "support_count": 0,
             "conflict_count": 0,
+            "neutral_count": 0,
             "last_evidence_ids": [],
         }
     proposed_text = str(proposal.get("proposed_text", "")).strip()
@@ -1209,6 +1386,7 @@ def select_hypothesis_with_llm(
     shortlist: Sequence[Dict[str, Any]],
     hypothesis_tracker: Optional[Dict[str, Any]],
     hypothesis_recent: Optional[Dict[str, Any]],
+    tenets_payload: Optional[Dict[str, Any]],
     tenets_block: str,
     evidence_snapshot: str,
     prompts_dir: Path,
@@ -1234,6 +1412,7 @@ def select_hypothesis_with_llm(
     fallback_id = str(ranked[0].get("id", "")).strip() if ranked else ""
     hypothesis_map = {str(hypothesis.get("id", "")).strip(): hypothesis for hypothesis in shortlist_rows}
     fallback_hypothesis = hypothesis_map.get(fallback_id) if fallback_id else shortlist_rows[0]
+    tenet_ids = _extract_tenet_ids(tenets_payload)
     summary: Dict[str, Any] = {
         "status": "fallback",
         "iteration": iteration,
@@ -1241,8 +1420,15 @@ def select_hypothesis_with_llm(
         "fallback_hypothesis_id": str(fallback_hypothesis.get("id", "")).strip(),
         "reason": "selection_disabled" if not enabled else "llm_not_run",
         "confidence": None,
+        "tenet_tensions": [],
         "reasoning": None,
         "evidence_iteration_ids": [],
+        "tenet_coverage": {
+            "expected_count": len(tenet_ids),
+            "covered_count": 0,
+            "missing_tenet_ids": list(tenet_ids),
+            "unknown_tenet_ids": [],
+        },
     }
     if not enabled:
         return fallback_hypothesis, summary, {}
@@ -1270,7 +1456,7 @@ def select_hypothesis_with_llm(
         llm_timeout_minutes=llm_timeout_minutes,
         llm_max_output_tokens=llm_max_output_tokens,
         llm_disable_shell_tool=llm_disable_shell_tool,
-        schema_hint='{"selected_hypothesis_id":"id","confidence":0.0,"tenet_alignment":[],"reasoning":"text","evidence_iteration_ids":[1]}',
+        schema_hint='{"selected_hypothesis_id":"id","confidence":0.0,"tenet_alignment":[],"tenet_tensions":["text"],"reasoning":"text","evidence_iteration_ids":[1]}',
     )
     if payload is None:
         summary["reason"] = error or "selection_llm_failed"
@@ -1283,15 +1469,21 @@ def select_hypothesis_with_llm(
         summary["llm_selected_hypothesis_id"] = selected_id or None
         return fallback_hypothesis, summary, artifacts
 
+    normalized_alignment, alignment_coverage = _normalize_tenet_alignment(
+        payload.get("tenet_alignment"),
+        tenet_ids,
+    )
     summary = {
         "status": "selected",
         "iteration": iteration,
         "mechanism": mechanism_name,
         "selected_hypothesis_id": selected_id,
         "confidence": _safe_probability(payload.get("confidence")),
-        "tenet_alignment": payload.get("tenet_alignment") if isinstance(payload.get("tenet_alignment"), list) else [],
+        "tenet_alignment": normalized_alignment,
+        "tenet_tensions": _parse_tenet_tensions(payload),
         "reasoning": str(payload.get("reasoning", "")).strip(),
         "evidence_iteration_ids": _parse_evidence_iteration_ids(payload),
+        "tenet_coverage": alignment_coverage,
         "fallback_hypothesis_id": str(fallback_hypothesis.get("id", "")).strip(),
     }
     return selected_hypothesis, summary, artifacts
@@ -1375,11 +1567,15 @@ def run_tenet_evolution(
     prompt_dir: Path,
     tenets_path: Path,
     auto_apply: bool,
+    force_once: bool = False,
 ) -> Tuple[Optional[Dict[str, Any]], Dict[str, str]]:
-    if not enabled or frequency <= 0 or iteration % frequency != 0:
+    if not enabled:
+        return None, {}
+    if not force_once and (frequency <= 0 or iteration % frequency != 0):
         return None, {}
 
-    window_rows = list(log_entries)[-max(1, int(frequency)) :]
+    window_size = max(1, int(frequency)) if frequency > 0 else DEFAULT_TENET_EVOLUTION_FREQUENCY
+    window_rows = list(log_entries)[-window_size:]
     compact_window: List[Dict[str, Any]] = []
     for entry in window_rows:
         if not isinstance(entry, dict):
@@ -2913,6 +3109,173 @@ def _build_iteration_prompt(
     )
 
 
+def _inject_retry_block(base_prompt: str, retry_block: str) -> str:
+    """
+    Helper to inject retry instructions before CONSTRAINTS section.
+
+    Args:
+        base_prompt: The original prompt text
+        retry_block: The retry-specific instructions to inject
+
+    Returns:
+        Modified prompt with retry block injected
+    """
+    if "## CONSTRAINTS" in base_prompt:
+        parts = base_prompt.split("## CONSTRAINTS", 1)
+        return parts[0] + retry_block + "\n## CONSTRAINTS" + parts[1]
+    return base_prompt + "\n\n" + retry_block
+
+
+def _build_gas_optimized_prompt(
+    base_prompt: str,
+    failed_code: str,
+    mechanism_name: str,
+    wildcard: bool,
+    failure_type: str,
+    retry_attempt: int,
+    max_retries: int,
+) -> str:
+    """
+    Enhance prompt with gas optimization instructions for retry.
+
+    Args:
+        base_prompt: The original prompt text
+        failed_code: The candidate code that exceeded gas limits
+        mechanism_name: Name of the mechanism being modified
+        wildcard: Whether this is a wildcard iteration
+        failure_type: The failure type (should be "gas_error")
+        retry_attempt: Current retry attempt number (1-indexed)
+        max_retries: Maximum retries allowed for this failure type
+
+    Returns:
+        Modified prompt with gas optimization guidance
+    """
+    gas_block = """
+## CRITICAL: GAS OPTIMIZATION REQUIRED
+
+Previous candidate exceeded 250,000 gas limit. You MUST generate simpler code.
+
+### Previous Failed Code:
+```solidity
+{failed_code}
+```
+
+### Gas Optimization Requirements:
+1. **Reduce storage slots**: Minimize state variables (aim for 8-12 slots max)
+2. **Simplify calculations**: Fewer operations, avoid expensive sqrt/exp
+3. **Reduce memory allocation**: Minimize arrays and dynamic structures
+4. **Optimize control flow**: Reduce branching, avoid nested loops
+5. **Remove non-essential features**: Focus on core logic only
+
+Target: 50-70% of previous complexity. Retry {retry}/{max_retries}.
+""".format(
+        failed_code=failed_code.strip(),
+        retry=retry_attempt,
+        max_retries=max_retries,
+    )
+
+    return _inject_retry_block(base_prompt, gas_block)
+
+
+def _build_timeout_optimized_prompt(
+    base_prompt: str,
+    failed_code: str,
+    mechanism_name: str,
+    wildcard: bool,
+    failure_type: str,
+    retry_attempt: int,
+    max_retries: int,
+) -> str:
+    """
+    Enhance prompt with timeout optimization instructions (future expansion).
+
+    Args:
+        base_prompt: The original prompt text
+        failed_code: The candidate code that timed out
+        mechanism_name: Name of the mechanism being modified
+        wildcard: Whether this is a wildcard iteration
+        failure_type: The failure type (should be "timeout_error")
+        retry_attempt: Current retry attempt number (1-indexed)
+        max_retries: Maximum retries allowed for this failure type
+
+    Returns:
+        Modified prompt with timeout optimization guidance
+    """
+    timeout_block = """
+## CRITICAL: EXECUTION TIMEOUT OPTIMIZATION REQUIRED
+
+Previous candidate exceeded test execution time limit.
+
+### Previous Failed Code:
+```solidity
+{failed_code}
+```
+
+### Optimization Requirements:
+1. Reduce computational complexity in swap logic
+2. Simplify price calculations
+3. Remove unnecessary loops or iterations
+
+Retry {retry}/{max_retries}.
+""".format(
+        failed_code=failed_code.strip(),
+        retry=retry_attempt,
+        max_retries=max_retries,
+    )
+
+    return _inject_retry_block(base_prompt, timeout_block)
+
+
+def _build_simulation_optimized_prompt(
+    base_prompt: str,
+    failed_code: str,
+    mechanism_name: str,
+    wildcard: bool,
+    failure_type: str,
+    retry_attempt: int,
+    max_retries: int,
+) -> str:
+    """
+    Enhance prompt with simulation stability instructions (future expansion).
+
+    Args:
+        base_prompt: The original prompt text
+        failed_code: The candidate code that caused simulation issues
+        mechanism_name: Name of the mechanism being modified
+        wildcard: Whether this is a wildcard iteration
+        failure_type: The failure type (should be "simulation_error")
+        retry_attempt: Current retry attempt number (1-indexed)
+        max_retries: Maximum retries allowed for this failure type
+
+    Returns:
+        Modified prompt with simulation stability guidance
+    """
+    sim_block = """
+## CRITICAL: SIMULATION STABILITY REQUIRED
+
+Previous candidate caused numerical instability or invalid states.
+
+### Previous Failed Code:
+```solidity
+{failed_code}
+```
+
+### Stability Requirements:
+1. Add bounds checking on calculations
+2. Prevent division by zero or near-zero values
+3. Ensure prices stay within valid ranges
+4. Validate intermediate results
+
+Retry {retry}/{max_retries}.
+""".format(
+        failed_code=failed_code.strip(),
+        retry=retry_attempt,
+        max_retries=max_retries,
+    )
+
+    return _inject_retry_block(base_prompt, sim_block)
+
+
 def _evaluate_iteration_candidate(
     args: argparse.Namespace,
     candidate_path: Path,
@@ -2952,6 +3315,30 @@ def _evaluate_iteration_candidate(
     screen_only_eval = bool(evaluation_summary.get("screen_only", False))
     authoritative_eval = promotable
     return candidate_edge, promotion_edge, promotable, screen_only_eval, authoritative_eval, evaluation_summary, eval_error
+
+
+def _classify_test_failure(eval_error: Optional[str]) -> Optional[str]:
+    """
+    Classify a test failure error into a known failure type.
+
+    Args:
+        eval_error: The error string from evaluate_with_pipeline
+
+    Returns:
+        The failure type key from TEST_FAILURE_CATALOG, or None if unclassified
+    """
+    if not eval_error:
+        return None
+
+    error_lower = str(eval_error).lower()
+
+    # Check each failure type's patterns
+    for failure_type, config in TEST_FAILURE_CATALOG.items():
+        patterns = config.get("patterns", [])
+        if any(pattern in error_lower for pattern in patterns):
+            return failure_type
+
+    return None  # Unclassified failure
 
 
 def run_iteration(args: argparse.Namespace) -> int:
@@ -3056,6 +3443,7 @@ def run_iteration(args: argparse.Namespace) -> int:
             shortlist=mechanism_hypotheses,
             hypothesis_tracker=stats.get("hypotheses"),
             hypothesis_recent=hypothesis_recent,
+            tenets_payload=tenets_payload,
             tenets_block=tenets_block,
             evidence_snapshot=evidence_snapshot,
             prompts_dir=prompts_dir,
@@ -3278,39 +3666,185 @@ def run_iteration(args: argparse.Namespace) -> int:
         )
 
     result_path = candidate_dir / f"iter_{iteration}_{mechanism_name}.result.json"
-    (
-        candidate_edge,
-        promotion_edge,
-        promotable,
-        screen_only_eval,
-        authoritative_eval,
-        evaluation_summary,
-        eval_error,
-    ) = _evaluate_iteration_candidate(
-        args=args,
-        candidate_path=candidate_path,
-        result_path=result_path,
-        champion_edge=champion_edge,
-        mechanism_name=mechanism_name,
-        iteration=iteration,
-    )
 
+    # Generic test failure retry logic
+    retry_history = []  # Track all retry attempts: [(failure_type, attempt_num), ...]
+    total_retry_attempt = 0
+    current_failure_type = None
+    failure_specific_retry_count = 0
+
+    # Maximum total retries across all failure types (safety limit)
+    MAX_TOTAL_RETRIES = 3
+
+    for total_retry_attempt in range(MAX_TOTAL_RETRIES + 1):
+        (
+            candidate_edge,
+            promotion_edge,
+            promotable,
+            screen_only_eval,
+            authoritative_eval,
+            evaluation_summary,
+            eval_error,
+        ) = _evaluate_iteration_candidate(
+            args=args,
+            candidate_path=candidate_path,
+            result_path=result_path,
+            champion_edge=champion_edge,
+            mechanism_name=mechanism_name,
+            iteration=iteration,
+        )
+
+        # Success - break out
+        if candidate_edge is not None:
+            break
+
+        # Classify the failure type
+        detected_failure_type = _classify_test_failure(eval_error)
+
+        # Check if this is a new failure type or continuation of same type
+        if detected_failure_type != current_failure_type:
+            # New failure type - reset failure-specific counter
+            current_failure_type = detected_failure_type
+            failure_specific_retry_count = 0
+
+        # Check if retry is available for this failure type
+        if detected_failure_type is None:
+            # Unclassified failure - no retry
+            break
+
+        max_retries_for_type = _get_retry_limit(detected_failure_type)
+
+        if failure_specific_retry_count >= max_retries_for_type:
+            # Exhausted retries for this specific failure type
+            break
+
+        # We have retry budget - attempt recovery
+        failure_specific_retry_count += 1
+        retry_history.append((detected_failure_type, failure_specific_retry_count))
+        failure_config = TEST_FAILURE_CATALOG[detected_failure_type]
+
+        print(
+            f"[test_retry] Iteration {iteration}: {failure_config['description']}. "
+            f"Retrying with {detected_failure_type} optimization "
+            f"(attempt {failure_specific_retry_count}/{max_retries_for_type}, "
+            f"total retries: {total_retry_attempt})...",
+            file=sys.stderr,
+        )
+
+        # Skip retry in special modes
+        if args.candidate_file or args.dry_run:
+            print(
+                f"[test_retry] Cannot retry in this mode. Skipping.",
+                file=sys.stderr,
+            )
+            break
+
+        # Read failed code
+        failed_code = candidate_path.read_text(encoding="utf-8")
+
+        # Get prompt modifier function name and call it
+        prompt_modifier_name = failure_config["prompt_modifier"]
+        prompt_modifier_fn = globals().get(prompt_modifier_name)
+
+        if prompt_modifier_fn is None:
+            print(
+                f"[test_retry] Prompt modifier '{prompt_modifier_name}' not found. "
+                f"Skipping retry.",
+                file=sys.stderr,
+            )
+            break
+
+        # Create optimized prompt using the appropriate modifier
+        base_prompt = prompt_path.read_text(encoding="utf-8")
+        optimized_prompt = prompt_modifier_fn(
+            base_prompt=base_prompt,
+            failed_code=failed_code,
+            mechanism_name=mechanism_name,
+            wildcard=wildcard,
+            failure_type=detected_failure_type,
+            retry_attempt=failure_specific_retry_count,
+            max_retries=max_retries_for_type,
+        )
+
+        # Save retry prompt with failure type in filename
+        retry_prompt_path = prompt_dir / (
+            f"iter_{iteration}_{mechanism_name}_"
+            f"{detected_failure_type}_retry{failure_specific_retry_count}.md"
+        )
+        atomic_write_text(retry_prompt_path, optimized_prompt)
+
+        # Generate new candidate with optimized prompt
+        artifact_prefix = candidate_dir / (
+            f"iter_{iteration}_{mechanism_name}_{detected_failure_type}"
+        )
+        candidate_code, llm_error, llm_artifacts = generate_candidate_with_llm(
+            prompt_path=retry_prompt_path,
+            artifact_prefix=artifact_prefix,
+            llm_command=args.llm_command,
+            llm_model=args.llm_model,
+            llm_timeout_minutes=args.llm_timeout_minutes,
+            llm_max_output_tokens=args.llm_max_output_tokens,
+            llm_disable_shell_tool=args.llm_disable_shell_tool,
+            attempt=failure_specific_retry_count,
+        )
+
+        if candidate_code is None:
+            print(
+                f"[test_retry] LLM failed on {detected_failure_type} retry: {llm_error}",
+                file=sys.stderr,
+            )
+            eval_error = f"retry_llm_failed:{detected_failure_type}:{llm_error}"
+            break
+
+        # Update candidate file
+        atomic_write_text(candidate_path, candidate_code)
+
+        # Re-extract policy metadata
+        iteration_policy_metadata = extract_iteration_policy_metadata(candidate_code)
+        selected_hypothesis_from_policy = resolve_selected_hypothesis(
+            iteration_policy_metadata, mechanism_hypotheses
+        )
+        if selected_hypothesis is None:
+            selected_hypothesis = selected_hypothesis_from_policy
+
+        # Re-extract hypothesis payload for updated candidate
+        hypothesis_payload = hypothesis_log_payload(selected_hypothesis)
+
+        # Continue to retry evaluation
+        continue
+
+    # Handle failure after retries exhausted
     if candidate_edge is None:
         _increment_mechanism_counter(stats, mechanism_name, "compile_fail_count")
         _increment_mechanism_counter(stats, mechanism_name, "invalid_count")
         stats["global"]["total_iterations"] = iteration
+
+        # Build failure reason with retry history
+        failure_reason = eval_error or "evaluation_failed"
+        if retry_history:
+            retry_summary = ";".join([
+                f"{ftype}:{count}" for ftype, count in retry_history
+            ])
+            failure_reason = f"retries_exhausted[{retry_summary}]:{failure_reason}"
+
         entry = {
             "iter": iteration,
             "ts": utc_now_iso(),
             "status": "compile_failed",
             "mechanism": mechanism_name,
             "valid": False,
-            "reason": eval_error or "evaluation_failed",
+            "reason": failure_reason,
             "champion_edge_before": champion_edge,
             "prompt_path": str(prompt_path),
             "candidate_path": str(candidate_path),
             "result_path": str(result_path),
         }
+        if retry_history:
+            entry["test_retries"] = {
+                "total_attempts": total_retry_attempt,
+                "retry_history": retry_history,
+                "final_failure_type": current_failure_type,
+            }
         if selection_summary:
             entry["tenet_selection"] = selection_summary
         if hypothesis_payload:
@@ -3351,6 +3885,11 @@ def run_iteration(args: argparse.Namespace) -> int:
             "result_path": str(result_path),
             "wildcard": wildcard,
         }
+        if retry_history:
+            entry["test_retries"] = {
+                "total_attempts": total_retry_attempt,
+                "retry_history": retry_history,
+            }
         if hypothesis_payload:
             entry["hypothesis"] = hypothesis_payload
         if selection_summary:
@@ -3364,7 +3903,8 @@ def run_iteration(args: argparse.Namespace) -> int:
 
         tenet_evolution_summary, tenet_evolution_artifacts = run_tenet_evolution(
             iteration=iteration,
-            enabled=bool(getattr(args, "tenet_evolution_enabled", True)) and not bool(args.dry_run),
+            enabled=bool(getattr(args, "tenet_evolution_enabled", True))
+            and (bool(getattr(args, "force_tenet_evolution_once", False)) or not bool(args.dry_run)),
             frequency=_int_value(
                 getattr(args, "tenet_evolution_frequency", DEFAULT_TENET_EVOLUTION_FREQUENCY),
                 default=DEFAULT_TENET_EVOLUTION_FREQUENCY,
@@ -3387,6 +3927,7 @@ def run_iteration(args: argparse.Namespace) -> int:
             prompt_dir=prompt_dir,
             tenets_path=tenets_path,
             auto_apply=bool(getattr(args, "tenet_auto_apply", False)),
+            force_once=bool(getattr(args, "force_tenet_evolution_once", False)),
         )
         if tenet_evolution_summary:
             append_jsonl(state_dir / DEFAULT_TENET_EVOLUTION_LOG, tenet_evolution_summary)
@@ -3552,6 +4093,11 @@ def run_iteration(args: argparse.Namespace) -> int:
         "candidate_path": str(candidate_path),
         "result_path": str(result_path),
     }
+    if retry_history:
+        entry["test_retries"] = {
+            "total_attempts": total_retry_attempt,
+            "retry_history": retry_history,
+        }
     if selection_summary:
         entry["tenet_selection"] = selection_summary
     if hypothesis_payload:
@@ -3567,7 +4113,8 @@ def run_iteration(args: argparse.Namespace) -> int:
 
     tenet_evolution_summary, tenet_evolution_artifacts = run_tenet_evolution(
         iteration=iteration,
-        enabled=bool(getattr(args, "tenet_evolution_enabled", True)) and not bool(args.dry_run),
+        enabled=bool(getattr(args, "tenet_evolution_enabled", True))
+        and (bool(getattr(args, "force_tenet_evolution_once", False)) or not bool(args.dry_run)),
         frequency=_int_value(
             getattr(args, "tenet_evolution_frequency", DEFAULT_TENET_EVOLUTION_FREQUENCY),
             default=DEFAULT_TENET_EVOLUTION_FREQUENCY,
@@ -3590,6 +4137,7 @@ def run_iteration(args: argparse.Namespace) -> int:
         prompt_dir=prompt_dir,
         tenets_path=tenets_path,
         auto_apply=bool(getattr(args, "tenet_auto_apply", False)),
+        force_once=bool(getattr(args, "force_tenet_evolution_once", False)),
     )
     if tenet_evolution_summary:
         append_jsonl(state_dir / DEFAULT_TENET_EVOLUTION_LOG, tenet_evolution_summary)
@@ -3861,6 +4409,11 @@ def build_parser() -> argparse.ArgumentParser:
             default=DEFAULT_TENET_EVOLUTION_FREQUENCY,
         )
         run_parser.add_argument("--tenet-auto-apply", action="store_true")
+        run_parser.add_argument(
+            "--force-tenet-evolution-once",
+            action="store_true",
+            help="Force one tenet-evolution execution this run regardless of cadence.",
+        )
         run_parser.add_argument(
             "--hypotheses-file",
             default="",
