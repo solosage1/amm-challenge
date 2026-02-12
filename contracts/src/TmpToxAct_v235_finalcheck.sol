@@ -4,7 +4,7 @@ import {AMMStrategyBase} from "./AMMStrategyBase.sol";
 import {TradeInfo} from "./IAMMStrategy.sol";
 
 contract Strategy is AMMStrategyBase {
-    // ITERATION_POLICY {"decision":"continue","hypothesis_id":"H_TOX_ACT_001","confidence":0.63,"ceiling_probability":0.30,"ev_next_5":0.09,"best_delta_seen":0.15,"reason":"Selected H_TOX_ACT_001 on eff_priority 0.724 with repeat_streak 0 and steps_since_last 3; test minimal adverse-vs-favorable tox split.","next_mechanism":"toxicity_and_activity"}
+    // ITERATION_POLICY {"decision":"continue","hypothesis_id":"H_TOX_ACT_003","confidence":0.58,"ceiling_probability":0.34,"ev_next_5":0.05,"best_delta_seen":0.0747,"reason":"Picked H_TOX_ACT_003 on eff_priority 0.640 with lower evidence_penalty 0.100 and no near_dup_nonpos; avoids low-step nonpos H_TOX_ACT_011 (steps_since_last 2).","next_mechanism":"toxicity_and_activity"}
 
     uint256 constant ELAPSED_CAP = 8;
     uint256 constant SIGNAL_THRESHOLD = WAD / 700;
@@ -37,6 +37,8 @@ contract Strategy is AMMStrategyBase {
     uint256 constant TOX_COEF = 180 * BPS;
     uint256 constant TOX_QUAD_COEF = 19000 * BPS;
     uint256 constant TOX_QUAD_KNEE = 12 * BPS;
+    uint256 constant SIGMA_TOX_SOFTEN_COEF = 40 * WAD;
+    uint256 constant SIGMA_TOX_SOFTEN_CAP = 450000000000000000;
     uint256 constant TOX_FAVORABLE_MULT = 920000000000000000;
     uint256 constant TOX_ADVERSE_MULT = 1080000000000000000;
     uint256 constant ACT_COEF = 42000 * BPS;
@@ -158,6 +160,9 @@ contract Strategy is AMMStrategyBase {
 
         uint256 toxExcess = toxSignal > TOX_QUAD_KNEE ? toxSignal - TOX_QUAD_KNEE : 0;
         uint256 toxAdd = wmul(TOX_COEF, toxSignal) + wmul(TOX_QUAD_COEF, wmul(toxExcess, toxExcess));
+        uint256 toxSoften = wmul(SIGMA_TOX_SOFTEN_COEF, sigmaHat);
+        if (toxSoften > SIGMA_TOX_SOFTEN_CAP) toxSoften = SIGMA_TOX_SOFTEN_CAP;
+        toxAdd = wmul(toxAdd, WAD - toxSoften);
         uint256 toxFavAdd = wmul(toxAdd, TOX_FAVORABLE_MULT);
         uint256 toxAdverseAdd = wmul(toxAdd, TOX_ADVERSE_MULT);
         uint256 toxSplitAdd = toxAdverseAdd > toxFavAdd ? toxAdverseAdd - toxFavAdd : 0;
@@ -262,6 +267,6 @@ contract Strategy is AMMStrategyBase {
     }
 
     function getName() external pure override returns (string memory) {
-        return "toxicity_and_activity_mod_v235";
+        return "toxicity_and_activity_mod_v238";
     }
 }

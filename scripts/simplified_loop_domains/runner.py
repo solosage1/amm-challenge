@@ -90,12 +90,23 @@ DEFAULT_LLM_MODEL = os.environ.get("CODEX_MODEL", "")
 DEFAULT_LLM_TIMEOUT_MINUTES = env_float("CODEX_TIMEOUT_MINUTES", 25.0)
 DEFAULT_LLM_MAX_OUTPUT_TOKENS = env_int("CODEX_MAX_OUTPUT_TOKENS", 8000)
 DEFAULT_POLICY_EVOLUTION_FREQUENCY = 5
-DEFAULT_SEED_OFFSETS = "0"
-DEFAULT_BOOTSTRAP_SEED_OFFSETS = "0,10000,20000"
+DEFAULT_SEED_OFFSETS = "0,10000"
+DEFAULT_BOOTSTRAP_SEED_OFFSETS = "0,10000"
 DEFAULT_PROMOTION_STD_PENALTY = 0.5
 DEFAULT_HYPOTHESES_FILENAME = "hypotheses_backlog.json"
 DEFAULT_HYPOTHESIS_RECENT_WINDOW = 20
 DEFAULT_HYPOTHESIS_NEAR_DUP_DELTA = 0.01
+DEFAULT_TENETS_FILE = ".ralph-amm/phase7/docs/HYPOTHESIS_SELECTION_TENETS.md"
+DEFAULT_TENET_EVOLUTION_FREQUENCY = 20
+DEFAULT_SELECTION_TOP_K = 5
+DEFAULT_SELECTION_RECENT_FAILURES = 8
+DEFAULT_TENET_META_STATE_FILE = "tenet_meta_state.json"
+DEFAULT_HYPOTHESIS_SELECTION_LOG = "hypothesis_selection_log.jsonl"
+DEFAULT_TENET_EVOLUTION_LOG = "tenet_evolution_log.jsonl"
+DEFAULT_PROMPTS_DIR = ".ralph-amm/phase7/prompts"
+DEFAULT_PROMPT_TEMPLATE_HYPOTHESIS_GENERATION = "hypothesis_generation.txt"
+DEFAULT_PROMPT_TEMPLATE_TENET_SELECTION = "tenet_guided_selection.txt"
+DEFAULT_PROMPT_TEMPLATE_TENET_EVOLUTION = "tenet_evolution.txt"
 SYSTEM_RANDOM = random.SystemRandom()
 DEFAULT_BOOTSTRAP_CANDIDATES = [
     ".ralph-amm/research/forks/shl0k28/strategies/Strategy.sol",
@@ -164,6 +175,7 @@ PROMPT_COMMON_CONTRACT_CONSTRAINTS = """
 
 PROMPT_COMMON_HYPOTHESIS_EXECUTION = """
 - Choose exactly one hypothesis_id from the shortlist below and set it in ITERATION_POLICY.hypothesis_id.
+- If a Selected Hypothesis is provided, treat it as authoritative and implement that hypothesis id.
 - Use scorecard feedback to balance exploration (untested/low-tries) and exploitation (higher average/best uplift).
 - Treat eff_priority as the primary shortlist score; raw priority alone is not sufficient.
 - Prefer the smallest code change that cleanly tests the selected hypothesis.
@@ -176,6 +188,71 @@ PROMPT_COMMON_HYPOTHESIS_EXECUTION = """
 PROMPT_COMMON_OUTPUT_FORMAT = """
 ## OUTPUT FORMAT
 Return ONLY the complete Solidity code. No explanations before or after.
+""".strip()
+
+HYPOTHESIS_GENERATION_TEMPLATE_FALLBACK = """
+## LLM REASONING REQUIREMENTS
+- Ground your edit in at least one tenet from the tenet list.
+- Use robust promotion metric context (primary_edge/promotion_edge), not alternate score views.
+- If a selected hypothesis id is provided, do not switch to a different hypothesis id.
+- In ITERATION_POLICY.reason, cite one metric and one tenet by number.
+""".strip()
+
+TENET_GUIDED_SELECTION_PROMPT_FALLBACK = """
+You are selecting one hypothesis for the next AMM iteration.
+
+Return STRICT JSON only:
+{
+  "selected_hypothesis_id": "string",
+  "confidence": 0.0,
+  "tenet_alignment": [{"tenet": "T1", "alignment": "aligned|neutral|misaligned", "note": "short"}],
+  "reasoning": "short rationale referencing one tenet and one metric",
+  "evidence_iteration_ids": [1, 2]
+}
+
+Mechanism: {{MECHANISM_NAME}}
+Tenets:
+{{TENETS_BLOCK}}
+
+Evidence snapshot:
+{{EVIDENCE_SNAPSHOT}}
+
+Candidates (best first):
+{{CANDIDATES_JSON}}
+""".strip()
+
+TENET_EVOLUTION_PROMPT_FALLBACK = """
+You are reviewing recent AMM optimization evidence and proposing one tenet update.
+
+Return STRICT JSON only:
+{
+  "proposal_type": "ADD|MODIFY|DELETE|NO_CHANGE",
+  "affected_tenet": 0,
+  "current_text": "optional",
+  "proposed_text": "optional",
+  "reasoning": "short rationale",
+  "expected_impact": "short impact",
+  "evidence_iteration_ids": [1, 2]
+}
+
+Current tenets:
+{{TENETS_BLOCK}}
+
+Evidence snapshot:
+{{EVIDENCE_SNAPSHOT}}
+
+Recent window results:
+{{WINDOW_RESULTS_JSON}}
+""".strip()
+
+JSON_REPAIR_PROMPT_TEMPLATE = """
+Return ONLY valid JSON object. No markdown, no prose.
+
+Schema reminder:
+{{SCHEMA_HINT}}
+
+Your invalid response was:
+{{BROKEN_RESPONSE}}
 """.strip()
 
 
@@ -204,6 +281,17 @@ Modify the **{mechanism_name}** mechanism to improve expected edge.
 
 ### Hypothesis Shortlist (LLM Selection Required)
 {hypothesis_shortlist}
+
+### Selected Hypothesis (Pre-Selection)
+{selected_hypothesis_block}
+
+### Tenets
+{tenets_block}
+
+### Evidence Snapshot
+{evidence_snapshot_block}
+
+{generation_requirements_block}
 
 {priors_block}
 
@@ -237,6 +325,14 @@ You are improving an AMM fee strategy with a broad structural change.
 ## YOUR TASK
 Propose a complete contract revision that can modify any mechanism if it improves expected edge.
 
+### Tenets
+{tenets_block}
+
+### Evidence Snapshot
+{evidence_snapshot_block}
+
+{generation_requirements_block}
+
 {dont_pursue_block}
 
 {iteration_governor_block}
@@ -248,6 +344,7 @@ Propose a complete contract revision that can modify any mechanism if it improve
 2. Keep contract declaration as `contract Strategy`
 3. Set getName() return value to "{variant_name}"
 4. Keep interface compatibility (afterInitialize, afterSwap, getName)
+5. Include basic structural sanity checks in reasoning: bounded fees, coherent spread behavior, no pathological liquidity collapse.
 
 {output_format_block}
 """.strip()
@@ -265,10 +362,18 @@ def parse_seed_offsets(raw: str) -> List[int]:
         if not value:
             continue
         try:
-            offsets.append(int(value))
+            parsed = int(value)
         except ValueError:
             continue
-    return offsets if offsets else [0]
+        if parsed < 0:
+            continue
+        if parsed > 10000:
+            continue
+        offsets.append(parsed)
+    if not offsets:
+        return [0]
+    deduped = sorted(set(offsets))
+    return deduped
 
 
 def authoritative_tries(rec: Dict[str, Any]) -> int:
@@ -596,6 +701,751 @@ def format_hypothesis_shortlist(
 
     rows.extend(PROMPT_COMMON_HYPOTHESIS_EXECUTION.splitlines())
     return "\n".join(rows)
+
+
+def load_prompt_asset(path: Path, fallback: str) -> str:
+    if path.exists():
+        try:
+            text = path.read_text().strip()
+            if text:
+                return text
+        except OSError:
+            pass
+    return fallback
+
+
+def render_template(template: str, values: Dict[str, str]) -> str:
+    rendered = str(template)
+    for key, value in values.items():
+        rendered = rendered.replace(f"{{{{{key}}}}}", str(value))
+    return rendered
+
+
+def _truncate_text(value: str, limit: int) -> str:
+    text = str(value or "").strip()
+    if len(text) <= limit:
+        return text
+    if limit <= 3:
+        return text[:limit]
+    return text[: limit - 3] + "..."
+
+
+def parse_tenets(tenets_path: Path) -> Dict[str, Any]:
+    if not tenets_path.exists():
+        return {
+            "path": str(tenets_path),
+            "raw_text": "",
+            "tenets": [],
+            "source": "missing",
+        }
+
+    raw_text = tenets_path.read_text()
+    machine_tenets: List[Dict[str, Any]] = []
+
+    fenced_match = re.search(r"```TENETS_JSON\s*(.*?)```", raw_text, re.DOTALL | re.IGNORECASE)
+    if fenced_match:
+        block = fenced_match.group(1).strip()
+        try:
+            parsed = json.loads(block)
+        except json.JSONDecodeError:
+            parsed = None
+        if isinstance(parsed, dict):
+            items = parsed.get("tenets")
+            if isinstance(items, list):
+                for idx, item in enumerate(items, start=1):
+                    if isinstance(item, dict):
+                        text = str(item.get("text", "")).strip()
+                        if not text:
+                            continue
+                        identifier = str(item.get("id", f"T{idx}")).strip() or f"T{idx}"
+                        machine_tenets.append(
+                            {
+                                "id": identifier,
+                                "index": _int_value(item.get("index", idx), default=idx),
+                                "text": text,
+                            }
+                        )
+                    else:
+                        text = str(item).strip()
+                        if not text:
+                            continue
+                        machine_tenets.append({"id": f"T{idx}", "index": idx, "text": text})
+        elif isinstance(parsed, list):
+            for idx, item in enumerate(parsed, start=1):
+                if isinstance(item, dict):
+                    text = str(item.get("text", "")).strip()
+                    if not text:
+                        continue
+                    identifier = str(item.get("id", f"T{idx}")).strip() or f"T{idx}"
+                    machine_tenets.append(
+                        {
+                            "id": identifier,
+                            "index": _int_value(item.get("index", idx), default=idx),
+                            "text": text,
+                        }
+                    )
+                else:
+                    text = str(item).strip()
+                    if not text:
+                        continue
+                    machine_tenets.append({"id": f"T{idx}", "index": idx, "text": text})
+
+    parsed_tenets: List[Dict[str, Any]] = []
+    if machine_tenets:
+        parsed_tenets = sorted(machine_tenets, key=lambda item: _int_value(item.get("index", 0), default=0))
+        source = "tenets_json"
+    else:
+        for line in raw_text.splitlines():
+            match = re.match(r"^\s*(\d+)\.\s+(.+?)\s*$", line)
+            if not match:
+                continue
+            index = _int_value(match.group(1), default=0)
+            if index <= 0:
+                continue
+            text = match.group(2).strip()
+            if not text:
+                continue
+            parsed_tenets.append({"id": f"T{index}", "index": index, "text": text})
+        source = "numbered_markdown"
+
+    return {
+        "path": str(tenets_path),
+        "raw_text": raw_text,
+        "tenets": parsed_tenets,
+        "source": source,
+    }
+
+
+def format_tenets_block(tenets_payload: Dict[str, Any]) -> str:
+    tenets = tenets_payload.get("tenets")
+    if not isinstance(tenets, list) or not tenets:
+        return "- (no tenets loaded)"
+    rows: List[str] = []
+    for tenet in tenets:
+        if not isinstance(tenet, dict):
+            continue
+        tenet_id = str(tenet.get("id", "")).strip() or f"T{_int_value(tenet.get('index', 0), default=0)}"
+        text = str(tenet.get("text", "")).strip()
+        if not text:
+            continue
+        rows.append(f"- {tenet_id}: {text}")
+    return "\n".join(rows) if rows else "- (no tenets loaded)"
+
+
+def sync_tenet_meta_state(
+    tenet_meta: Dict[str, Any],
+    tenets_payload: Dict[str, Any],
+    iteration: int,
+) -> Dict[str, Any]:
+    current = tenet_meta if isinstance(tenet_meta, dict) else {}
+    records = current.get("tenets")
+    if not isinstance(records, dict):
+        records = {}
+    tenets = tenets_payload.get("tenets")
+    if isinstance(tenets, list):
+        for tenet in tenets:
+            if not isinstance(tenet, dict):
+                continue
+            tenet_id = str(tenet.get("id", "")).strip()
+            if not tenet_id:
+                continue
+            text = str(tenet.get("text", "")).strip()
+            rec = records.get(tenet_id)
+            if not isinstance(rec, dict):
+                rec = {}
+            rec.setdefault("support_count", 0)
+            rec.setdefault("conflict_count", 0)
+            rec.setdefault("last_evidence_ids", [])
+            rec.setdefault("last_updated_iter", int(iteration))
+            rec["text"] = text
+            records[tenet_id] = rec
+    current["tenets"] = records
+    current["updated_at"] = utc_now_iso()
+    current["schema_version"] = 1
+    return current
+
+
+def _parse_evidence_iteration_ids(payload: Dict[str, Any]) -> List[int]:
+    ids: List[int] = []
+    values = payload.get("evidence_iteration_ids")
+    if not isinstance(values, list):
+        return ids
+    for value in values:
+        parsed = _int_value(value, default=-1)
+        if parsed >= 0:
+            ids.append(parsed)
+    return ids
+
+
+def update_tenet_meta_from_selection(
+    tenet_meta: Dict[str, Any],
+    selection_payload: Dict[str, Any],
+    iteration: int,
+) -> None:
+    records = tenet_meta.get("tenets")
+    if not isinstance(records, dict):
+        return
+    alignments = selection_payload.get("tenet_alignment")
+    evidence_ids = _parse_evidence_iteration_ids(selection_payload)
+    if not isinstance(alignments, list):
+        return
+    for row in alignments:
+        if not isinstance(row, dict):
+            continue
+        tenet_id = str(row.get("tenet", "")).strip()
+        if not tenet_id:
+            continue
+        rec = records.get(tenet_id)
+        if not isinstance(rec, dict):
+            continue
+        alignment = str(row.get("alignment", "")).strip().lower()
+        if alignment == "aligned":
+            rec["support_count"] = _int_value(rec.get("support_count", 0), default=0) + 1
+        elif alignment == "misaligned":
+            rec["conflict_count"] = _int_value(rec.get("conflict_count", 0), default=0) + 1
+        rec["last_evidence_ids"] = evidence_ids[:12]
+        rec["last_updated_iter"] = int(iteration)
+
+
+def update_tenet_meta_from_proposal(
+    tenet_meta: Dict[str, Any],
+    proposal: Dict[str, Any],
+    iteration: int,
+    applied: bool,
+) -> None:
+    if not applied:
+        return
+    records = tenet_meta.get("tenets")
+    if not isinstance(records, dict):
+        return
+    tenet_idx = _int_value(proposal.get("affected_tenet"), default=0)
+    if tenet_idx <= 0:
+        return
+    tenet_id = f"T{tenet_idx}"
+    rec = records.get(tenet_id)
+    if not isinstance(rec, dict):
+        rec = {
+            "support_count": 0,
+            "conflict_count": 0,
+            "last_evidence_ids": [],
+        }
+    proposed_text = str(proposal.get("proposed_text", "")).strip()
+    if proposed_text:
+        rec["text"] = proposed_text
+    rec["last_evidence_ids"] = _parse_evidence_iteration_ids(proposal)[:12]
+    rec["last_updated_iter"] = int(iteration)
+    records[tenet_id] = rec
+
+
+def extract_recent_failures(
+    log_entries: Sequence[Dict[str, Any]],
+    limit: int = DEFAULT_SELECTION_RECENT_FAILURES,
+) -> List[Dict[str, Any]]:
+    failures: List[Dict[str, Any]] = []
+    for entry in reversed(log_entries):
+        if not isinstance(entry, dict):
+            continue
+        status = str(entry.get("status", "")).strip()
+        delta = entry.get("delta")
+        is_failure = status in {"invalid", "llm_failed", "compile_failed", "regression_rejected"}
+        if not is_failure and delta is not None:
+            is_failure = _float_value(delta, default=0.0) <= -0.05
+        if not is_failure:
+            continue
+        hypothesis_id = _hypothesis_id_from_log_entry(entry)
+        failures.append(
+            {
+                "iter": _int_value(entry.get("iter", 0), default=0),
+                "status": status or "unknown",
+                "mechanism": str(entry.get("mechanism", "")).strip(),
+                "hypothesis_id": hypothesis_id or None,
+                "edge": entry.get("edge"),
+                "delta": entry.get("delta"),
+                "reason": str(entry.get("reason", "")).strip() or None,
+            }
+        )
+        if len(failures) >= max(1, int(limit)):
+            break
+    return list(reversed(failures))
+
+
+def summarize_mechanism_concentration(
+    log_entries: Sequence[Dict[str, Any]],
+    window: int = 30,
+) -> Dict[str, Any]:
+    rows = [entry for entry in log_entries if isinstance(entry, dict)]
+    recent = rows[-max(1, int(window)) :]
+    counts: Dict[str, int] = {}
+    for entry in recent:
+        mechanism_name = str(entry.get("mechanism", "")).strip()
+        if not mechanism_name:
+            continue
+        counts[mechanism_name] = counts.get(mechanism_name, 0) + 1
+    sorted_counts = sorted(counts.items(), key=lambda item: item[1], reverse=True)
+    top = [{"mechanism": key, "count": value} for key, value in sorted_counts[:5]]
+    return {
+        "window": len(recent),
+        "top": top,
+    }
+
+
+def build_evidence_snapshot(
+    stats: Dict[str, Any],
+    log_entries: Sequence[Dict[str, Any]],
+    mechanism_name: str,
+    seed_offsets: Sequence[int],
+    shortlist_size: int,
+) -> str:
+    champion = stats.get("champion") if isinstance(stats.get("champion"), dict) else {}
+    champion_edge = _float_value(champion.get("edge", 0.0), default=0.0)
+    champion_name = str(champion.get("name", "unknown_champion")).strip() or "unknown_champion"
+    concentration = summarize_mechanism_concentration(log_entries)
+    failures = extract_recent_failures(log_entries, limit=DEFAULT_SELECTION_RECENT_FAILURES)
+    mechanisms = stats.get("mechanisms") if isinstance(stats.get("mechanisms"), dict) else {}
+    mechanism_stats = mechanisms.get(mechanism_name) if isinstance(mechanisms, dict) else {}
+    mechanism_stats = mechanism_stats if isinstance(mechanism_stats, dict) else {}
+
+    offset_list = [int(offset) for offset in seed_offsets]
+    max_seed_offset = max(offset_list) if offset_list else 0
+    concentration_text = ", ".join(
+        f"{row['mechanism']}:{row['count']}" for row in concentration.get("top", []) if isinstance(row, dict)
+    ) or "n/a"
+    rows: List[str] = [
+        f"- champion: name={champion_name} robust_edge={champion_edge:.4f}",
+        f"- active_seed_offsets: {','.join(str(value) for value in offset_list)} max_seed_offset={max_seed_offset}",
+        f"- mechanism_focus: target={mechanism_name} shortlist_size={int(shortlist_size)} "
+        f"tries={_int_value(mechanism_stats.get('tries_authoritative', mechanism_stats.get('tries', 0)), default=0)} "
+        f"best_delta={_float_value(mechanism_stats.get('best_delta', 0.0), default=0.0):+.4f}",
+        f"- concentration_last_{_int_value(concentration.get('window', 0), default=0)}: {concentration_text}",
+    ]
+    if failures:
+        rows.append("- recent_failures:")
+        for failure in failures:
+            rows.append(
+                f"  - iter={failure.get('iter')} mechanism={failure.get('mechanism')} "
+                f"status={failure.get('status')} edge={failure.get('edge')} delta={failure.get('delta')} "
+                f"reason={failure.get('reason') or 'n/a'}"
+            )
+    else:
+        rows.append("- recent_failures: none")
+    return "\n".join(rows)
+
+
+def score_hypothesis_candidate(
+    hypothesis: Dict[str, Any],
+    hypothesis_tracker: Optional[Dict[str, Any]],
+    hypothesis_recent: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    tracker = hypothesis_tracker if isinstance(hypothesis_tracker, dict) else {}
+    tracker_records = tracker.get("records") if isinstance(tracker.get("records"), dict) else {}
+    recent = hypothesis_recent if isinstance(hypothesis_recent, dict) else {}
+    recent_records = recent.get("records") if isinstance(recent.get("records"), dict) else {}
+
+    hypothesis_id = str(hypothesis.get("id", "")).strip()
+    priority = _float_value(hypothesis.get("priority", 1.0), default=1.0)
+    rec = tracker_records.get(hypothesis_id) if isinstance(tracker_records, dict) else {}
+    rec_dict = rec if isinstance(rec, dict) else {}
+    tries = _int_value(rec_dict.get("tries", 0), default=0)
+    auth_tries = _int_value(rec_dict.get("tries_authoritative", 0), default=0)
+    total_uplift = _float_value(rec_dict.get("total_uplift", 0.0), default=0.0)
+    mean_delta = total_uplift / auth_tries if auth_tries > 0 else 0.0
+    best_delta = rec_dict.get("best_delta")
+    recent_rec = recent_records.get(hypothesis_id) if isinstance(recent_records, dict) else {}
+    recent_dict = recent_rec if isinstance(recent_rec, dict) else {}
+    recent_count = _int_value(recent_dict.get("recent_count", 0), default=0)
+    recent_mean_raw = recent_dict.get("recent_mean_delta")
+    recent_mean = _float_value(recent_mean_raw, default=0.0) if recent_mean_raw is not None else None
+    repeat_streak = _int_value(recent_dict.get("repeat_streak", 0), default=0)
+    steps_since_last = _int_value(
+        recent_dict.get("steps_since_last", DEFAULT_HYPOTHESIS_RECENT_WINDOW),
+        default=DEFAULT_HYPOTHESIS_RECENT_WINDOW,
+    )
+    soft_nochange = _int_value(recent_dict.get("soft_nochange", 0), default=0)
+    near_dup_nonpos = _int_value(recent_dict.get("near_duplicate_nonpositive", 0), default=0)
+
+    exploration_bonus = 0.0
+    if tries <= 0:
+        exploration_bonus = 0.08
+    elif tries == 1:
+        exploration_bonus = 0.05
+    elif tries == 2:
+        exploration_bonus = 0.02
+
+    evidence_penalty = 0.0
+    if recent_count >= 2 and recent_mean is not None and recent_mean <= 0.0:
+        evidence_penalty += 0.10
+    if recent_count > 0 and steps_since_last <= 2:
+        evidence_penalty += 0.06
+    if near_dup_nonpos > 0:
+        evidence_penalty += 0.12
+    if soft_nochange > 0:
+        evidence_penalty += min(0.16, 0.04 * soft_nochange)
+
+    eff_priority = max(0.0, min(1.0, priority + exploration_bonus - evidence_penalty))
+    return {
+        "id": hypothesis_id,
+        "mechanism": str(hypothesis.get("mechanism", "")).strip(),
+        "hypothesis": str(hypothesis.get("hypothesis", "")).strip(),
+        "expected_signal": str(hypothesis.get("expected_signal", "")).strip(),
+        "priority": priority,
+        "eff_priority": eff_priority,
+        "exploration_bonus": exploration_bonus,
+        "evidence_penalty": evidence_penalty,
+        "tries": tries,
+        "mean_delta": mean_delta,
+        "best_delta": _float_value(best_delta, default=0.0) if best_delta is not None else None,
+        "recent_count": recent_count,
+        "recent_mean_delta": recent_mean,
+        "repeat_streak": repeat_streak,
+        "steps_since_last": steps_since_last,
+        "soft_nochange": soft_nochange,
+        "near_dup_nonpos": near_dup_nonpos,
+    }
+
+
+def rank_hypothesis_candidates(
+    shortlist: Sequence[Dict[str, Any]],
+    hypothesis_tracker: Optional[Dict[str, Any]],
+    hypothesis_recent: Optional[Dict[str, Any]],
+    top_k: int = DEFAULT_SELECTION_TOP_K,
+) -> List[Dict[str, Any]]:
+    scored = [
+        score_hypothesis_candidate(hypothesis, hypothesis_tracker, hypothesis_recent)
+        for hypothesis in shortlist
+        if isinstance(hypothesis, dict)
+    ]
+    scored.sort(
+        key=lambda row: (
+            _float_value(row.get("eff_priority", 0.0), default=0.0),
+            _float_value(row.get("priority", 0.0), default=0.0),
+            -_int_value(row.get("tries", 0), default=0),
+        ),
+        reverse=True,
+    )
+    return scored[: max(1, int(top_k))]
+
+
+def format_selected_hypothesis_block(
+    selected_hypothesis: Optional[Dict[str, Any]],
+    selection_summary: Optional[Dict[str, Any]],
+) -> str:
+    if not isinstance(selected_hypothesis, dict):
+        return "- none"
+    hypothesis_id = str(selected_hypothesis.get("id", "")).strip()
+    mechanism = str(selected_hypothesis.get("mechanism", "")).strip()
+    statement = str(selected_hypothesis.get("hypothesis", "")).strip()
+    summary = selection_summary if isinstance(selection_summary, dict) else {}
+    reason = str(summary.get("reasoning", "")).strip()
+    confidence = _safe_probability(summary.get("confidence"))
+    conf_text = "n/a" if confidence is None else f"{confidence:.2f}"
+    reason_text = _truncate_text(reason, 220) if reason else "n/a"
+    return (
+        f"- id={hypothesis_id} mechanism={mechanism} confidence={conf_text} "
+        f"reason={reason_text} hypothesis={statement}"
+    )
+
+
+def run_llm_json_step(
+    prompt_text: str,
+    prompt_path: Path,
+    artifact_prefix: Path,
+    llm_command: str,
+    llm_model: str,
+    llm_timeout_minutes: float,
+    llm_max_output_tokens: int,
+    llm_disable_shell_tool: bool,
+    schema_hint: str,
+) -> Tuple[Optional[Dict[str, Any]], Optional[str], Dict[str, str]]:
+    atomic_write_text(prompt_path, f"{prompt_text}\n")
+    response_text, error, artifacts = run_llm_exec(
+        prompt_path=prompt_path,
+        artifact_prefix=artifact_prefix,
+        llm_command=llm_command,
+        llm_model=llm_model,
+        llm_timeout_minutes=llm_timeout_minutes,
+        llm_max_output_tokens=llm_max_output_tokens,
+        llm_disable_shell_tool=llm_disable_shell_tool,
+        attempt=0,
+    )
+    if response_text is None:
+        return None, error or "llm_json_failed", artifacts
+    payload = extract_json_payload_from_response(response_text)
+    if payload is not None:
+        return payload, None, artifacts
+
+    repair_prompt = render_template(
+        JSON_REPAIR_PROMPT_TEMPLATE,
+        {
+            "SCHEMA_HINT": schema_hint,
+            "BROKEN_RESPONSE": _truncate_text(response_text, 3500),
+        },
+    )
+    repair_prompt_path = prompt_path.with_name(f"{prompt_path.stem}_repair{prompt_path.suffix}")
+    atomic_write_text(repair_prompt_path, f"{repair_prompt}\n")
+    repair_response, repair_error, repair_artifacts = run_llm_exec(
+        prompt_path=repair_prompt_path,
+        artifact_prefix=artifact_prefix.with_name(f"{artifact_prefix.name}_repair"),
+        llm_command=llm_command,
+        llm_model=llm_model,
+        llm_timeout_minutes=llm_timeout_minutes,
+        llm_max_output_tokens=llm_max_output_tokens,
+        llm_disable_shell_tool=llm_disable_shell_tool,
+        attempt=1,
+    )
+    merged_artifacts = dict(artifacts)
+    for key, value in repair_artifacts.items():
+        merged_artifacts[f"repair_{key}"] = value
+    if repair_response is None:
+        return None, repair_error or "llm_json_repair_failed", merged_artifacts
+    repair_payload = extract_json_payload_from_response(repair_response)
+    if repair_payload is None:
+        return None, "llm_json_parse_failed_after_repair", merged_artifacts
+    return repair_payload, None, merged_artifacts
+
+
+def select_hypothesis_with_llm(
+    iteration: int,
+    mechanism_name: str,
+    shortlist: Sequence[Dict[str, Any]],
+    hypothesis_tracker: Optional[Dict[str, Any]],
+    hypothesis_recent: Optional[Dict[str, Any]],
+    tenets_block: str,
+    evidence_snapshot: str,
+    prompts_dir: Path,
+    llm_command: str,
+    llm_model: str,
+    llm_timeout_minutes: float,
+    llm_max_output_tokens: int,
+    llm_disable_shell_tool: bool,
+    candidate_dir: Path,
+    enabled: bool,
+    top_k: int,
+) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any], Dict[str, str]]:
+    shortlist_rows = [hypothesis for hypothesis in shortlist if isinstance(hypothesis, dict)]
+    if not shortlist_rows:
+        return None, {"status": "no_candidates", "iteration": iteration}, {}
+
+    ranked = rank_hypothesis_candidates(
+        shortlist=shortlist_rows,
+        hypothesis_tracker=hypothesis_tracker,
+        hypothesis_recent=hypothesis_recent,
+        top_k=top_k,
+    )
+    fallback_id = str(ranked[0].get("id", "")).strip() if ranked else ""
+    hypothesis_map = {str(hypothesis.get("id", "")).strip(): hypothesis for hypothesis in shortlist_rows}
+    fallback_hypothesis = hypothesis_map.get(fallback_id) if fallback_id else shortlist_rows[0]
+    summary: Dict[str, Any] = {
+        "status": "fallback",
+        "iteration": iteration,
+        "mechanism": mechanism_name,
+        "fallback_hypothesis_id": str(fallback_hypothesis.get("id", "")).strip(),
+        "reason": "selection_disabled" if not enabled else "llm_not_run",
+        "confidence": None,
+        "reasoning": None,
+        "evidence_iteration_ids": [],
+    }
+    if not enabled:
+        return fallback_hypothesis, summary, {}
+
+    candidates_payload = json.dumps(ranked, indent=2)
+    template_path = prompts_dir / DEFAULT_PROMPT_TEMPLATE_TENET_SELECTION
+    template_text = load_prompt_asset(template_path, TENET_GUIDED_SELECTION_PROMPT_FALLBACK)
+    prompt_text = render_template(
+        template_text,
+        {
+            "MECHANISM_NAME": mechanism_name,
+            "TENETS_BLOCK": tenets_block,
+            "EVIDENCE_SNAPSHOT": evidence_snapshot,
+            "CANDIDATES_JSON": candidates_payload,
+        },
+    )
+    prompt_path = candidate_dir / f"iter_{iteration}_{mechanism_name}_tenet_selection.prompt.md"
+    artifact_prefix = candidate_dir / f"iter_{iteration}_{mechanism_name}_tenet_selection"
+    payload, error, artifacts = run_llm_json_step(
+        prompt_text=prompt_text,
+        prompt_path=prompt_path,
+        artifact_prefix=artifact_prefix,
+        llm_command=llm_command,
+        llm_model=llm_model,
+        llm_timeout_minutes=llm_timeout_minutes,
+        llm_max_output_tokens=llm_max_output_tokens,
+        llm_disable_shell_tool=llm_disable_shell_tool,
+        schema_hint='{"selected_hypothesis_id":"id","confidence":0.0,"tenet_alignment":[],"reasoning":"text","evidence_iteration_ids":[1]}',
+    )
+    if payload is None:
+        summary["reason"] = error or "selection_llm_failed"
+        return fallback_hypothesis, summary, artifacts
+
+    selected_id = str(payload.get("selected_hypothesis_id", "")).strip()
+    selected_hypothesis = hypothesis_map.get(selected_id)
+    if selected_hypothesis is None:
+        summary["reason"] = "selection_id_not_in_candidates"
+        summary["llm_selected_hypothesis_id"] = selected_id or None
+        return fallback_hypothesis, summary, artifacts
+
+    summary = {
+        "status": "selected",
+        "iteration": iteration,
+        "mechanism": mechanism_name,
+        "selected_hypothesis_id": selected_id,
+        "confidence": _safe_probability(payload.get("confidence")),
+        "tenet_alignment": payload.get("tenet_alignment") if isinstance(payload.get("tenet_alignment"), list) else [],
+        "reasoning": str(payload.get("reasoning", "")).strip(),
+        "evidence_iteration_ids": _parse_evidence_iteration_ids(payload),
+        "fallback_hypothesis_id": str(fallback_hypothesis.get("id", "")).strip(),
+    }
+    return selected_hypothesis, summary, artifacts
+
+
+def apply_tenet_proposal(
+    tenets_path: Path,
+    proposal: Dict[str, Any],
+    iteration: int,
+) -> Tuple[bool, str]:
+    if not tenets_path.exists():
+        return False, "tenets_file_missing"
+    proposal_type = str(proposal.get("proposal_type", "")).strip().upper()
+    if proposal_type not in {"ADD", "MODIFY", "DELETE"}:
+        return False, "proposal_not_applicable"
+    affected_tenet = _int_value(proposal.get("affected_tenet"), default=0)
+    proposed_text = str(proposal.get("proposed_text", "")).strip()
+
+    lines = tenets_path.read_text().splitlines()
+    number_pattern = re.compile(r"^\s*(\d+)\.\s+(.+?)\s*$")
+    numbered_indices: Dict[int, int] = {}
+    for idx, line in enumerate(lines):
+        match = number_pattern.match(line)
+        if not match:
+            continue
+        tenet_idx = _int_value(match.group(1), default=0)
+        if tenet_idx > 0 and tenet_idx not in numbered_indices:
+            numbered_indices[tenet_idx] = idx
+
+    if proposal_type == "MODIFY":
+        if affected_tenet <= 0 or affected_tenet not in numbered_indices or not proposed_text:
+            return False, "invalid_modify_target"
+        lines[numbered_indices[affected_tenet]] = f"{affected_tenet}. {proposed_text}"
+    elif proposal_type == "DELETE":
+        if affected_tenet <= 0 or affected_tenet not in numbered_indices:
+            return False, "invalid_delete_target"
+        delete_idx = numbered_indices[affected_tenet]
+        lines.pop(delete_idx)
+    elif proposal_type == "ADD":
+        if not proposed_text:
+            return False, "invalid_add_text"
+        next_idx = max(numbered_indices.keys(), default=0) + 1
+        insert_after = max(numbered_indices.values(), default=-1)
+        insert_at = insert_after + 1
+        lines.insert(insert_at, f"{next_idx}. {proposed_text}")
+        affected_tenet = next_idx
+
+    if not any(line.strip() == "## Change Log" for line in lines):
+        lines.extend(["", "## Change Log", ""])
+    else:
+        lines.append("")
+    change_title = f"### Iteration {iteration} - Tenet {affected_tenet} {proposal_type.title()}"
+    evidence = ", ".join(str(value) for value in _parse_evidence_iteration_ids(proposal)) or "n/a"
+    expected_impact = str(proposal.get("expected_impact", "")).strip() or "n/a"
+    lines.extend(
+        [
+            change_title,
+            f"**Evidence**: {evidence}",
+            f"**Change**: {proposal_type}",
+            f"**Expected Impact**: {expected_impact}",
+            "",
+        ]
+    )
+    atomic_write_text(tenets_path, "\n".join(lines).rstrip() + "\n")
+    return True, "applied"
+
+
+def run_tenet_evolution(
+    iteration: int,
+    enabled: bool,
+    frequency: int,
+    tenets_payload: Dict[str, Any],
+    evidence_snapshot: str,
+    log_entries: Sequence[Dict[str, Any]],
+    prompts_dir: Path,
+    llm_command: str,
+    llm_model: str,
+    llm_timeout_minutes: float,
+    llm_max_output_tokens: int,
+    llm_disable_shell_tool: bool,
+    prompt_dir: Path,
+    tenets_path: Path,
+    auto_apply: bool,
+) -> Tuple[Optional[Dict[str, Any]], Dict[str, str]]:
+    if not enabled or frequency <= 0 or iteration % frequency != 0:
+        return None, {}
+
+    window_rows = list(log_entries)[-max(1, int(frequency)) :]
+    compact_window: List[Dict[str, Any]] = []
+    for entry in window_rows:
+        if not isinstance(entry, dict):
+            continue
+        compact_window.append(
+            {
+                "iter": _int_value(entry.get("iter", 0), default=0),
+                "status": str(entry.get("status", "")).strip(),
+                "mechanism": str(entry.get("mechanism", "")).strip(),
+                "delta": entry.get("delta"),
+                "edge": entry.get("edge"),
+                "hypothesis_id": _hypothesis_id_from_log_entry(entry) or None,
+            }
+        )
+
+    template_path = prompts_dir / DEFAULT_PROMPT_TEMPLATE_TENET_EVOLUTION
+    template_text = load_prompt_asset(template_path, TENET_EVOLUTION_PROMPT_FALLBACK)
+    prompt_text = render_template(
+        template_text,
+        {
+            "TENETS_BLOCK": format_tenets_block(tenets_payload),
+            "EVIDENCE_SNAPSHOT": evidence_snapshot,
+            "WINDOW_RESULTS_JSON": json.dumps(compact_window, indent=2),
+        },
+    )
+    prompt_path = prompt_dir / f"iter_{iteration}_tenet_evolution.prompt.md"
+    artifact_prefix = prompt_dir / f"iter_{iteration}_tenet_evolution"
+    payload, error, artifacts = run_llm_json_step(
+        prompt_text=prompt_text,
+        prompt_path=prompt_path,
+        artifact_prefix=artifact_prefix,
+        llm_command=llm_command,
+        llm_model=llm_model,
+        llm_timeout_minutes=llm_timeout_minutes,
+        llm_max_output_tokens=llm_max_output_tokens,
+        llm_disable_shell_tool=llm_disable_shell_tool,
+        schema_hint='{"proposal_type":"NO_CHANGE","affected_tenet":0,"proposed_text":"","reasoning":"","expected_impact":"","evidence_iteration_ids":[1]}',
+    )
+    if payload is None:
+        return {
+            "status": "failed",
+            "iteration": iteration,
+            "reason": error or "tenet_evolution_failed",
+            "auto_apply": bool(auto_apply),
+        }, artifacts
+
+    proposal_type = str(payload.get("proposal_type", "")).strip().upper()
+    proposal = {
+        "status": "proposed",
+        "iteration": iteration,
+        "proposal_type": proposal_type or "NO_CHANGE",
+        "affected_tenet": _int_value(payload.get("affected_tenet"), default=0),
+        "current_text": str(payload.get("current_text", "")).strip() or None,
+        "proposed_text": str(payload.get("proposed_text", "")).strip() or None,
+        "reasoning": str(payload.get("reasoning", "")).strip() or None,
+        "expected_impact": str(payload.get("expected_impact", "")).strip() or None,
+        "evidence_iteration_ids": _parse_evidence_iteration_ids(payload),
+        "auto_apply": bool(auto_apply),
+        "applied": False,
+        "apply_result": None,
+    }
+    if auto_apply and proposal_type in {"ADD", "MODIFY", "DELETE"}:
+        applied, apply_result = apply_tenet_proposal(tenets_path, payload, iteration)
+        proposal["applied"] = bool(applied)
+        proposal["apply_result"] = apply_result
+    return proposal, artifacts
 
 
 def parse_hypothesis_items(payload: Any) -> List[Dict[str, Any]]:
@@ -935,6 +1785,10 @@ def build_prompt(
     hypothesis_shortlist: Sequence[Dict[str, Any]] = (),
     hypothesis_tracker: Optional[Dict[str, Any]] = None,
     hypothesis_recent: Optional[Dict[str, Any]] = None,
+    selected_hypothesis_block: str = "- none",
+    tenets_block: str = "- (no tenets loaded)",
+    evidence_snapshot_block: str = "- (no evidence snapshot)",
+    generation_requirements_block: str = HYPOTHESIS_GENERATION_TEMPLATE_FALLBACK,
 ) -> str:
     return PROMPT_TEMPLATE.format(
         champion_code=champion_code,
@@ -948,6 +1802,10 @@ def build_prompt(
             hypothesis_tracker,
             hypothesis_recent=hypothesis_recent,
         ),
+        selected_hypothesis_block=selected_hypothesis_block,
+        tenets_block=tenets_block,
+        evidence_snapshot_block=evidence_snapshot_block,
+        generation_requirements_block=generation_requirements_block,
         priors_block=PROMPT_COMMON_PRIORS,
         dont_pursue_block=PROMPT_COMMON_DONT_PURSUE,
         iteration_governor_block=ITERATION_GOVERNOR_BLOCK,
@@ -960,9 +1818,18 @@ def build_prompt(
     )
 
 
-def build_wildcard_prompt(champion_code: str, variant_name: str) -> str:
+def build_wildcard_prompt(
+    champion_code: str,
+    variant_name: str,
+    tenets_block: str = "- (no tenets loaded)",
+    evidence_snapshot_block: str = "- (no evidence snapshot)",
+    generation_requirements_block: str = HYPOTHESIS_GENERATION_TEMPLATE_FALLBACK,
+) -> str:
     return WILDCARD_PROMPT_TEMPLATE.format(
         champion_code=champion_code,
+        tenets_block=tenets_block,
+        evidence_snapshot_block=evidence_snapshot_block,
+        generation_requirements_block=generation_requirements_block,
         dont_pursue_block=PROMPT_COMMON_DONT_PURSUE,
         iteration_governor_block=ITERATION_GOVERNOR_BLOCK,
         iteration_policy_metadata_block=ITERATION_POLICY_METADATA_BLOCK,
@@ -1790,6 +2657,24 @@ def read_iteration_log(path: Path) -> List[Dict[str, Any]]:
     return rows
 
 
+def read_last_jsonl_entry(path: Path) -> Optional[Dict[str, Any]]:
+    if not path.exists():
+        return None
+    last_payload: Optional[Dict[str, Any]] = None
+    with path.open() as handle:
+        for line in handle:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            try:
+                payload = json.loads(stripped)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(payload, dict):
+                last_payload = payload
+    return last_payload
+
+
 def bootstrap_champion(args: argparse.Namespace) -> int:
     state_dir = Path(args.state_dir)
     state_dir.mkdir(parents=True, exist_ok=True)
@@ -1998,11 +2883,18 @@ def _build_iteration_prompt(
     hypothesis_shortlist: Sequence[Dict[str, Any]],
     hypothesis_tracker: Optional[Dict[str, Any]],
     hypothesis_recent: Optional[Dict[str, Any]],
+    selected_hypothesis_block: str,
+    tenets_block: str,
+    evidence_snapshot_block: str,
+    generation_requirements_block: str,
 ) -> str:
     if wildcard:
         return build_wildcard_prompt(
             champion_code=champion_code,
             variant_name=f"wildcard_mod_v{iteration}",
+            tenets_block=tenets_block,
+            evidence_snapshot_block=evidence_snapshot_block,
+            generation_requirements_block=generation_requirements_block,
         )
     mechanism_info = mechanisms[mechanism_name]
     return build_prompt(
@@ -2014,6 +2906,10 @@ def _build_iteration_prompt(
         hypothesis_shortlist=hypothesis_shortlist,
         hypothesis_tracker=hypothesis_tracker,
         hypothesis_recent=hypothesis_recent,
+        selected_hypothesis_block=selected_hypothesis_block,
+        tenets_block=tenets_block,
+        evidence_snapshot_block=evidence_snapshot_block,
+        generation_requirements_block=generation_requirements_block,
     )
 
 
@@ -2077,6 +2973,8 @@ def run_iteration(args: argparse.Namespace) -> int:
         atomic_write_json(stats_path, stats)
 
     iteration = _get_int(stats, "global", "total_iterations") + 1
+    seed_offsets_active = parse_seed_offsets(getattr(args, "seed_offsets", DEFAULT_SEED_OFFSETS))
+    args.seed_offsets = ",".join(str(value) for value in seed_offsets_active)
     rng = random.Random(args.seed + iteration)
 
     champion_code, champion_edge, champion_name = load_champion(state_dir)
@@ -2125,6 +3023,93 @@ def run_iteration(args: argparse.Namespace) -> int:
     iteration_policy_metadata: Optional[Dict[str, Any]] = None
     selected_hypothesis: Optional[Dict[str, Any]] = None
     hypothesis_payload: Optional[Dict[str, Any]] = None
+    selection_summary: Optional[Dict[str, Any]] = None
+    tenet_evolution_summary: Optional[Dict[str, Any]] = None
+
+    prompts_dir = Path(DEFAULT_PROMPTS_DIR)
+    generation_requirements_template = load_prompt_asset(
+        prompts_dir / DEFAULT_PROMPT_TEMPLATE_HYPOTHESIS_GENERATION,
+        HYPOTHESIS_GENERATION_TEMPLATE_FALLBACK,
+    )
+    tenets_path = Path(getattr(args, "tenets_file", DEFAULT_TENETS_FILE))
+    tenets_payload = parse_tenets(tenets_path)
+    tenets_block = format_tenets_block(tenets_payload)
+    tenet_meta_path = state_dir / DEFAULT_TENET_META_STATE_FILE
+    tenet_meta_state = sync_tenet_meta_state(
+        load_json(tenet_meta_path, {}),
+        tenets_payload=tenets_payload,
+        iteration=iteration,
+    )
+    evidence_snapshot = build_evidence_snapshot(
+        stats=stats,
+        log_entries=existing_logs,
+        mechanism_name=mechanism_name,
+        seed_offsets=seed_offsets_active,
+        shortlist_size=len(mechanism_hypotheses),
+    )
+    selected_hypothesis_block = "- none"
+    selection_log_path = state_dir / DEFAULT_HYPOTHESIS_SELECTION_LOG
+    if not wildcard and mechanism_hypotheses:
+        selected_hypothesis, selection_summary, selection_artifacts = select_hypothesis_with_llm(
+            iteration=iteration,
+            mechanism_name=mechanism_name,
+            shortlist=mechanism_hypotheses,
+            hypothesis_tracker=stats.get("hypotheses"),
+            hypothesis_recent=hypothesis_recent,
+            tenets_block=tenets_block,
+            evidence_snapshot=evidence_snapshot,
+            prompts_dir=prompts_dir,
+            llm_command=args.llm_command,
+            llm_model=args.llm_model,
+            llm_timeout_minutes=args.llm_timeout_minutes,
+            llm_max_output_tokens=args.llm_max_output_tokens,
+            llm_disable_shell_tool=args.llm_disable_shell_tool,
+            candidate_dir=candidate_dir,
+            enabled=bool(getattr(args, "selection_llm_enabled", True)) and not bool(args.dry_run),
+            top_k=getattr(args, "selection_top_k", DEFAULT_SELECTION_TOP_K),
+        )
+        selected_hypothesis_block = format_selected_hypothesis_block(selected_hypothesis, selection_summary)
+        if isinstance(selection_summary, dict):
+            append_jsonl(selection_log_path, selection_summary)
+            update_tenet_meta_from_selection(
+                tenet_meta=tenet_meta_state,
+                selection_payload=selection_summary,
+                iteration=iteration,
+            )
+        for key, value in selection_artifacts.items():
+            llm_artifacts[f"selection_{key}"] = value
+    elif wildcard:
+        selection_summary = {
+            "status": "wildcard_skip",
+            "iteration": iteration,
+            "mechanism": mechanism_name,
+            "reason": "wildcard_iteration",
+        }
+        append_jsonl(selection_log_path, selection_summary)
+
+    atomic_write_json(tenet_meta_path, tenet_meta_state)
+    policy_state_path = state_dir / "policy_evolution_state.json"
+    policy_state = load_json(policy_state_path, {})
+    if not isinstance(policy_state, dict):
+        policy_state = {}
+    policy_state["tenet_system"] = {
+        "enabled": True,
+        "selection_llm_enabled": bool(getattr(args, "selection_llm_enabled", True)),
+        "tenet_evolution_enabled": bool(getattr(args, "tenet_evolution_enabled", True)),
+        "tenet_evolution_frequency": _int_value(
+            getattr(args, "tenet_evolution_frequency", DEFAULT_TENET_EVOLUTION_FREQUENCY),
+            default=DEFAULT_TENET_EVOLUTION_FREQUENCY,
+        ),
+        "tenet_auto_apply": bool(getattr(args, "tenet_auto_apply", False)),
+        "tenets_file": str(tenets_path),
+        "active_seed_offsets": seed_offsets_active,
+        "max_seed_offset": max(seed_offsets_active) if seed_offsets_active else 0,
+        "last_selection": selection_summary,
+        "last_tenet_evolution": None,
+        "last_updated_iter": iteration,
+    }
+    atomic_write_json(policy_state_path, policy_state)
+    hypothesis_payload = hypothesis_log_payload(selected_hypothesis)
 
     prompt_text = _build_iteration_prompt(
         champion_code=champion_code,
@@ -2135,6 +3120,10 @@ def run_iteration(args: argparse.Namespace) -> int:
         hypothesis_shortlist=mechanism_hypotheses,
         hypothesis_tracker=stats.get("hypotheses"),
         hypothesis_recent=hypothesis_recent,
+        selected_hypothesis_block=selected_hypothesis_block,
+        tenets_block=tenets_block,
+        evidence_snapshot_block=evidence_snapshot,
+        generation_requirements_block=generation_requirements_template,
     )
     atomic_write_text(prompt_path, f"{prompt_text}\n")
 
@@ -2177,6 +3166,8 @@ def run_iteration(args: argparse.Namespace) -> int:
                 "prompt_path": str(prompt_path),
                 "candidate_path": str(candidate_path),
             }
+            if selection_summary:
+                entry["tenet_selection"] = selection_summary
             if hypothesis_payload:
                 entry["hypothesis"] = hypothesis_payload
             if llm_artifacts:
@@ -2237,7 +3228,19 @@ def run_iteration(args: argparse.Namespace) -> int:
             atomic_write_text(candidate_path, candidate_code)
 
     iteration_policy_metadata = extract_iteration_policy_metadata(candidate_code)
-    selected_hypothesis = resolve_selected_hypothesis(iteration_policy_metadata, mechanism_hypotheses)
+    selected_hypothesis_from_policy = resolve_selected_hypothesis(iteration_policy_metadata, mechanism_hypotheses)
+    if selected_hypothesis is None:
+        selected_hypothesis = selected_hypothesis_from_policy
+    elif (
+        selected_hypothesis_from_policy is not None
+        and str(selected_hypothesis_from_policy.get("id", "")).strip()
+        != str(selected_hypothesis.get("id", "")).strip()
+    ):
+        validation_warnings.append(
+            "selection_lock_mismatch:selected="
+            f"{str(selected_hypothesis.get('id', '')).strip()}"
+            f":policy={str(selected_hypothesis_from_policy.get('id', '')).strip()}"
+        )
     hypothesis_payload = hypothesis_log_payload(selected_hypothesis)
 
     if not valid:
@@ -2254,6 +3257,8 @@ def run_iteration(args: argparse.Namespace) -> int:
             "prompt_path": str(prompt_path),
             "candidate_path": str(candidate_path),
         }
+        if selection_summary:
+            entry["tenet_selection"] = selection_summary
         if hypothesis_payload:
             entry["hypothesis"] = hypothesis_payload
         if iteration_policy_metadata:
@@ -2306,6 +3311,8 @@ def run_iteration(args: argparse.Namespace) -> int:
             "candidate_path": str(candidate_path),
             "result_path": str(result_path),
         }
+        if selection_summary:
+            entry["tenet_selection"] = selection_summary
         if hypothesis_payload:
             entry["hypothesis"] = hypothesis_payload
         if evaluation_summary:
@@ -2346,12 +3353,53 @@ def run_iteration(args: argparse.Namespace) -> int:
         }
         if hypothesis_payload:
             entry["hypothesis"] = hypothesis_payload
+        if selection_summary:
+            entry["tenet_selection"] = selection_summary
         if iteration_policy_metadata:
             entry["iteration_policy"] = iteration_policy_metadata
         if evaluation_summary:
             entry["evaluation"] = evaluation_summary
         if llm_artifacts:
             entry.update(llm_artifacts)
+
+        tenet_evolution_summary, tenet_evolution_artifacts = run_tenet_evolution(
+            iteration=iteration,
+            enabled=bool(getattr(args, "tenet_evolution_enabled", True)) and not bool(args.dry_run),
+            frequency=_int_value(
+                getattr(args, "tenet_evolution_frequency", DEFAULT_TENET_EVOLUTION_FREQUENCY),
+                default=DEFAULT_TENET_EVOLUTION_FREQUENCY,
+            ),
+            tenets_payload=tenets_payload,
+            evidence_snapshot=build_evidence_snapshot(
+                stats=stats,
+                log_entries=list(existing_logs) + [entry],
+                mechanism_name=mechanism_name,
+                seed_offsets=seed_offsets_active,
+                shortlist_size=len(mechanism_hypotheses),
+            ),
+            log_entries=list(existing_logs) + [entry],
+            prompts_dir=prompts_dir,
+            llm_command=args.llm_command,
+            llm_model=args.llm_model,
+            llm_timeout_minutes=args.llm_timeout_minutes,
+            llm_max_output_tokens=args.llm_max_output_tokens,
+            llm_disable_shell_tool=args.llm_disable_shell_tool,
+            prompt_dir=prompt_dir,
+            tenets_path=tenets_path,
+            auto_apply=bool(getattr(args, "tenet_auto_apply", False)),
+        )
+        if tenet_evolution_summary:
+            append_jsonl(state_dir / DEFAULT_TENET_EVOLUTION_LOG, tenet_evolution_summary)
+            entry["tenet_evolution"] = tenet_evolution_summary
+            update_tenet_meta_from_proposal(
+                tenet_meta=tenet_meta_state,
+                proposal=tenet_evolution_summary,
+                iteration=iteration,
+                applied=bool(tenet_evolution_summary.get("applied", False)),
+            )
+        for key, value in tenet_evolution_artifacts.items():
+            entry[f"tenet_evolution_{key}"] = value
+        atomic_write_json(tenet_meta_path, tenet_meta_state)
 
         # Even though this evaluation is screen-only (non-promotable), it is still a strong negative signal.
         # Count it toward learning stats so selection/prompting does not repeatedly treat the same hypothesis
@@ -2382,6 +3430,27 @@ def run_iteration(args: argparse.Namespace) -> int:
             improvement_threshold=args.improvement_threshold,
         )
         stats["global"]["total_iterations"] = iteration
+        policy_state_path = state_dir / "policy_evolution_state.json"
+        policy_state = load_json(policy_state_path, {})
+        if not isinstance(policy_state, dict):
+            policy_state = {}
+        policy_state["tenet_system"] = {
+            "enabled": True,
+            "selection_llm_enabled": bool(getattr(args, "selection_llm_enabled", True)),
+            "tenet_evolution_enabled": bool(getattr(args, "tenet_evolution_enabled", True)),
+            "tenet_evolution_frequency": _int_value(
+                getattr(args, "tenet_evolution_frequency", DEFAULT_TENET_EVOLUTION_FREQUENCY),
+                default=DEFAULT_TENET_EVOLUTION_FREQUENCY,
+            ),
+            "tenet_auto_apply": bool(getattr(args, "tenet_auto_apply", False)),
+            "tenets_file": str(tenets_path),
+            "active_seed_offsets": seed_offsets_active,
+            "max_seed_offset": max(seed_offsets_active) if seed_offsets_active else 0,
+            "last_selection": selection_summary,
+            "last_tenet_evolution": tenet_evolution_summary,
+            "last_updated_iter": iteration,
+        }
+        atomic_write_json(policy_state_path, policy_state)
         return finalize_iteration_entry(
             state_dir=state_dir,
             log_path=log_path,
@@ -2483,6 +3552,8 @@ def run_iteration(args: argparse.Namespace) -> int:
         "candidate_path": str(candidate_path),
         "result_path": str(result_path),
     }
+    if selection_summary:
+        entry["tenet_selection"] = selection_summary
     if hypothesis_payload:
         entry["hypothesis"] = hypothesis_payload
     if iteration_policy_metadata:
@@ -2493,6 +3564,67 @@ def run_iteration(args: argparse.Namespace) -> int:
         entry["evaluation"] = evaluation_summary
     if llm_artifacts:
         entry.update(llm_artifacts)
+
+    tenet_evolution_summary, tenet_evolution_artifacts = run_tenet_evolution(
+        iteration=iteration,
+        enabled=bool(getattr(args, "tenet_evolution_enabled", True)) and not bool(args.dry_run),
+        frequency=_int_value(
+            getattr(args, "tenet_evolution_frequency", DEFAULT_TENET_EVOLUTION_FREQUENCY),
+            default=DEFAULT_TENET_EVOLUTION_FREQUENCY,
+        ),
+        tenets_payload=tenets_payload,
+        evidence_snapshot=build_evidence_snapshot(
+            stats=stats,
+            log_entries=list(existing_logs) + [entry],
+            mechanism_name=mechanism_name,
+            seed_offsets=seed_offsets_active,
+            shortlist_size=len(mechanism_hypotheses),
+        ),
+        log_entries=list(existing_logs) + [entry],
+        prompts_dir=prompts_dir,
+        llm_command=args.llm_command,
+        llm_model=args.llm_model,
+        llm_timeout_minutes=args.llm_timeout_minutes,
+        llm_max_output_tokens=args.llm_max_output_tokens,
+        llm_disable_shell_tool=args.llm_disable_shell_tool,
+        prompt_dir=prompt_dir,
+        tenets_path=tenets_path,
+        auto_apply=bool(getattr(args, "tenet_auto_apply", False)),
+    )
+    if tenet_evolution_summary:
+        append_jsonl(state_dir / DEFAULT_TENET_EVOLUTION_LOG, tenet_evolution_summary)
+        entry["tenet_evolution"] = tenet_evolution_summary
+        update_tenet_meta_from_proposal(
+            tenet_meta=tenet_meta_state,
+            proposal=tenet_evolution_summary,
+            iteration=iteration,
+            applied=bool(tenet_evolution_summary.get("applied", False)),
+        )
+    for key, value in tenet_evolution_artifacts.items():
+        entry[f"tenet_evolution_{key}"] = value
+
+    atomic_write_json(tenet_meta_path, tenet_meta_state)
+    policy_state_path = state_dir / "policy_evolution_state.json"
+    policy_state = load_json(policy_state_path, {})
+    if not isinstance(policy_state, dict):
+        policy_state = {}
+    policy_state["tenet_system"] = {
+        "enabled": True,
+        "selection_llm_enabled": bool(getattr(args, "selection_llm_enabled", True)),
+        "tenet_evolution_enabled": bool(getattr(args, "tenet_evolution_enabled", True)),
+        "tenet_evolution_frequency": _int_value(
+            getattr(args, "tenet_evolution_frequency", DEFAULT_TENET_EVOLUTION_FREQUENCY),
+            default=DEFAULT_TENET_EVOLUTION_FREQUENCY,
+        ),
+        "tenet_auto_apply": bool(getattr(args, "tenet_auto_apply", False)),
+        "tenets_file": str(tenets_path),
+        "active_seed_offsets": seed_offsets_active,
+        "max_seed_offset": max(seed_offsets_active) if seed_offsets_active else 0,
+        "last_selection": selection_summary,
+        "last_tenet_evolution": tenet_evolution_summary,
+        "last_updated_iter": iteration,
+    }
+    atomic_write_json(policy_state_path, policy_state)
     return finalize_iteration_entry(
         state_dir=state_dir,
         log_path=log_path,
@@ -2509,15 +3641,31 @@ def show_status(args: argparse.Namespace) -> int:
     stats_path = state_dir / "mechanism_stats.json"
     log_path = state_dir / "iteration_log.jsonl"
     policy_state_path = state_dir / "policy_evolution_state.json"
+    selection_log_path = state_dir / DEFAULT_HYPOTHESIS_SELECTION_LOG
+    tenet_evolution_log_path = state_dir / DEFAULT_TENET_EVOLUTION_LOG
+    tenet_meta_path = state_dir / DEFAULT_TENET_META_STATE_FILE
     stats = load_json(stats_path, {})
     logs = read_iteration_log(log_path)
     policy_state = load_json(policy_state_path, {})
+    tenet_meta_state = load_json(tenet_meta_path, {})
+    last_selection_entry = read_last_jsonl_entry(selection_log_path)
+    last_tenet_evolution_entry = read_last_jsonl_entry(tenet_evolution_log_path)
 
     if not stats:
         print(_json_out({"status": "uninitialized", "state_dir": str(state_dir)}))
         return 0
 
     rollback_spine = load_rollback_spine(state_dir)
+    tenet_system = policy_state.get("tenet_system") if isinstance(policy_state, dict) else {}
+    tenet_system = tenet_system if isinstance(tenet_system, dict) else {}
+    active_seed_offsets = tenet_system.get("active_seed_offsets")
+    if isinstance(active_seed_offsets, list):
+        seed_offsets = [_int_value(value, default=0) for value in active_seed_offsets]
+        seed_offsets = [value for value in seed_offsets if 0 <= value <= 10000]
+        if not seed_offsets:
+            seed_offsets = parse_seed_offsets(DEFAULT_SEED_OFFSETS)
+    else:
+        seed_offsets = parse_seed_offsets(DEFAULT_SEED_OFFSETS)
     payload = {
         "state_dir": str(state_dir),
         "schema_version": stats.get("schema_version"),
@@ -2528,6 +3676,14 @@ def show_status(args: argparse.Namespace) -> int:
         "log_entries": len(logs),
         "last_entry": logs[-1] if logs else None,
         "policy_evolution": policy_state if isinstance(policy_state, dict) else {},
+        "tenet_meta_state": tenet_meta_state if isinstance(tenet_meta_state, dict) else {},
+        "last_hypothesis_selection": tenet_system.get("last_selection") or last_selection_entry,
+        "last_tenet_evolution": tenet_system.get("last_tenet_evolution") or last_tenet_evolution_entry,
+        "tenet_auto_apply": bool(tenet_system.get("tenet_auto_apply", False)),
+        "active_seed_policy": {
+            "offsets": seed_offsets,
+            "max_seed_offset": max(seed_offsets) if seed_offsets else 0,
+        },
         "rollback_spine": rollback_spine if rollback_spine is not None else {"present": False},
     }
     print(_json_out(payload))
@@ -2675,6 +3831,36 @@ def build_parser() -> argparse.ArgumentParser:
         run_parser.add_argument("--llm-timeout-minutes", type=float, default=DEFAULT_LLM_TIMEOUT_MINUTES)
         run_parser.add_argument("--llm-max-output-tokens", type=int, default=DEFAULT_LLM_MAX_OUTPUT_TOKENS)
         run_parser.add_argument("--llm-disable-shell-tool", action="store_true")
+        run_parser.add_argument("--tenets-file", default=DEFAULT_TENETS_FILE)
+        run_parser.add_argument(
+            "--selection-llm-enabled",
+            dest="selection_llm_enabled",
+            action="store_true",
+            default=True,
+        )
+        run_parser.add_argument(
+            "--selection-llm-disabled",
+            dest="selection_llm_enabled",
+            action="store_false",
+        )
+        run_parser.add_argument("--selection-top-k", type=int, default=DEFAULT_SELECTION_TOP_K)
+        run_parser.add_argument(
+            "--tenet-evolution-enabled",
+            dest="tenet_evolution_enabled",
+            action="store_true",
+            default=True,
+        )
+        run_parser.add_argument(
+            "--tenet-evolution-disabled",
+            dest="tenet_evolution_enabled",
+            action="store_false",
+        )
+        run_parser.add_argument(
+            "--tenet-evolution-frequency",
+            type=int,
+            default=DEFAULT_TENET_EVOLUTION_FREQUENCY,
+        )
+        run_parser.add_argument("--tenet-auto-apply", action="store_true")
         run_parser.add_argument(
             "--hypotheses-file",
             default="",
