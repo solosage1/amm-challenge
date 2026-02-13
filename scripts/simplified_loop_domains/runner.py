@@ -1172,6 +1172,7 @@ def build_evidence_snapshot(
     mechanism_name: str,
     seed_offsets: Sequence[int],
     shortlist_size: int,
+    tenet_meta: Optional[Dict[str, Any]] = None,
 ) -> str:
     champion = stats.get("champion") if isinstance(stats.get("champion"), dict) else {}
     champion_edge = _float_value(champion.get("edge", 0.0), default=0.0)
@@ -1190,11 +1191,31 @@ def build_evidence_snapshot(
     rows: List[str] = [
         f"- champion: name={champion_name} robust_edge={champion_edge:.4f}",
         f"- active_seed_offsets: {','.join(str(value) for value in offset_list)} max_seed_offset={max_seed_offset}",
-        f"- mechanism_focus: target={mechanism_name} shortlist_size={int(shortlist_size)} "
-        f"tries={_int_value(mechanism_stats.get('tries_authoritative', mechanism_stats.get('tries', 0)), default=0)} "
-        f"best_delta={_float_value(mechanism_stats.get('best_delta', 0.0), default=0.0):+.4f}",
-        f"- concentration_last_{_int_value(concentration.get('window', 0), default=0)}: {concentration_text}",
     ]
+    if mechanism_name == "cross_mechanism":
+        rows.append("- mechanism_summary (LLM selects mechanism + hypothesis):")
+        all_mechs = stats.get("mechanisms", {})
+        for mname in sorted(all_mechs.keys()):
+            mstats = all_mechs.get(mname)
+            if not isinstance(mstats, dict):
+                continue
+            m_tries = _int_value(mstats.get("tries_authoritative", mstats.get("tries", 0)), default=0)
+            m_successes = _int_value(mstats.get("successes", 0), default=0)
+            m_best = _float_value(mstats.get("best_delta", 0.0), default=0.0)
+            m_last = str(mstats.get("last_tried", "never"))[:19]
+            rows.append(
+                f"    {mname}: tries={m_tries} successes={m_successes} "
+                f"best_delta={m_best:+.4f} last_tried={m_last}"
+            )
+    else:
+        rows.append(
+            f"- mechanism_focus: target={mechanism_name} shortlist_size={int(shortlist_size)} "
+            f"tries={_int_value(mechanism_stats.get('tries_authoritative', mechanism_stats.get('tries', 0)), default=0)} "
+            f"best_delta={_float_value(mechanism_stats.get('best_delta', 0.0), default=0.0):+.4f}"
+        )
+    rows.append(
+        f"- concentration_last_{_int_value(concentration.get('window', 0), default=0)}: {concentration_text}"
+    )
     if failures:
         rows.append("- recent_failures:")
         for failure in failures:
@@ -1205,6 +1226,31 @@ def build_evidence_snapshot(
             )
     else:
         rows.append("- recent_failures: none")
+    if tenet_meta and isinstance(tenet_meta.get("tenets"), dict):
+        gap_rows: List[str] = []
+        for tid, tdata in sorted(tenet_meta["tenets"].items(), key=lambda x: x[0]):
+            if not isinstance(tdata, dict):
+                continue
+            support = int(tdata.get("support_count", 0) or 0)
+            conflict = int(tdata.get("conflict_count", 0) or 0)
+            neutral = int(tdata.get("neutral_count", 0) or 0)
+            total = support + conflict + neutral
+            if total > 0 and support == 0:
+                label = "NEVER_TESTED"
+            elif support <= 5 and neutral >= support * 3:
+                label = "under_explored"
+            elif conflict >= 2:
+                label = "active_tension"
+            else:
+                continue
+            text_snip = str(tdata.get("text", ""))[:80]
+            gap_rows.append(
+                f"  - {tid}: support={support} conflict={conflict} neutral={neutral} "
+                f"({label}) \"{text_snip}\""
+            )
+        if gap_rows:
+            rows.append("- tenet_coverage_gaps:")
+            rows.extend(gap_rows)
     return "\n".join(rows)
 
 
@@ -3380,7 +3426,7 @@ def run_iteration(args: argparse.Namespace) -> int:
     if sync_stats_hypotheses(stats, hypotheses):
         atomic_write_json(stats_path, stats)
 
-    mechanism_name, wildcard = _select_iteration_mechanism(
+    _, wildcard = _select_iteration_mechanism(
         iteration=iteration,
         stats=stats,
         mechanisms=mechanisms,
@@ -3388,20 +3434,24 @@ def run_iteration(args: argparse.Namespace) -> int:
         wildcard_frequency=args.wildcard_frequency,
         rng=rng,
     )
-    mechanism_hypotheses = hypotheses_for_mechanism(hypotheses, mechanism_name) if not wildcard else []
+    if not wildcard:
+        # Cross-mechanism: pass ALL hypotheses, let LLM pick mechanism + hypothesis
+        all_mechanism_names = set(mechanisms.keys())
+        mechanism_hypotheses = [
+            h for h in hypotheses
+            if isinstance(h, dict) and str(h.get("mechanism", "")).strip() in all_mechanism_names
+        ]
+        mechanism_name = "cross_mechanism"
+    else:
+        mechanism_hypotheses = []
+        mechanism_name = "wildcard"
     # Keep shortlist order non-deterministic to reduce anchoring bias in LLM selection.
     if len(mechanism_hypotheses) > 1:
         SYSTEM_RANDOM.shuffle(mechanism_hypotheses)
     existing_logs = read_iteration_log(log_path)
-    hypothesis_recent = (
-        summarize_hypothesis_recent_history(
-            existing_logs,
-            mechanism_name=mechanism_name,
-            window=DEFAULT_HYPOTHESIS_RECENT_WINDOW,
-        )
-        if not wildcard
-        else None
-    )
+    # For cross-mechanism mode, pass None so untried hypotheses from starved mechanisms
+    # get full exploration_bonus with zero evidence penalties in scoring.
+    hypothesis_recent = None
 
     candidate_code = ""
     prompt_path = prompt_dir / f"iter_{iteration}_{mechanism_name.replace(':', '_')}.md"
@@ -3433,6 +3483,7 @@ def run_iteration(args: argparse.Namespace) -> int:
         mechanism_name=mechanism_name,
         seed_offsets=seed_offsets_active,
         shortlist_size=len(mechanism_hypotheses),
+        tenet_meta=tenet_meta_state,
     )
     selected_hypothesis_block = "- none"
     selection_log_path = state_dir / DEFAULT_HYPOTHESIS_SELECTION_LOG
@@ -3454,7 +3505,7 @@ def run_iteration(args: argparse.Namespace) -> int:
             llm_disable_shell_tool=args.llm_disable_shell_tool,
             candidate_dir=candidate_dir,
             enabled=bool(getattr(args, "selection_llm_enabled", True)) and not bool(args.dry_run),
-            top_k=getattr(args, "selection_top_k", DEFAULT_SELECTION_TOP_K),
+            top_k=10 if mechanism_name == "cross_mechanism" else getattr(args, "selection_top_k", DEFAULT_SELECTION_TOP_K),
         )
         selected_hypothesis_block = format_selected_hypothesis_block(selected_hypothesis, selection_summary)
         if isinstance(selection_summary, dict):
@@ -3474,6 +3525,24 @@ def run_iteration(args: argparse.Namespace) -> int:
             "reason": "wildcard_iteration",
         }
         append_jsonl(selection_log_path, selection_summary)
+
+    # Cross-mechanism: resolve actual mechanism from LLM-selected hypothesis
+    if not wildcard and mechanism_name == "cross_mechanism":
+        if selected_hypothesis:
+            resolved_name = str(selected_hypothesis.get("mechanism", "")).strip()
+            if resolved_name in mechanisms:
+                mechanism_name = resolved_name
+            else:
+                mechanism_name = list(mechanisms.keys())[0]
+        else:
+            # Fallback: use UCB as before
+            mechanism_name = select_mechanism(
+                {name: rec for name, rec in stats["mechanisms"].items() if name in mechanisms},
+                args.exploration_c, rng, current_iteration=iteration,
+            )
+        # Update file paths with resolved mechanism name
+        prompt_path = prompt_dir / f"iter_{iteration}_{mechanism_name.replace(':', '_')}.md"
+        candidate_path = candidate_dir / f"iter_{iteration}_{mechanism_name.replace(':', '_')}.sol"
 
     atomic_write_json(tenet_meta_path, tenet_meta_state)
     policy_state_path = state_dir / "policy_evolution_state.json"

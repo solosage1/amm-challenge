@@ -6,6 +6,19 @@ import {TradeInfo} from "./IAMMStrategy.sol";
 contract Strategy is AMMStrategyBase {
     // ITERATION_POLICY {"decision":"continue","hypothesis_id":"H_TOX_ACT_001","confidence":0.63,"ceiling_probability":0.36,"ev_next_5":0.09,"best_delta_seen":2.3074,"reason":"promotion_edge 519.26 supports T5 confidence-weighted asymmetry with bounded fees, coherent spread behavior, and no pathological liquidity collapse","next_mechanism":"wildcard"}
 
+    struct State {
+        uint256 bidFee;
+        uint256 askFee;
+        uint256 flowState;
+        uint256 pRef;
+        uint256 sigmaEma;
+        uint256 toxEma;
+        uint256 lambdaEma;
+        uint256 sizeEma;
+        uint256 confEma;
+        uint256 stepTradeCount;
+    }
+
     uint256 constant ELAPSED_CAP = 8;
     uint256 constant STEP_COUNT_CAP = 64;
 
@@ -103,155 +116,109 @@ contract Strategy is AMMStrategyBase {
     }
 
     function afterSwap(TradeInfo calldata trade) external override returns (uint256, uint256) {
-        uint256 prevBidFee = slots[0];
-        uint256 prevAskFee = slots[1];
-        uint256 lastTs = slots[2];
-        uint256 flowState = slots[3];
-        uint256 pRef = slots[4];
-        uint256 sigmaEma = slots[5];
-        uint256 toxEma = slots[6];
-        uint256 lambdaEma = slots[7];
-        uint256 sizeEma = slots[8];
-        uint256 confEma = slots[9];
-        uint256 stepTradeCount = slots[10];
+        State memory s = _loadState();
 
+        uint256 lastTs = slots[2];
         if (trade.timestamp > lastTs) {
             uint256 elapsedRaw = trade.timestamp - lastTs;
             uint256 elapsed = elapsedRaw > ELAPSED_CAP ? ELAPSED_CAP : elapsedRaw;
 
-            flowState = _decayCenteredLinear(flowState, DIR_DECAY_PER_SEC, elapsed);
-            sigmaEma = _decayLinear(sigmaEma, SIGMA_DECAY_PER_SEC, elapsed);
-            toxEma = _decayLinear(toxEma, TOX_DECAY_PER_SEC, elapsed);
-            sizeEma = _decayLinear(sizeEma, SIZE_DECAY_PER_SEC, elapsed);
-            confEma = _decayToward(confEma, CONF_NEUTRAL, CONF_DECAY_PER_SEC, elapsed);
+            s.flowState = _decayCenteredLinear(s.flowState, DIR_DECAY_PER_SEC, elapsed);
+            s.sigmaEma = _decayLinear(s.sigmaEma, SIGMA_DECAY_PER_SEC, elapsed);
+            s.toxEma = _decayLinear(s.toxEma, TOX_DECAY_PER_SEC, elapsed);
+            s.sizeEma = _decayLinear(s.sizeEma, SIZE_DECAY_PER_SEC, elapsed);
+            s.confEma = _decayToward(s.confEma, CONF_NEUTRAL, CONF_DECAY_PER_SEC, elapsed);
 
-            if (stepTradeCount > 0 && elapsedRaw > 0) {
-                uint256 lambdaInst = (stepTradeCount * WAD) / elapsedRaw;
+            if (s.stepTradeCount > 0 && elapsedRaw > 0) {
+                uint256 lambdaInst = (s.stepTradeCount * WAD) / elapsedRaw;
                 if (lambdaInst > LAMBDA_CAP) lambdaInst = LAMBDA_CAP;
-                lambdaEma = _blend(lambdaEma, lambdaInst, WAD - LAMBDA_KEEP);
+                s.lambdaEma = _blend(s.lambdaEma, lambdaInst, WAD - LAMBDA_KEEP);
             }
 
-            stepTradeCount = 0;
+            s.stepTradeCount = 0;
         }
 
-        bool firstInStep = stepTradeCount == 0;
+        bool firstInStep = s.stepTradeCount == 0;
 
-        uint256 spot = trade.reserveX > 0 ? wdiv(trade.reserveY, trade.reserveX) : pRef;
-        if (pRef == 0) pRef = spot;
+        uint256 spot = trade.reserveX > 0 ? wdiv(trade.reserveY, trade.reserveX) : s.pRef;
+        if (s.pRef == 0) s.pRef = spot;
 
-        uint256 feeUsed = trade.isBuy ? prevBidFee : prevAskFee;
-        uint256 gamma = feeUsed < WAD ? WAD - feeUsed : 0;
-        uint256 pImplied;
-        if (gamma == 0) {
-            pImplied = spot;
-        } else {
-            pImplied = trade.isBuy ? wmul(spot, gamma) : wdiv(spot, gamma);
-        }
+        uint256 pImplied = _impliedPrice(spot, trade.isBuy ? s.bidFee : s.askFee, trade.isBuy);
 
         uint256 tradeRatio = trade.reserveY > 0 ? wdiv(trade.amountY, trade.reserveY) : 0;
         if (tradeRatio > TRADE_RATIO_CAP) tradeRatio = TRADE_RATIO_CAP;
 
-        bool likelyArb = firstInStep && tradeRatio <= ARB_MAX_RATIO;
-
-        uint256 ret = pRef > 0 ? wdiv(absDiff(pImplied, pRef), pRef) : 0;
+        uint256 ret = s.pRef > 0 ? wdiv(absDiff(pImplied, s.pRef), s.pRef) : 0;
         if (ret > RET_CAP) ret = RET_CAP;
 
-        uint256 alpha;
-        if (firstInStep) {
-            alpha = likelyArb ? ALPHA_FIRST_ARB : ALPHA_FIRST_RETAIL;
-        } else {
-            alpha = ALPHA_FOLLOW;
-        }
-        if (ret > SHOCK_GATE) alpha = wmul(alpha, ALPHA_SHOCK_DAMP);
-        pRef = _blend(pRef, pImplied, alpha);
+        {
+            uint256 alpha;
+            if (firstInStep) {
+                alpha = tradeRatio <= ARB_MAX_RATIO ? ALPHA_FIRST_ARB : ALPHA_FIRST_RETAIL;
+            } else {
+                alpha = ALPHA_FOLLOW;
+            }
+            if (ret > SHOCK_GATE) alpha = wmul(alpha, ALPHA_SHOCK_DAMP);
+            s.pRef = _blend(s.pRef, pImplied, alpha);
 
-        uint256 sigmaInput = firstInStep ? ret : ret / 2;
-        sigmaEma = _blend(sigmaEma, sigmaInput, firstInStep ? SIGMA_ALPHA_FIRST : SIGMA_ALPHA_FOLLOW);
+            uint256 sigmaInput = firstInStep ? ret : ret / 2;
+            s.sigmaEma = _blend(s.sigmaEma, sigmaInput, firstInStep ? SIGMA_ALPHA_FIRST : SIGMA_ALPHA_FOLLOW);
+        }
 
         if (tradeRatio > SIGNAL_THRESHOLD) {
             uint256 push = tradeRatio;
             if (push > WAD / 4) push = WAD / 4;
             if (trade.isBuy) {
-                flowState = flowState + push;
-                if (flowState > 2 * WAD) flowState = 2 * WAD;
+                s.flowState = s.flowState + push;
+                if (s.flowState > 2 * WAD) s.flowState = 2 * WAD;
             } else {
-                flowState = flowState > push ? flowState - push : 0;
+                s.flowState = s.flowState > push ? s.flowState - push : 0;
             }
         }
 
-        sizeEma = _blend(sizeEma, tradeRatio, SIZE_ALPHA);
-        if (sizeEma > WAD) sizeEma = WAD;
+        s.sizeEma = _blend(s.sizeEma, tradeRatio, SIZE_ALPHA);
+        if (s.sizeEma > WAD) s.sizeEma = WAD;
 
-        uint256 toxInst = pRef > 0 ? wdiv(absDiff(spot, pRef), pRef) : 0;
+        uint256 toxInst = s.pRef > 0 ? wdiv(absDiff(spot, s.pRef), s.pRef) : 0;
         if (toxInst > TOX_CAP) toxInst = TOX_CAP;
-        toxEma = _blend(toxEma, toxInst, TOX_ALPHA);
+        s.toxEma = _blend(s.toxEma, toxInst, TOX_ALPHA);
 
-        uint256 flowPressure = wmul(lambdaEma, sizeEma);
+        uint256 flowPressure = wmul(s.lambdaEma, s.sizeEma);
         if (flowPressure > FLOW_CAP) flowPressure = FLOW_CAP;
 
-        uint256 confPenalty =
-            wmul(CONF_TOX_W, toxEma)
-            + wmul(CONF_SIGMA_W, sigmaEma)
-            + wmul(CONF_FLOW_W, flowPressure);
-        if (firstInStep) confPenalty = confPenalty + wmul(CONF_RET_W, ret);
-        uint256 confInst = confPenalty >= WAD ? 0 : WAD - confPenalty;
-        confEma = _blend(confEma, confInst, CONF_ALPHA);
-
-        uint256 toxExcess = toxEma > TOX_QUAD_KNEE ? toxEma - TOX_QUAD_KNEE : 0;
-        uint256 toxQuad = wmul(TOX_QUAD_COEF, wmul(toxExcess, toxExcess));
-        if (toxQuad > TOX_QUAD_CAP) toxQuad = TOX_QUAD_CAP;
-
-        uint256 center =
-            BASE_FEE
-            + wmul(SIGMA_COEF, sigmaEma)
-            + wmul(FLOW_COEF, flowPressure)
-            + wmul(TOX_COEF, toxEma)
-            + toxQuad
-            + wmul(CONF_GUARD_COEF, WAD - confEma);
-
-        uint256 centerRelief = wmul(CONF_RELIEF_COEF, confEma);
-        if (center > centerRelief) {
-            center = center - centerRelief;
-        } else {
-            center = MID_FLOOR;
-        }
-        if (center < MID_FLOOR) center = MID_FLOOR;
-        center = _capMove(center, (prevBidFee + prevAskFee) / 2, MID_UP_CAP, MID_DOWN_CAP);
-
-        uint256 spread =
-            SPREAD_BASE
-            + wmul(SPREAD_TOX_COEF, toxEma)
-            + wmul(SPREAD_SIGMA_COEF, sigmaEma)
-            + wmul(SPREAD_FLOW_COEF, flowPressure);
-
-        if (toxEma > AGREE_TOX_GATE && sigmaEma > AGREE_SIGMA_GATE && flowPressure > AGREE_FLOW_GATE) {
-            spread = spread + AGREE_ADD;
+        {
+            uint256 confPenalty =
+                wmul(CONF_TOX_W, s.toxEma)
+                + wmul(CONF_SIGMA_W, s.sigmaEma)
+                + wmul(CONF_FLOW_W, flowPressure);
+            if (firstInStep) confPenalty = confPenalty + wmul(CONF_RET_W, ret);
+            uint256 confInst = confPenalty >= WAD ? 0 : WAD - confPenalty;
+            s.confEma = _blend(s.confEma, confInst, CONF_ALPHA);
         }
 
-        uint256 spreadRelief = wmul(SPREAD_CONF_RELIEF, confEma);
-        spread = spread > spreadRelief ? spread - spreadRelief : SPREAD_MIN;
-        if (spread < SPREAD_MIN) spread = SPREAD_MIN;
-        if (spread > SPREAD_MAX) spread = SPREAD_MAX;
-        spread = _capMove(spread, absDiff(prevBidFee, prevAskFee), SPREAD_UP_CAP, SPREAD_DOWN_CAP);
-        if (spread < SPREAD_MIN) spread = SPREAD_MIN;
-        if (spread > SPREAD_MAX) spread = SPREAD_MAX;
+        (s.bidFee, s.askFee) = _quoteFees(s, spot, flowPressure);
 
-        uint256 dirDev;
-        bool protectBid;
-        if (flowState >= WAD) {
-            dirDev = flowState - WAD;
-            protectBid = true;
-        } else {
-            dirDev = WAD - flowState;
-            protectBid = false;
-        }
+        s.stepTradeCount = s.stepTradeCount + 1;
+        if (s.stepTradeCount > STEP_COUNT_CAP) s.stepTradeCount = STEP_COUNT_CAP;
 
-        uint256 skew = wmul(DIR_COEF, dirDev) + wmul(DIR_TOX_COEF, wmul(dirDev, toxEma));
+        _storeState(s, trade.timestamp);
+        return (s.bidFee, s.askFee);
+    }
+
+    function _quoteFees(State memory s, uint256 spot, uint256 flowPressure)
+        internal
+        pure
+        returns (uint256 bidFee, uint256 askFee)
+    {
+        uint256 center = _computeCenter(s, flowPressure);
+        uint256 spread = _computeSpread(s, flowPressure);
+        (uint256 dirDev, bool protectBid) = _directionState(s.flowState);
+
+        uint256 skew = wmul(DIR_COEF, dirDev);
+        skew = skew + wmul(DIR_TOX_COEF, wmul(dirDev, s.toxEma));
         if (skew > SKEW_CAP) skew = SKEW_CAP;
 
         uint256 half = spread / 2;
-        uint256 bidFee;
-        uint256 askFee;
         if (protectBid) {
             bidFee = center + half + skew;
             askFee = center > half ? center - half : 0;
@@ -260,15 +227,72 @@ contract Strategy is AMMStrategyBase {
             bidFee = center > half ? center - half : 0;
         }
 
-        uint256 split = wmul(SPLIT_COEF, toxEma) + wmul(SPLIT_CONF_COEF, wmul(toxEma, WAD - confEma));
-        if (spot >= pRef) {
+        (bidFee, askFee) = _applySideAdjustments(s, spot, bidFee, askFee);
+    }
+
+    function _computeCenter(State memory s, uint256 flowPressure) internal pure returns (uint256 center) {
+        uint256 toxExcess = s.toxEma > TOX_QUAD_KNEE ? s.toxEma - TOX_QUAD_KNEE : 0;
+        uint256 toxQuad = wmul(TOX_QUAD_COEF, wmul(toxExcess, toxExcess));
+        if (toxQuad > TOX_QUAD_CAP) toxQuad = TOX_QUAD_CAP;
+
+        center =
+            BASE_FEE
+            + wmul(SIGMA_COEF, s.sigmaEma)
+            + wmul(FLOW_COEF, flowPressure)
+            + wmul(TOX_COEF, s.toxEma)
+            + toxQuad
+            + wmul(CONF_GUARD_COEF, WAD - s.confEma);
+
+        uint256 centerRelief = wmul(CONF_RELIEF_COEF, s.confEma);
+        center = center > centerRelief ? center - centerRelief : MID_FLOOR;
+        if (center < MID_FLOOR) center = MID_FLOOR;
+        center = _capMove(center, (s.bidFee + s.askFee) / 2, MID_UP_CAP, MID_DOWN_CAP);
+    }
+
+    function _computeSpread(State memory s, uint256 flowPressure) internal pure returns (uint256 spread) {
+        spread =
+            SPREAD_BASE
+            + wmul(SPREAD_TOX_COEF, s.toxEma)
+            + wmul(SPREAD_SIGMA_COEF, s.sigmaEma)
+            + wmul(SPREAD_FLOW_COEF, flowPressure);
+
+        if (s.toxEma > AGREE_TOX_GATE && s.sigmaEma > AGREE_SIGMA_GATE && flowPressure > AGREE_FLOW_GATE) {
+            spread = spread + AGREE_ADD;
+        }
+
+        uint256 spreadRelief = wmul(SPREAD_CONF_RELIEF, s.confEma);
+        spread = spread > spreadRelief ? spread - spreadRelief : SPREAD_MIN;
+        if (spread < SPREAD_MIN) spread = SPREAD_MIN;
+        if (spread > SPREAD_MAX) spread = SPREAD_MAX;
+        spread = _capMove(spread, absDiff(s.bidFee, s.askFee), SPREAD_UP_CAP, SPREAD_DOWN_CAP);
+        if (spread < SPREAD_MIN) spread = SPREAD_MIN;
+        if (spread > SPREAD_MAX) spread = SPREAD_MAX;
+    }
+
+    function _directionState(uint256 flowState) internal pure returns (uint256 dirDev, bool protectBid) {
+        if (flowState >= WAD) {
+            dirDev = flowState - WAD;
+            protectBid = true;
+        } else {
+            dirDev = WAD - flowState;
+            protectBid = false;
+        }
+    }
+
+    function _applySideAdjustments(State memory s, uint256 spot, uint256 bidFee, uint256 askFee)
+        internal
+        pure
+        returns (uint256, uint256)
+    {
+        uint256 split = wmul(SPLIT_COEF, s.toxEma) + wmul(SPLIT_CONF_COEF, wmul(s.toxEma, WAD - s.confEma));
+        if (spot >= s.pRef) {
             bidFee = bidFee + split;
         } else {
             askFee = askFee + split;
         }
 
-        uint256 rebate = wmul(REBATE_COEF, wmul(confEma, WAD - toxEma));
-        if (spot >= pRef) {
+        uint256 rebate = wmul(REBATE_COEF, wmul(s.confEma, WAD - s.toxEma));
+        if (spot >= s.pRef) {
             askFee = askFee > rebate ? askFee - rebate : 0;
         } else {
             bidFee = bidFee > rebate ? bidFee - rebate : 0;
@@ -304,23 +328,40 @@ contract Strategy is AMMStrategyBase {
 
         if (bidFee < MIN_SIDE_FEE) bidFee = MIN_SIDE_FEE;
         if (askFee < MIN_SIDE_FEE) askFee = MIN_SIDE_FEE;
-
-        stepTradeCount = stepTradeCount + 1;
-        if (stepTradeCount > STEP_COUNT_CAP) stepTradeCount = STEP_COUNT_CAP;
-
-        slots[0] = bidFee;
-        slots[1] = askFee;
-        slots[2] = trade.timestamp;
-        slots[3] = flowState;
-        slots[4] = pRef;
-        slots[5] = sigmaEma;
-        slots[6] = toxEma;
-        slots[7] = lambdaEma;
-        slots[8] = sizeEma;
-        slots[9] = confEma;
-        slots[10] = stepTradeCount;
-
         return (bidFee, askFee);
+    }
+
+    function _loadState() internal view returns (State memory s) {
+        s.bidFee = slots[0];
+        s.askFee = slots[1];
+        s.flowState = slots[3];
+        s.pRef = slots[4];
+        s.sigmaEma = slots[5];
+        s.toxEma = slots[6];
+        s.lambdaEma = slots[7];
+        s.sizeEma = slots[8];
+        s.confEma = slots[9];
+        s.stepTradeCount = slots[10];
+    }
+
+    function _storeState(State memory s, uint256 timestamp) internal {
+        slots[0] = s.bidFee;
+        slots[1] = s.askFee;
+        slots[2] = timestamp;
+        slots[3] = s.flowState;
+        slots[4] = s.pRef;
+        slots[5] = s.sigmaEma;
+        slots[6] = s.toxEma;
+        slots[7] = s.lambdaEma;
+        slots[8] = s.sizeEma;
+        slots[9] = s.confEma;
+        slots[10] = s.stepTradeCount;
+    }
+
+    function _impliedPrice(uint256 spot, uint256 feeUsed, bool isBuy) internal pure returns (uint256) {
+        uint256 gamma = feeUsed < WAD ? WAD - feeUsed : 0;
+        if (gamma == 0) return spot;
+        return isBuy ? wmul(spot, gamma) : wdiv(spot, gamma);
     }
 
     function _blend(uint256 oldValue, uint256 newValue, uint256 alpha) internal pure returns (uint256) {
